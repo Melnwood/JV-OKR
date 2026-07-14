@@ -14,18 +14,21 @@
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
 <style>
   :root{--ink:#18212B;--ink-2:#5A6875;--paper:#EDF0F3;--card:#fff;--rule:#D6DCE2;
-        --moss:#3F6B4F;--amber:#B5811F;--clay:#A8443A;--indigo:#45539B;--r:11px}
+        --moss:#3F6B4F;--amber:#B5811F;--clay:#A8443A;--indigo:#45539B;--jv:#FF6600;--r:11px}
   *{box-sizing:border-box}
   body{margin:0;background:var(--paper);color:var(--ink);font-family:Inter,system-ui,sans-serif;font-size:14px;line-height:1.55}
   a{color:var(--indigo)}
-  .bar{background:var(--card);border-bottom:1px solid var(--rule);position:sticky;top:0;z-index:20}
+  .bar{background:var(--jv);border-bottom:1px solid #E25C00;position:sticky;top:0;z-index:20}
   .bar-in{max-width:1200px;margin:0 auto;padding:11px 20px;display:flex;gap:14px;align-items:center;flex-wrap:wrap}
-  .logo{font-family:'Bricolage Grotesque',sans-serif;font-weight:700;font-size:17px;letter-spacing:-.02em;margin-right:6px}
+  .logo{font-family:'Bricolage Grotesque',sans-serif;font-weight:700;font-size:17px;letter-spacing:-.02em;margin-right:6px;color:#fff;display:flex;align-items:center;gap:8px}
+  .logo img{width:22px;height:22px;border-radius:5px;background:#fff}
   nav{display:flex;gap:3px;flex-wrap:wrap;flex:1}
-  .nv{background:none;border:0;border-radius:8px;padding:7px 11px;font:inherit;font-size:13.5px;color:var(--ink-2);cursor:pointer}
-  .nv[aria-current="true"]{background:var(--ink);color:#fff}
-  .nv:hover:not([aria-current="true"]){background:#F0F3F5;color:var(--ink)}
-  .me{display:flex;align-items:center;gap:7px;font-size:12.5px;color:var(--ink-2)}
+  .nv{background:none;border:0;border-radius:8px;padding:7px 11px;font:inherit;font-size:13.5px;color:rgba(255,255,255,.82);cursor:pointer}
+  .nv[aria-current="true"]{background:#fff;color:var(--jv);font-weight:600}
+  .nv:hover:not([aria-current="true"]){background:rgba(255,255,255,.18);color:#fff}
+  .me{display:flex;align-items:center;gap:7px;font-size:12.5px;color:rgba(255,255,255,.85)}
+  .me select{border-color:rgba(255,255,255,.5);background:rgba(255,255,255,.14);color:#fff}
+  .me select option{color:var(--ink);background:#fff}
   select,input,textarea{font-family:Inter;font-size:13.5px;border:1px solid var(--rule);border-radius:8px;padding:8px 9px;background:#fff;color:var(--ink);width:100%}
   select.sm{width:auto;padding:6px 9px;font-size:13px}
   .wrap{max-width:1200px;margin:0 auto;padding:22px 20px 80px}
@@ -37,7 +40,15 @@
   .mono{font-family:'JetBrains Mono',monospace;font-size:11.5px;color:var(--ink-2)}
   .card{background:var(--card);border:1px solid var(--rule);border-radius:var(--r);padding:16px 18px;margin-bottom:14px}
   .cap{font-size:12.5px;color:var(--ink-2);margin-bottom:12px}
-  .head{display:flex;justify-content:space-between;gap:14px;align-items:flex-end;flex-wrap:wrap;margin-bottom:16px}
+  .head{display:flex;justify-content:space-between;gap:14px;align-items:flex-end;flex-wrap:wrap;
+        background:var(--jv);border-radius:var(--r);padding:16px 18px;margin-bottom:16px;color:#fff}
+  .head h1{color:#fff}
+  .head .sub{color:rgba(255,255,255,.9);margin:3px 0 0}
+  .head .eyebrow{color:rgba(255,255,255,.8)}
+  .head select{border-color:rgba(255,255,255,.55);background:rgba(255,255,255,.16);color:#fff}
+  .head select option{color:var(--ink);background:#fff}
+  .head .btn.ghost{border-color:rgba(255,255,255,.6);color:#fff;background:rgba(255,255,255,.12)}
+  .head .btn.ghost:hover{background:rgba(255,255,255,.24)}
   .filters{display:flex;gap:7px;flex-wrap:wrap}
   .two{display:grid;grid-template-columns:1.4fr 1fr;gap:14px;align-items:start}
   .side{display:grid;grid-template-columns:300px 1fr;gap:14px;align-items:start}
@@ -94,8 +105,9 @@
   .n-title{font-size:12.5px;font-weight:600;fill:var(--ink)}
   .n-meta{font-size:10.5px;fill:var(--ink-2);font-family:'JetBrains Mono',monospace}
   .n-lvl{font-size:9px;fill:var(--ink-2);font-family:'JetBrains Mono',monospace;letter-spacing:.09em}
-  .root rect{fill:var(--ink);stroke:var(--ink)}
-  .root .n-title{fill:#fff}.root .n-meta,.root .n-lvl{fill:#9FADBA}
+  .root rect{fill:var(--jv);stroke:var(--jv)}
+  .root .n-title{fill:#fff}.root .n-meta,.root .n-lvl{fill:rgba(255,255,255,.82)}
+  .node.root.lit rect{stroke:#B84A00;stroke-width:2.5}
   .colhead{font-family:'JetBrains Mono',monospace;font-size:10px;fill:var(--ink-2);letter-spacing:.1em}
 
   /* tasks */
@@ -186,7 +198,7 @@
 </head>
 <body>
 <div class="bar"><div class="bar-in">
-  <span class="logo">JV OKR</span>
+  <span class="logo"><img src="icon.svg" alt=""/>JV OKR</span>
   <nav id="nav"></nav>
   <div class="me">I'm <select class="sm" id="who"></select></div>
 </div></div>
@@ -281,7 +293,7 @@ const objProgress = o => f(o,"Progress") ?? 0;
 const ladderKr = o => { const p = one(o,"Parent Key Result"); return p ? rec("krs",p) : null; };
 
 /* ============================ CHROME ============================ */
-const NAV = [["dashboard","Dashboard"],["map","Alignment map"],["mine","My work"],["checkin","Check in"],
+const NAV = [["dashboard","Dashboard"],["map","Alignment map"],["browse","Browse JV"],["mine","My work"],["checkin","Check in"],
              ["reviews","Reviews"],["objective","Objectives"],["coaching","Coaching"]];
 function drawChrome(){
   document.getElementById("nav").innerHTML = NAV.map(([k,l])=>
@@ -456,6 +468,128 @@ function drawMap(N, LV){
   window.onmouseup=()=>{dn=false;cv.classList.remove("drag");};
   window.onmousemove=e=>{ if(!dn)return; cv.scrollLeft=sl-(e.pageX-sx); cv.scrollTop=st-(e.pageY-sy); };
 }
+
+/* ============================ BROWSE JV (read-only) ============================ */
+let bArea = null, bScope = "", bCycle = "", bQuery = "";
+const areaGroups = () => {
+  const m = {};
+  DB.objectives.filter(o=>f(o,"Scope")!=="JV 5-year").forEach(o=>{
+    const a = f(o,"Area") || "Unassigned", s = f(o,"Scope") || "Team";
+    (m[a] ||= {name:a, scope:s, objs:[]}).objs.push(o);
+  });
+  DB.people.forEach(p=>{ const a=f(p,"Area"); if(a && !m[a]) m[a] = {name:a, scope:/leader/i.test(f(p,"Role")||"")?"Team":"Team", objs:[]}; });
+  return Object.values(m).sort((a,b)=>a.name.localeCompare(b.name));
+};
+V.browse = () => {
+  const el = document.getElementById("view");
+  const groups = areaGroups();
+
+  if(!bArea){
+    const shown = groups.filter(g => (!bScope || g.scope===bScope)
+      && (!bQuery || g.name.toLowerCase().includes(bQuery.toLowerCase())
+                  || g.objs.some(o=>(f(o,"Title")||"").toLowerCase().includes(bQuery.toLowerCase()))));
+    const scopes = [...new Set(groups.map(g=>g.scope))];
+
+    el.innerHTML = `
+      <div class="head">
+        <div><h1>Browse JV</h1>
+          <div class="sub">Every country, division and team. Look around all you like — nothing here can be changed.</div></div>
+        <div class="filters">
+          <select class="sm" id="bs"><option value="">All scopes</option>${scopes.map(s=>`<option ${bScope===s?"selected":""}>${esc(s)}</option>`).join("")}</select>
+          <input class="sm" id="bq" placeholder="Search areas or objectives…" value="${esc(bQuery)}" style="width:220px"/>
+        </div>
+      </div>
+      ${scopes.filter(s=>!bScope||s===bScope).map(s=>{
+        const gs = shown.filter(g=>g.scope===s);
+        if(!gs.length) return "";
+        return `<div style="margin-bottom:20px">
+          <div class="eyebrow" style="margin-bottom:8px">${esc(s).toUpperCase()}${s==="Country"?"IES":"S"}</div>
+          <div class="lib">${gs.map(g=>{
+            const objs = g.objs;
+            const avg = objs.length ? Math.round(objs.reduce((a,o)=>a+objProgress(o),0)/objs.length*100) : 0;
+            const mix = ["On track","At risk","Off track"].map(c=>objs.filter(o=>f(o,"Confidence")===c).length);
+            const people = DB.people.filter(p=>f(p,"Area")===g.name);
+            const quiet = objs.filter(isStale).length;
+            return `<div class="res" style="cursor:pointer" data-area="${esc(g.name)}">
+              <div style="font-family:'Bricolage Grotesque',sans-serif;font-weight:700;font-size:16px">${esc(g.name)}</div>
+              <div class="mono">${objs.length} objective${objs.length===1?"":"s"} · ${people.length} ${people.length===1?"person":"people"}</div>
+              <div class="prog" style="margin-top:9px"><span style="width:${avg}%;background:var(--jv)"></span></div>
+              <div class="mono" style="margin-top:5px">${avg}% average</div>
+              <div style="display:flex;gap:5px;margin-top:8px;flex-wrap:wrap">
+                ${mix[0]?`<span class="pill p-on">${mix[0]} on</span>`:""}
+                ${mix[1]?`<span class="pill p-risk">${mix[1]} risk</span>`:""}
+                ${mix[2]?`<span class="pill p-off">${mix[2]} off</span>`:""}
+                ${quiet?`<span class="pill p-stale">${quiet} quiet</span>`:""}
+                ${!objs.length?`<span class="pill p-none">nothing written</span>`:""}
+              </div>
+            </div>`;}).join("")}</div>
+        </div>`;}).join("") || `<div class="card empty">Nothing matches.</div>`}`;
+
+    document.getElementById("bs").onchange = e=>{bScope=e.target.value; render();};
+    const q = document.getElementById("bq");
+    q.oninput = e=>{ bQuery=e.target.value; render();
+      const n=document.getElementById("bq"); n.focus(); n.setSelectionRange(n.value.length,n.value.length); };
+    document.querySelectorAll("[data-area]").forEach(c=>c.onclick=()=>{bArea=c.dataset.area; render(); scrollTo(0,0);});
+    return;
+  }
+
+  /* --- one area, read-only --- */
+  const g = groups.find(x=>x.name===bArea) || {name:bArea, objs:[]};
+  const people = DB.people.filter(p=>f(p,"Area")===bArea);
+  const avg = g.objs.length ? Math.round(g.objs.reduce((a,o)=>a+objProgress(o),0)/g.objs.length*100) : 0;
+
+  el.innerHTML = `
+    <div class="head">
+      <div>
+        <div class="eyebrow">${esc(g.scope||"")}</div>
+        <h1>${esc(bArea)}</h1>
+        <div class="sub">${g.objs.length} objective${g.objs.length===1?"":"s"} · ${avg}% average · read-only</div>
+      </div>
+      <button class="btn ghost" id="bback">← All of JV</button>
+    </div>
+
+    ${people.length?`<div class="card"><h2>Who's here</h2>
+      <div class="roster" style="margin-top:8px">${people.map(p=>`<span class="p">${esc(f(p,"Name"))}${f(p,"Role")?` · ${esc(f(p,"Role"))}`:""}</span>`).join("")}</div>
+    </div>`:""}
+
+    ${g.objs.length ? g.objs.map(o=>{
+      const krs = objKrs(o.id), c = f(o,"Confidence")||"Not started", p = pct(objProgress(o));
+      const k = ladderKr(o), decs = DB.decisions.filter(d=>lnk(d,"Objective").includes(o.id));
+      const last = objCheckins(o.id)[0];
+      return `<div class="card">
+        <div class="eyebrow">↑ ${esc(k?f(k,"Title"):"not laddered to a JV key result")}</div>
+        <div style="display:flex;justify-content:space-between;gap:12px;align-items:baseline;margin-top:4px">
+          <h2>${esc(f(o,"Title"))}</h2><span class="pill ${cls(c)}">${c}</span>
+        </div>
+        <div class="mono">${esc(nm("people",one(o,"Owner"))||"unowned")} · ${esc(nm("cycles",one(o,"Cycle")))} · ${p}%
+          ${isStale(o)?` · <span style="color:var(--indigo)">◆ ${staleDays(o)}d since a check-in</span>`:""}</div>
+        <div class="prog"><span style="width:${p}%;background:${col(c)}"></span></div>
+
+        ${krs.length ? `<div style="margin-top:12px">${krs.map(kr=>{
+          const kp = pct(f(kr,"Progress")), kc = f(kr,"Confidence")||"Not started";
+          const ts = krTasks(kr.id), done = ts.filter(t=>f(t,"Status")==="Done").length;
+          return `<div style="padding:9px 0;border-top:1px dashed var(--rule)">
+            <div style="display:flex;justify-content:space-between;gap:10px">
+              <span style="font-weight:600;font-size:13.5px">${esc(f(kr,"Title"))}</span>
+              <span class="mono">${f(kr,"Current value")??0} / ${f(kr,"Target value")??0}${esc(f(kr,"Unit")||"")} · ${kp}%</span>
+            </div>
+            <div class="prog"><span style="width:${kp}%;background:${col(kc)}"></span></div>
+            ${ts.length?`<div class="mono" style="margin-top:5px">${done} of ${ts.length} tasks done${ts.filter(isLate).length?` · ${ts.filter(isLate).length} overdue`:""}</div>`:""}
+            ${f(kr,"Target changed")?`<div class="mono" style="color:var(--indigo);margin-top:4px">◆ ${esc(f(kr,"Target changed"))}</div>`:""}
+          </div>`;}).join("")}</div>` : `<div class="empty" style="margin-top:10px">No key results yet.</div>`}
+
+        ${last?`<div class="next" style="margin-top:12px"><span class="mono">Last check-in ${fmt(f(last,"Date"))} · ${esc(nm("people",one(last,"Person")))}</span>
+          <div style="margin-top:3px">${esc(f(last,"What moved")||"")}</div></div>`:""}
+
+        ${decs.length?`<div style="margin-top:12px">
+          <div class="eyebrow" style="margin-bottom:6px">Decisions on this objective</div>
+          ${decs.map(d=>`<div class="mono" style="margin-bottom:4px">◆ ${esc(f(d,"Decision"))} — ${esc((f(d,"Why")||"").slice(0,90))}${(f(d,"Why")||"").length>90?"…":""}</div>`).join("")}
+        </div>`:""}
+      </div>`;}).join("")
+      : `<div class="card empty">${esc(bArea)} hasn't written any objectives yet.</div>`}`;
+
+  document.getElementById("bback").onclick = ()=>{bArea=null; render(); scrollTo(0,0);};
+};
 
 /* ============================ MY WORK (leader view) ============================ */
 let leaderId = null;
