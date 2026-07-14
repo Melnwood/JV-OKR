@@ -37,6 +37,18 @@
   .nv[aria-current="true"]{background:#fff;color:var(--jv);font-weight:600}
   .nv:hover:not([aria-current="true"]){background:rgba(255,255,255,.2);color:#fff}
   .me{display:flex;align-items:center;gap:7px;font-size:12.5px;color:rgba(255,255,255,.85)}
+  .gearwrap{position:relative}
+  .nv.gear{font-size:16px;padding:6px 9px}
+  .geardrop{position:absolute;right:0;top:34px;background:#fff;border:1px solid var(--rule);border-radius:10px;
+            box-shadow:0 8px 24px rgba(34,30,27,.14);padding:5px;z-index:40;min-width:130px}
+  .geardrop button{display:block;width:100%;text-align:left;background:none;border:0;border-radius:7px;
+            padding:8px 11px;font:inherit;font-size:13.5px;color:var(--ink);cursor:pointer}
+  .geardrop button:hover{background:var(--jv-50);color:var(--jv-deep)}
+  .lenses{display:flex;gap:4px;background:var(--jv-50);border:1px solid var(--jv-edge);border-radius:10px;
+          padding:4px;margin-bottom:16px;width:fit-content}
+  .lens{background:none;border:0;border-radius:7px;padding:7px 14px;font:inherit;font-size:13px;color:var(--ink-2);cursor:pointer;font-weight:500}
+  .lens.on{background:#fff;color:var(--jv-deep);font-weight:600;box-shadow:0 1px 3px rgba(34,30,27,.08)}
+  .lens:hover:not(.on){color:var(--jv-deep)}
   .me select{border-color:rgba(255,255,255,.5);background:rgba(255,255,255,.14);color:#fff}
   .me select option{color:var(--ink);background:#fff}
   select,input,textarea{font-family:Inter;font-size:13.5px;border:1px solid var(--rule);border-radius:8px;padding:8px 9px;background:#fff;color:var(--ink);width:100%}
@@ -261,7 +273,7 @@ const upload = (recordId, fieldId, file) => new Promise((res,rej)=>{
 
 /* ============================ STATE ============================ */
 const DB = {};
-let ME = null, VIEW = "dashboard", TOAST_T;
+let ME = null, VIEW = "objective", TOAST_T;
 const TODAY = new Date(); TODAY.setHours(0,0,0,0);
 const STALE = 21;
 
@@ -309,8 +321,10 @@ const iAmLeader = () => AUTH && LEADER_ROLES.includes(AUTH.role);
 const unitOf   = r => { const u = one(r,"Org Unit"); return u ? rec("units", u) : null; };
 const areaName = r => { const u = unitOf(r); return u ? f(u,"Name") : (f(r,"Area") || ""); };
 const unitParent   = u => { const p = one(u,"Parent unit"); return p ? rec("units", p) : null; };
-const unitChildren = id => DB.units.filter(u=>lnk(u,"Parent unit").includes(id));
-const unitRoots    = () => DB.units.filter(u=>!one(u,"Parent unit"));
+// A unit with no name is an empty Airtable row, not part of JV. Never show it.
+const namedUnits   = () => DB.units.filter(u=>String(f(u,"Name")||"").trim());
+const unitChildren = id => namedUnits().filter(u=>lnk(u,"Parent unit").includes(id));
+const unitRoots    = () => namedUnits().filter(u=>!one(u,"Parent unit"));
 const unitPath     = u => { const out=[]; let c=u; while(c){ out.unshift(c); c = unitParent(c); } return out; };
 const unitCrumb    = u => unitPath(u).map(x=>f(x,"Name")).join(" › ");
 // Everything at or beneath a unit — a country's number includes its departments and teams.
@@ -318,7 +332,7 @@ const unitTree = id => { const out=[id]; unitChildren(id).forEach(c=>out.push(..
 const unitObjectives = id => live(DB.objectives.filter(o=>f(o,"Scope")!=="JV 5-year" && unitTree(id).includes(one(o,"Org Unit"))));
 const unitPeople = id => DB.people.filter(p=>unitTree(id).includes(one(p,"Org Unit")));
 const UNIT_ORDER = {Country:0, Division:1, Department:2, Team:3};
-const unitsSorted = list => [...list].sort((a,b)=>
+const unitsSorted = list => [...list].filter(u=>String(f(u,"Name")||"").trim()).sort((a,b)=>
   (UNIT_ORDER[f(a,"Type")]??9)-(UNIT_ORDER[f(b,"Type")]??9) || String(f(a,"Name")).localeCompare(String(f(b,"Name"))));
 
 /* ============================ DERIVED ============================ */
@@ -356,24 +370,60 @@ const alignLine = o => {
 };
 
 /* ============================ CHROME ============================ */
-const NAV = [["dashboard","Dashboard"],["map","Alignment map"],["browse","Browse JV"],["mine","My work"],["checkin","Check in"],
-             ["reviews","Reviews"],["objective","Objectives"],["org","Org"],["coaching","Coaching"],["archive","Archive"]];
+// Four working lines. Check-in and Reviews fold into the objective + surface in My work.
+// Dashboard, Alignment map and Browse JV merge into one "JV 2030" page with three lenses.
+// Org and Archive live in a quiet settings corner.
+const NAV = [["objective","Objectives"],["mine","My work"],["jv","JV 2030"],["coaching","Coaching"]];
+const GEAR = [["org","Org"],["archive","Archive"]];
 function drawChrome(){
-  const nav = NAV.filter(([k]) => (k!=="coaching" || iAmCoach()) && (k!=="org" || iAmLeader()));
+  const nav = NAV.filter(([k]) => k!=="coaching" || iAmCoach());
   document.getElementById("nav").innerHTML = nav.map(([k,l])=>
-    `<button class="nv" data-v="${k}" aria-current="${VIEW===k}">${l}</button>`).join("");
+    `<button class="nv" data-v="${k}" aria-current="${VIEW===k||(k==='jv'&&['dashboard','map','browse'].includes(VIEW))}">${l}</button>`).join("");
   document.querySelectorAll(".nv").forEach(b=>b.onclick=()=>{VIEW=b.dataset.v; drawChrome(); render(); scrollTo(0,0);});
+  const gear = iAmLeader()
+    ? `<div class="gearwrap">
+         <button class="nv gear" id="gearbtn" title="Setup" aria-current="${GEAR.some(([k])=>k===VIEW)}">⚙</button>
+         <div class="geardrop hidden" id="geardrop">
+           ${GEAR.map(([k,l])=>`<button data-v="${k}">${l}</button>`).join("")}
+         </div>
+       </div>` : "";
   document.getElementById("whobox").innerHTML =
-    `<span>${esc(AUTH.name)} · ${esc(AUTH.role)}</span>
+    `${gear}<span>${esc(AUTH.name)} · ${esc(AUTH.role)}</span>
      <button class="btn ghost" id="signout" style="padding:5px 9px;font-size:12px">Sign out</button>`;
+  const gb = document.getElementById("gearbtn");
+  if(gb){
+    gb.onclick = e=>{ e.stopPropagation(); document.getElementById("geardrop").classList.toggle("hidden"); };
+    document.querySelectorAll("#geardrop button").forEach(b=>b.onclick=()=>{VIEW=b.dataset.v; drawChrome(); render(); scrollTo(0,0);});
+    document.addEventListener("click", ()=>document.getElementById("geardrop")?.classList.add("hidden"), {once:true});
+  }
   document.getElementById("signout").onclick = signOut;
 }
 const V = {};
-function render(){ document.getElementById("view").className=""; (V[VIEW]||V.dashboard)(); }
+function render(){ document.getElementById("view").className=""; (V[VIEW]||V.objective)(); }
+
+/* ============================ JV 2030 (three lenses) ============================ */
+let jvLens = "dashboard";   // dashboard = cascade · map = alignment · browse = by org
+V.jv = () => {
+  // keep the current lens if the user clicked straight to a sub-view
+  if(["dashboard","map","browse"].includes(VIEW)){ jvLens = VIEW; VIEW = "jv"; }
+  const lensBar = `
+    <div class="lenses">
+      ${[["dashboard","By key result","the cascade — who ladders to what"],
+         ["browse","By org","countries, divisions, teams"],
+         ["map","Map","trace any objective up to JV 2030"]]
+        .map(([k,l,tip])=>`<button class="lens ${jvLens===k?"on":""}" data-lens="${k}" title="${tip}">${l}</button>`).join("")}
+    </div>`;
+  // each lens view renders into #view; we prepend the switcher after it draws
+  (LENS[jvLens] || LENS.dashboard)();
+  const host = document.getElementById("view");
+  host.insertAdjacentHTML("afterbegin", lensBar);
+  document.querySelectorAll("[data-lens]").forEach(b=>b.onclick=()=>{ jvLens=b.dataset.lens; render(); scrollTo(0,0); });
+};
+const LENS = {};
 
 /* ============================ DASHBOARD ============================ */
 let dFilter = null, dCycle = "", dArea = "";
-V.dashboard = () => {
+LENS.dashboard = () => {
   const areas = [...new Set(DB.objectives.filter(o=>areaName(o)).map(o=>areaName(o)))].sort();
   const base = live(DB.objectives.filter(o=>f(o,"Scope")!=="JV 5-year"
     && (!dCycle || lnk(o,"Cycle").includes(dCycle))
@@ -470,7 +520,7 @@ function openObjective(id){ selObj = id; VIEW="objective"; drawChrome(); render(
 
 /* ============================ ALIGNMENT MAP ============================ */
 let mArea = "", collapsed = new Set();
-V.map = () => {
+LENS.map = () => {
   const LV = ["JV OBJECTIVE","JV KEY RESULT","COUNTRY / DIVISION OBJECTIVE","THEIR KEY RESULT","TASKS"];
   const N = [];
   jvObjectives().forEach(j=>{
@@ -579,7 +629,7 @@ function drawMap(N, LV){
 // A real tree: Countries and Divisions at the top, Departments and Teams beneath.
 let bUnit = null, bType = "", bQuery = "";
 
-V.browse = () => {
+LENS.browse = () => {
   const el = document.getElementById("view");
 
   if(!bUnit){
@@ -773,13 +823,21 @@ V.mine = () => {
   const needs = [];
   mine.forEach(o=>{
     const t = objTasks(o.id), lt = t.filter(isLate).length;
-    if(f(o,"Confidence")==="Off track") needs.push({p:0,c:"p-off",tag:"Off track",t:f(o,"Title"),
+    if(f(o,"Confidence")==="Off track") needs.push({p:0,c:"p-off",tag:"Off track",t:f(o,"Title"),o:o.id,go:"objective",
       w:"Declared off track. Needs a decision, not a nudge."});
-    if(isStale(o)) needs.push({p:1,c:"p-stale",tag:`${staleDays(o)}d silent`,t:f(o,"Title"),
-      w:"No check-in logged — you can't tell if it's stuck or just quiet."});
+    if(isStale(o)) needs.push({p:1,c:"p-stale",tag:`${staleDays(o)}d silent`,t:f(o,"Title"),o:o.id,go:"checkin",
+      w:"No check-in logged — you can't tell if it's stuck or just quiet. Check in →"});
     if(f(o,"Confidence")==="At risk" && !t.filter(x=>f(x,"Status")==="Open").length)
-      needs.push({p:1,c:"p-risk",tag:"At risk, no tasks",t:f(o,"Title"),w:"At risk with nothing planned against it."});
-    if(lt) needs.push({p:2,c:"p-off",tag:`${lt} overdue`,t:f(o,"Title"),w:`${lt} task${lt>1?"s":""} past due.`});
+      needs.push({p:1,c:"p-risk",tag:"At risk, no tasks",t:f(o,"Title"),o:o.id,go:"objective",w:"At risk with nothing planned against it."});
+    if(lt) needs.push({p:2,c:"p-off",tag:`${lt} overdue`,t:f(o,"Title"),o:o.id,go:"objective",w:`${lt} task${lt>1?"s":""} past due.`});
+  });
+  // open reviews where this person hasn't answered yet
+  DB.reviews.filter(r=>f(r,"Status")!=="Closed").forEach(r=>{
+    const oid = one(r,"Objective");
+    if(!mine.some(o=>o.id===oid) && !teamFor(oid).some(p=>p.id===L.id)) return;
+    const answered = DB.responses.some(x=>lnk(x,"Review").includes(r.id) && lnk(x,"Person").includes(L.id));
+    if(!answered) needs.push({p:0,c:"p-risk",tag:f(r,"Type")||"Review",t:nm("objectives",oid),rev:r.id,go:"review",
+      w:`${f(r,"Type")||"A review"} is open and your answer isn't in yet. The team can't see anyone's until everyone's in.`});
   });
   needs.sort((a,b)=>a.p-b.p);
 
@@ -802,7 +860,7 @@ V.mine = () => {
     <div class="card">
       <h2>Needs you this week</h2>
       <div class="cap">Ranked by what's actually blocked, not by what's loudest.</div>
-      ${needs.length ? needs.map(n=>`<div class="row"><div><strong>${esc(n.t)}</strong><div class="why">${esc(n.w)}</div></div>
+      ${needs.length ? needs.map(n=>`<div class="row" style="cursor:pointer" data-need="${n.go}" data-no="${n.o||''}" data-nr="${n.rev||''}"><div><strong>${esc(n.t)}</strong><div class="why">${esc(n.w)}</div></div>
         <span class="pill ${n.c}">${n.tag}</span></div>`).join("")
         : `<div class="empty">Nothing flagged. Everything's checked in and moving.</div>`}
     </div>
@@ -832,6 +890,13 @@ V.mine = () => {
     </div>`;
   document.getElementById("lw").onchange = e=>{leaderId=e.target.value; render();};
   document.querySelectorAll("[data-o]").forEach(r=>r.onclick=()=>openObjective(r.dataset.o));
+  document.querySelectorAll("[data-need]").forEach(r=>r.onclick=()=>{
+    const go=r.dataset.need, oid=r.dataset.no, rid=r.dataset.nr;
+    if(go==="checkin"){ ciObj=oid; ciVals={}; selObj=oid; VIEW="checkin"; }
+    else if(go==="review"){ revId=rid||null; VIEW="reviews"; }
+    else { selObj=oid; VIEW="objective"; }
+    drawChrome(); render(); scrollTo(0,0);
+  });
 };
 
 /* ============================ CHECK-IN WORKSPACE ============================ */
@@ -848,7 +913,10 @@ V.checkin = () => {
   document.getElementById("view").innerHTML = `
     <div class="head">
       <div><h1>Check in</h1><div class="sub">${esc(f(o,"Title"))} · takes about two minutes.</div></div>
-      <select class="sm" id="cio">${mine.map(x=>`<option value="${x.id}" ${x.id===ciObj?"selected":""}>${esc(areaName(x)||"")} — ${esc(f(x,"Title"))}</option>`).join("")}</select>
+      <div class="filters">
+        <select class="sm" id="cio">${mine.map(x=>`<option value="${x.id}" ${x.id===ciObj?"selected":""}>${esc(areaName(x)||"")} — ${esc(f(x,"Title"))}</option>`).join("")}</select>
+        <button class="btn ghost" onclick="selObj='${ciObj}';VIEW='objective';drawChrome();render();scrollTo(0,0)">← Back to objective</button>
+      </div>
     </div>
     <div style="max-width:680px">
     ${krs.map(k=>{
@@ -1003,11 +1071,21 @@ const RET = [
   {k:"R — One thing I'd change about how we worked", q:"One thing you'd change about how we worked together?", t:"text"}
 ];
 let revId = null, revDraft = {};
+let rvNewObj = null;
 V.reviews = () => {
   if(!revId) revId = DB.reviews[0]?.id;
   const el = document.getElementById("view");
+  const backBtn = selObj ? `<button class="btn ghost" onclick="VIEW='objective';drawChrome();render();scrollTo(0,0)">← Back to objective</button>` : "";
+  // jumped in from an objective that has no review yet → offer to start one for it
+  if(rvNewObj && !DB.reviews.some(r=>lnk(r,"Objective").includes(rvNewObj))){
+    el.innerHTML = `<div class="head"><div><h1>Start a review</h1>
+        <div class="sub">${esc(nm("objectives",rvNewObj))} · a midterm or retrospective. Everyone answers before you meet.</div></div>${backBtn}</div>
+      <div class="card">${newReviewForm()}</div>`;
+    wireNewReview(); return;
+  }
+  rvNewObj = null;   // past the new-review branch; don't let it stick
   if(!DB.reviews.length){
-    el.innerHTML = `<h1>Reviews</h1><div class="sub">A midterm or retrospective for one objective. Everyone answers before you meet.</div>
+    el.innerHTML = `<div class="head"><div><h1>Reviews</h1><div class="sub">A midterm or retrospective for one objective. Everyone answers before you meet.</div></div>${backBtn}</div>
       <div class="card"><h3>Start a review</h3>${newReviewForm()}</div>`;
     wireNewReview(); return;
   }
@@ -1072,7 +1150,7 @@ function teamFor(objId){
 function newReviewForm(){
   const objs = DB.objectives.filter(o=>f(o,"Scope")!=="JV 5-year");
   return `<div class="grid2">
-    <div class="field"><label>Objective</label><select id="nrObj">${objs.map(o=>`<option value="${o.id}">${esc(areaName(o)||"")} — ${esc(f(o,"Title"))}</option>`).join("")}</select></div>
+    <div class="field"><label>Objective</label><select id="nrObj">${objs.map(o=>`<option value="${o.id}" ${o.id===rvNewObj?"selected":""}>${esc(areaName(o)||"")} — ${esc(f(o,"Title"))}</option>`).join("")}</select></div>
     <div class="field"><label>Type</label><select id="nrType"><option>Midterm review</option><option>Retrospective</option></select></div>
     <div class="field"><label>Cycle</label><select id="nrCyc">${DB.cycles.map(c=>`<option value="${c.id}">${esc(f(c,"Name"))}</option>`).join("")}</select></div>
     <div class="field"><label>Meeting date</label><input type="date" id="nrDate"/></div>
@@ -1132,6 +1210,8 @@ V.objective = () => {
       </div>
       <div class="filters">
         <select class="sm" id="so">${(ARCHIVED(o)?[o,...objs]:objs).map(x=>`<option value="${x.id}" ${x.id===selObj?"selected":""}>${ARCHIVED(x)?"[archived] ":""}${esc(areaName(x)||"")} — ${esc(f(x,"Title"))}</option>`).join("")}</select>
+        <button class="btn jv" id="ocheckin">Check in</button>
+        <button class="btn ghost" id="oreview">Review</button>
         <button class="btn ghost" id="oedit">Edit</button>
         <button class="btn ghost" id="oarch">${ARCHIVED(o)?"Reopen":"Archive"}</button>
         <button class="btn ghost" id="onew">+ New objective</button>
@@ -1259,6 +1339,12 @@ V.objective = () => {
     </div>`;
 
   document.getElementById("so").onchange = e=>{selObj=e.target.value; render();};
+  document.getElementById("ocheckin").onclick = ()=>{ ciObj=o.id; ciVals={}; VIEW="checkin"; drawChrome(); render(); scrollTo(0,0); };
+  document.getElementById("oreview").onclick = ()=>{
+    const rev = DB.reviews.find(r=>lnk(r,"Objective").includes(o.id));
+    revId = rev ? rev.id : null; rvNewObj = o.id;
+    VIEW="reviews"; drawChrome(); render(); scrollTo(0,0);
+  };
   document.getElementById("onew").onclick = ()=>document.getElementById("onewbox").classList.toggle("hidden");
   document.getElementById("oedit").onclick = ()=>document.getElementById("oeditbox").classList.toggle("hidden");
   document.getElementById("krnew").onclick = ()=>document.getElementById("krbox").classList.toggle("hidden");
@@ -1834,22 +1920,45 @@ async function start(){
 
 /* First sign-in: they exist now, but nobody knows where they sit. */
 function welcome(){
-  const units = unitsSorted(DB.units);
+  const units = unitsSorted(namedUnits());
+
+  // Empty org: don't strand anyone at a dead dropdown.
+  if(!units.length){
+    document.getElementById("view").innerHTML = `
+      <div class="head"><div>
+        <h1>Welcome, ${esc(AUTH.name.split(" ")[0])}</h1>
+        <div class="sub">You're in.</div>
+      </div></div>
+      <div class="card" style="max-width:560px">
+        ${iAmLeader() ? `
+          <h2>Nothing's set up yet — that's your first job</h2>
+          <div class="cap">JV's countries, divisions, departments and teams don't exist in here yet.
+            Build a couple and everything else has somewhere to live.</div>
+          <button class="btn jv wide" id="wOrg">Set up the org →</button>`
+        : `
+          <h2>Almost ready</h2>
+          <div class="cap">The org hasn't been set up yet. Ask Mike or Mel to add your country or division,
+            then reload — you'll be able to pick where you sit.</div>`}
+      </div>`;
+    const org = document.getElementById("wOrg");
+    if(org) org.onclick = ()=>{ VIEW="org"; AUTH.isNew=false; drawChrome(); render(); };
+    return;
+  }
+
   document.getElementById("view").innerHTML = `
     <div class="head"><div>
       <h1>Welcome, ${esc(AUTH.name.split(" ")[0])}</h1>
       <div class="sub">You're in. One question before you look around.</div>
     </div></div>
     <div class="card" style="max-width:560px">
-      <h2>Which country or division are you part of?</h2>
+      <h2>Which unit are you part of?</h2>
       <div class="cap">This is what puts your work on your page — and your name on your team's reviews. You can change it later.</div>
       <div class="field">
         <select id="wArea">
           ${units.map(u=>`<option value="${u.id}">${esc(unitCrumb(u))} · ${esc(f(u,"Type")||"")}</option>`).join("")}
         </select>
       </div>
-      <button class="btn wide" id="wGo" ${units.length?"":"disabled"}>That's me</button>
-      ${units.length?"":`<div class="hint">Nobody has set up the org units yet. Ask Mike or Mel.</div>`}
+      <button class="btn wide" id="wGo">That's me</button>
       <div class="hint">You're set up as <b>Staff</b> — you can browse everything across JV, add and tick tasks, log check-ins and answer reviews.
         If you lead a country, division or team, ask Mike to change your role.</div>
     </div>`;
@@ -1865,7 +1974,7 @@ function welcome(){
     await reload("people");
     ME = DB.people.find(p=>p.id===AUTH.id) || ME;
     toast(`Welcome to ${area}`);
-    VIEW = "browse"; drawChrome(); render();
+    jvLens = "browse"; VIEW = "jv"; drawChrome(); render();
   };
 }
 
