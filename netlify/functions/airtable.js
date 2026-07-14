@@ -91,7 +91,8 @@ async function whoami(event) {
 
   return { id: me.id, email, name: me.fields.Name || g.name || email,
            role: me.fields.Role || "Staff", area: me.fields.Area || "",
-           isNew: !me.fields.Area };
+           unit: (me.fields["Org Unit"] || [])[0] || null,
+           isNew: !(me.fields["Org Unit"] || []).length };
 }
 
 /* ---------------------------------------------------------------- */
@@ -103,7 +104,7 @@ const isCoach  = u => COACH.includes(u.role);
 const isLeader = u => LEADER.includes(u.role);
 
 const COACH_ONLY   = ["Resources"];                                   // library: Mike + Mel only
-const LEADER_WRITE = ["Objectives", "Key Results", "Decisions", "Cycles", "People"];
+const LEADER_WRITE = ["Objectives", "Key Results", "Decisions", "Cycles", "People", "Org Units"];
 const NO_DELETE    = ["Check-ins", "Decisions"];                      // the record stands
 
 // A leader sees a coaching note ONLY if it was explicitly shared with them.
@@ -158,10 +159,14 @@ exports.handler = async (event) => {
   // Roles stay in Mike's and Mel's hands.
   if (q.action === "setarea") {
     const area = String(body.area || "").trim();
-    if (!area) return bad(400, "area required");
+    const unitId = String(body.unitId || "").trim();
+    if (!area && !unitId) return bad(400, "unit required");
+    const fields = {};
+    if (unitId) fields["Org Unit"] = [unitId];
+    if (area) fields.Area = area;   // mirror of the unit name, for readability in the grid
     await air("People", {
       method: "PATCH",
-      body: JSON.stringify({ records: [{ id: me.id, fields: { Area: area } }], typecast: true })
+      body: JSON.stringify({ records: [{ id: me.id, fields }], typecast: true })
     });
     return ok({ me: { ...me, area, isNew: false } });
   }
