@@ -9,6 +9,7 @@
 <link rel="apple-touch-icon" href="apple-touch-icon.png"/>
 <link rel="manifest" href="site.webmanifest"/>
 <meta name="theme-color" content="#FF6600"/>
+<script src="https://accounts.google.com/gsi/client" async defer></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
@@ -197,10 +198,10 @@
 </style>
 </head>
 <body>
-<div class="bar"><div class="bar-in">
+<div class="bar" id="bar" style="display:none"><div class="bar-in">
   <span class="logo"><img src="icon.svg" alt=""/>JV OKR</span>
   <nav id="nav"></nav>
-  <div class="me">I'm <select class="sm" id="who"></select></div>
+  <div class="me" id="whobox"></div>
 </div></div>
 
 <div class="wrap"><div id="view" class="loading">Loading…</div></div>
@@ -214,19 +215,30 @@ const T = {people:"People", cycles:"Cycles", objectives:"Objectives", krs:"Key R
            notes:"Coaching Notes", resources:"Resources", shares:"Resource Shares"};
 const FIELD_IDS = { notesFiles:"fldzqeq0lTRD5r5SR", resourceFile:"fld87BX3WN94SPYqY" };
 
+let ID_TOKEN = null;
+
+const authHeaders = (extra={}) => ({ ...extra, ...(ID_TOKEN ? {Authorization:`Bearer ${ID_TOKEN}`} : {}) });
+
 const get = async t => {
   let r, j;
-  try { r = await fetch(`${API}?table=${encodeURIComponent(t)}`); }
+  try { r = await fetch(`${API}?table=${encodeURIComponent(t)}`, {headers: authHeaders()}); }
   catch(e){ throw new Error(`Network error reaching the function (${t}): ${e.message}`); }
   const text = await r.text();
   try { j = JSON.parse(text); }
   catch(e){ throw new Error(`The function didn't return JSON for "${t}" (HTTP ${r.status}). Is it deployed at ${API}? First bytes: ${text.slice(0,80)}`); }
+  if (r.status === 401 || r.status === 403) throw Object.assign(new Error(j.error||"Not allowed"), {auth:true});
   if (!r.ok || j.error) throw new Error(`"${t}" — ${j.error || "HTTP "+r.status}`);
   if (!j.records) throw new Error(`"${t}" returned no records array. Check the table name matches the base exactly.`);
   return j;
 };
-const post  = (t,records) => fetch(`${API}?table=${encodeURIComponent(t)}`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({records})}).then(j=>j.json());
-const patch = (t,records) => fetch(`${API}?table=${encodeURIComponent(t)}`,{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify({records})}).then(j=>j.json());
+const post  = (t,records) => fetch(`${API}?table=${encodeURIComponent(t)}`,{method:"POST",headers:authHeaders({"Content-Type":"application/json"}),body:JSON.stringify({records})}).then(j=>j.json());
+const patch = (t,records) => fetch(`${API}?table=${encodeURIComponent(t)}`,{method:"PATCH",headers:authHeaders({"Content-Type":"application/json"}),body:JSON.stringify({records})}).then(j=>j.json());
+const del = async (t, ids) => {
+  const r = await fetch(`${API}?table=${encodeURIComponent(t)}&ids=${ids.join(",")}`, {method:"DELETE", headers: authHeaders()});
+  const j = await r.json();
+  if (!r.ok || j.error) throw new Error(j.error || "delete failed");
+  return j;
+};
 const upload = (recordId, fieldId, file) => new Promise((res,rej)=>{
   const fr = new FileReader();
   fr.onload = async () => {
@@ -272,15 +284,25 @@ async function load(){
     krs:krs.records, tasks:tasks.records, checkins:checkins.records, reviews:reviews.records,
     responses:responses.records, decisions:decisions.records, notes:notes.records,
     resources:resources.records, shares:shares.records});
-  ME = DB.people.find(p=>p.id===localStorage.getItem("jvokr.me")) || DB.people[0];
+  ME = DB.people.find(p=>p.id===AUTH.id) || null;
   drawChrome(); render();
 }
 async function reload(t){ const j = await get(T[t]); DB[t] = j.records; }
 
+/* who the signed-in person is, per the server. The browser never decides this. */
+let AUTH = null;
+const COACH_ROLES = ["OKR Director","Executive"];
+const LEADER_ROLES = ["Country leader","Division leader",...COACH_ROLES];
+const iAmCoach  = () => AUTH && COACH_ROLES.includes(AUTH.role);
+const iAmLeader = () => AUTH && LEADER_ROLES.includes(AUTH.role);
+
 /* ============================ DERIVED ============================ */
+const ARCHIVED = o => ["Closed","Abandoned"].includes(f(o,"Status"));
+let showArchived = false;
+const live = list => showArchived ? list : list.filter(o=>!ARCHIVED(o));
 const jvObjectives = () => DB.objectives.filter(o=>f(o,"Scope")==="JV 5-year");
 const jvKrs = () => DB.krs.filter(k=>{ const o = one(k,"Objective"); return o && f(rec("objectives",o)||{fields:{}},"Scope")==="JV 5-year"; });
-const childObjectives = krId => DB.objectives.filter(o=>lnk(o,"Parent Key Result").includes(krId));
+const childObjectives = krId => live(DB.objectives.filter(o=>lnk(o,"Parent Key Result").includes(krId)));
 const objKrs = objId => DB.krs.filter(k=>lnk(k,"Objective").includes(objId));
 const krTasks = krId => DB.tasks.filter(t=>lnk(t,"Key Result").includes(krId));
 const objTasks = objId => objKrs(objId).flatMap(k=>krTasks(k.id));
@@ -288,7 +310,7 @@ const objCheckins = objId => DB.checkins.filter(c=>lnk(c,"Objective").includes(o
 const staleDays = o => f(o,"Days since check-in") ?? 999;
 const isStale = o => staleDays(o) > STALE;
 const isLate = t => f(t,"Status")==="Open" && f(t,"Due date") && new Date(f(t,"Due date")) < TODAY;
-const ownedBy = pid => DB.objectives.filter(o=>lnk(o,"Owner").includes(pid) && f(o,"Scope")!=="JV 5-year");
+const ownedBy = pid => live(DB.objectives.filter(o=>lnk(o,"Owner").includes(pid) && f(o,"Scope")!=="JV 5-year"));
 const objProgress = o => f(o,"Progress") ?? 0;
 const ladderKr = o => { const p = one(o,"Parent Key Result"); return p ? rec("krs",p) : null; };
 
@@ -296,12 +318,14 @@ const ladderKr = o => { const p = one(o,"Parent Key Result"); return p ? rec("kr
 const NAV = [["dashboard","Dashboard"],["map","Alignment map"],["browse","Browse JV"],["mine","My work"],["checkin","Check in"],
              ["reviews","Reviews"],["objective","Objectives"],["coaching","Coaching"]];
 function drawChrome(){
-  document.getElementById("nav").innerHTML = NAV.map(([k,l])=>
+  const nav = NAV.filter(([k]) => k!=="coaching" || iAmCoach());
+  document.getElementById("nav").innerHTML = nav.map(([k,l])=>
     `<button class="nv" data-v="${k}" aria-current="${VIEW===k}">${l}</button>`).join("");
   document.querySelectorAll(".nv").forEach(b=>b.onclick=()=>{VIEW=b.dataset.v; drawChrome(); render(); scrollTo(0,0);});
-  const w = document.getElementById("who");
-  w.innerHTML = DB.people.map(p=>`<option value="${p.id}" ${p.id===ME?.id?"selected":""}>${esc(f(p,"Name"))}</option>`).join("");
-  w.onchange = () => { ME = rec("people", w.value); try{localStorage.setItem("jvokr.me", ME.id);}catch(e){} render(); };
+  document.getElementById("whobox").innerHTML =
+    `<span>${esc(AUTH.name)} · ${esc(AUTH.role)}</span>
+     <button class="btn ghost" id="signout" style="padding:5px 9px;font-size:12px">Sign out</button>`;
+  document.getElementById("signout").onclick = signOut;
 }
 const V = {};
 function render(){ document.getElementById("view").className=""; (V[VIEW]||V.dashboard)(); }
@@ -310,9 +334,9 @@ function render(){ document.getElementById("view").className=""; (V[VIEW]||V.das
 let dFilter = null, dCycle = "", dArea = "";
 V.dashboard = () => {
   const areas = [...new Set(DB.objectives.filter(o=>f(o,"Area")).map(o=>f(o,"Area")))].sort();
-  const base = DB.objectives.filter(o=>f(o,"Scope")!=="JV 5-year"
+  const base = live(DB.objectives.filter(o=>f(o,"Scope")!=="JV 5-year"
     && (!dCycle || lnk(o,"Cycle").includes(dCycle))
-    && (!dArea  || f(o,"Area")===dArea));
+    && (!dArea  || f(o,"Area")===dArea)));
   const show = base.filter(o => !dFilter || (dFilter==="stale" ? isStale(o) : f(o,"Confidence")===dFilter));
   const late = base.flatMap(o=>objTasks(o.id)).filter(isLate).length;
 
@@ -344,6 +368,7 @@ V.dashboard = () => {
       <div class="filters">
         <select class="sm" id="dc"><option value="">All cycles</option>${DB.cycles.filter(c=>f(c,"Type")!=="5-year").map(c=>`<option value="${c.id}" ${dCycle===c.id?"selected":""}>${esc(f(c,"Name"))}</option>`).join("")}</select>
         <select class="sm" id="da"><option value="">All areas</option>${areas.map(a=>`<option ${dArea===a?"selected":""}>${esc(a)}</option>`).join("")}</select>
+        <button class="btn ghost" id="dar">${showArchived?"Hide archived":"Show archived"}</button>
       </div>
     </div>
     <div class="tiles">
@@ -357,16 +382,17 @@ V.dashboard = () => {
 
   document.getElementById("dc").onchange = e=>{dCycle=e.target.value; render();};
   document.getElementById("da").onchange = e=>{dArea=e.target.value; render();};
+  document.getElementById("dar").onclick = ()=>{showArchived=!showArchived; render();};
   document.querySelectorAll(".tile[data-k]").forEach(b=>b.onclick=()=>{
     dFilter = dFilter===b.dataset.k ? null : b.dataset.k; render();});
   document.querySelectorAll(".child[data-o]").forEach(c=>c.onclick=()=>openObjective(c.dataset.o));
 };
 function card(o){
   const p = pct(objProgress(o)), c = f(o,"Confidence")||"Not started";
-  return `<div class="child" data-o="${o.id}">
+  return `<div class="child" data-o="${o.id}" style="${ARCHIVED(o)?"opacity:.62":""}">
     <div style="display:flex;justify-content:space-between;gap:10px;align-items:center">
       <div><span class="scope">${esc(f(o,"Area")||f(o,"Scope")||"")}</span><strong>${esc(f(o,"Title"))}</strong></div>
-      <span class="pill ${cls(c)}">${c}</span>
+      ${ARCHIVED(o)?`<span class="pill p-none">${esc(f(o,"Status"))}</span>`:`<span class="pill ${cls(c)}">${c}</span>`}
     </div>
     <div class="prog"><span style="width:${p}%;background:${col(c)}"></span></div>
     <div class="mono" style="margin-top:5px">${esc(nm("people",one(o,"Owner"))||"unowned")} · ${esc(nm("cycles",one(o,"Cycle")))} · ${p}%
@@ -698,6 +724,7 @@ V.checkin = () => {
               <input type="checkbox" data-task="${t.id}" ${f(t,"Status")==="Done"?"checked":""}/>
               <span class="t">${esc(f(t,"Title"))}</span>
               <span class="m">${esc((nm("people",one(t,"Owner"))||"").split(" ")[0])} · ${f(t,"Status")==="Done"?"done":fmt(f(t,"Due date"))||"no date"}</span>
+              <span class="m" data-tdel="${t.id}" style="cursor:pointer;padding:0 2px" title="Delete task">✕</span>
             </div>`).join("") : `<div class="empty">No tasks yet.</div>`}
           <div class="grid3" style="margin-top:9px">
             <input type="text" id="nt-${k.id}" placeholder="Add a task…"/>
@@ -737,6 +764,11 @@ V.checkin = () => {
     const done = c.checked;
     await patch(T.tasks, [{id:c.dataset.task, fields:{Status: done?"Done":"Open", "Done date": done?iso(TODAY):null}}]);
     await reload("tasks"); toast(done?"Task done":"Task reopened"); render();
+  });
+  document.querySelectorAll("[data-tdel]").forEach(x=>x.onclick=async()=>{
+    if(!confirm(`Delete "${nm("tasks", x.dataset.tdel)}"?`)) return;
+    try{ await del(T.tasks, [x.dataset.tdel]); await reload("tasks"); toast("Task deleted"); render(); }
+    catch(e){ toast(e.message, true); }
   });
   document.querySelectorAll("button[data-add]").forEach(b=>b.onclick=async()=>{
     const k = b.dataset.add, title = document.getElementById("nt-"+k).value.trim();
@@ -955,9 +987,36 @@ V.objective = () => {
         <div class="sub">The objective, and every decision that shaped it.</div>
       </div>
       <div class="filters">
-        <select class="sm" id="so">${objs.map(x=>`<option value="${x.id}" ${x.id===selObj?"selected":""}>${esc(f(x,"Area")||"")} — ${esc(f(x,"Title"))}</option>`).join("")}</select>
+        <select class="sm" id="so">${objs.map(x=>`<option value="${x.id}" ${x.id===selObj?"selected":""}>${ARCHIVED(x)?"[archived] ":""}${esc(f(x,"Area")||"")} — ${esc(f(x,"Title"))}</option>`).join("")}</select>
+        <button class="btn ghost" id="oedit">Edit</button>
+        <button class="btn ghost" id="oarch">${ARCHIVED(o)?"Reopen":"Archive"}</button>
         <button class="btn ghost" id="onew">+ New objective</button>
       </div>
+    </div>
+    ${ARCHIVED(o)?`<div class="card" style="border-left:3px solid var(--ink-2);background:#F7F8F9">
+      <strong>This objective is ${esc(f(o,"Status")).toLowerCase()}.</strong>
+      <div class="cap" style="margin:2px 0 0">It's kept, not deleted — the decisions and check-ins under it are the record of what was tried. Reopen it if it's live again.</div>
+    </div>`:""}
+
+    <div id="oeditbox" class="card hidden">
+      <h3>Edit objective</h3>
+      <div class="grid2">
+        <div class="field"><label>Title</label><input id="eT" value="${esc(f(o,"Title")||"")}"/></div>
+        <div class="field"><label>Ladders to</label>
+          <select id="eP">${jvKrs().map(k=>`<option value="${k.id}" ${one(o,"Parent Key Result")===k.id?"selected":""}>${esc(f(k,"Title"))}</option>`).join("")}</select></div>
+        <div class="field"><label>Area</label><input id="eA" value="${esc(f(o,"Area")||"")}"/></div>
+        <div class="field"><label>Owner</label>
+          <select id="eO">${DB.people.map(p=>`<option value="${p.id}" ${one(o,"Owner")===p.id?"selected":""}>${esc(f(p,"Name"))}</option>`).join("")}</select></div>
+        <div class="field"><label>Cycle</label>
+          <select id="eC">${DB.cycles.filter(c=>f(c,"Type")!=="5-year").map(c=>`<option value="${c.id}" ${one(o,"Cycle")===c.id?"selected":""}>${esc(f(c,"Name"))}</option>`).join("")}</select></div>
+        <div class="field"><label>Status</label>
+          <select id="eS">${["Draft","Active","Closed","Abandoned"].map(s=>`<option ${f(o,"Status")===s?"selected":""}>${s}</option>`).join("")}</select></div>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn" id="eGo">Save changes</button>
+        <button class="btn ghost" id="eDel" style="color:var(--clay);border-color:#E9C7C3">Delete permanently</button>
+      </div>
+      <div class="hint">Deleting is only possible while an objective has no check-ins and no decisions. Once it has history, archive it instead — that history is the point.</div>
     </div>
     <div id="onewbox" class="card hidden"><h3>New objective</h3>${objForm()}</div>
 
@@ -974,6 +1033,20 @@ V.objective = () => {
               </div>
               <div class="prog"><span style="width:${p}%;background:${col(c)}"></span></div>
               ${ch?`<div class="mono" style="color:var(--indigo);margin-top:5px">◆ ${esc(ch)} — see decisions</div>`:""}
+              <div style="display:flex;gap:6px;margin-top:7px">
+                <button class="btn dash" style="font-size:11.5px;padding:4px 8px" data-kredit="${kr.id}">Edit</button>
+                <button class="btn dash" style="font-size:11.5px;padding:4px 8px;color:var(--clay)" data-krdel="${kr.id}">Delete</button>
+              </div>
+              <div class="hidden" id="kre-${kr.id}" style="margin-top:8px;border-left:2px solid var(--rule);padding-left:10px">
+                <div class="grid2">
+                  <div class="field"><label>Title</label><input id="et-${kr.id}" value="${esc(f(kr,"Title")||"")}"/></div>
+                  <div class="field"><label>Unit</label><input id="eu-${kr.id}" value="${esc(f(kr,"Unit")||"")}"/></div>
+                  <div class="field"><label>Current</label><input type="number" id="ec-${kr.id}" value="${f(kr,"Current value")??0}"/></div>
+                  <div class="field"><label>Target</label><input type="number" id="eg-${kr.id}" value="${f(kr,"Target value")??0}"/></div>
+                </div>
+                <button class="btn" style="font-size:12.5px;padding:7px 11px" data-krsave="${kr.id}">Save</button>
+                <div class="hint">Changing a target here does <b>not</b> record why. If the team decided to move it, record a decision instead — that's the one that keeps the original and leaves a trace.</div>
+              </div>
             </div>`;}).join("") : `<div class="empty">No key results yet.</div>`}
           <button class="btn dash wide" style="margin-top:10px" id="krnew">+ Add a key result</button>
           <div id="krbox" class="hidden" style="margin-top:10px">
@@ -1037,9 +1110,73 @@ V.objective = () => {
 
   document.getElementById("so").onchange = e=>{selObj=e.target.value; render();};
   document.getElementById("onew").onclick = ()=>document.getElementById("onewbox").classList.toggle("hidden");
+  document.getElementById("oedit").onclick = ()=>document.getElementById("oeditbox").classList.toggle("hidden");
   document.getElementById("krnew").onclick = ()=>document.getElementById("krbox").classList.toggle("hidden");
   document.getElementById("dnew").onclick = ()=>document.getElementById("dbox").classList.toggle("hidden");
   wireObjForm();
+
+  /* archive / reopen */
+  document.getElementById("oarch").onclick = async()=>{
+    if(ARCHIVED(o)){
+      await patch(T.objectives, [{id:o.id, fields:{Status:"Active"}}]);
+      await reload("objectives"); toast("Reopened"); return render();
+    }
+    const why = confirm(`Archive "${f(o,"Title")}"?\n\nIt disappears from dashboards but keeps every check-in, decision and key result. You can reopen it any time.`);
+    if(!why) return;
+    await patch(T.objectives, [{id:o.id, fields:{Status:"Closed"}}]);
+    await reload("objectives"); toast("Archived"); render();
+  };
+
+  /* edit objective */
+  document.getElementById("eGo").onclick = async()=>{
+    await patch(T.objectives, [{id:o.id, fields:{
+      Title: document.getElementById("eT").value.trim() || f(o,"Title"),
+      Area: document.getElementById("eA").value.trim(),
+      Status: document.getElementById("eS").value,
+      Owner:[document.getElementById("eO").value],
+      Cycle:[document.getElementById("eC").value],
+      "Parent Key Result":[document.getElementById("eP").value]}}]);
+    await reload("objectives"); toast("Saved"); render();
+  };
+
+  /* delete objective — only when it has no history */
+  document.getElementById("eDel").onclick = async()=>{
+    const hist = objCheckins(o.id).length + decs.length;
+    if(hist) return toast(`Can't delete — this objective has ${hist} check-in/decision record${hist>1?"s":""} on it. Archive it instead.`, true);
+    if(!confirm(`Delete "${f(o,"Title")}" and its ${krs.length} key result${krs.length===1?"":"s"} for good?\n\nThis cannot be undone.`)) return;
+    try{
+      const ts = objTasks(o.id).map(t=>t.id);
+      if(ts.length) await del(T.tasks, ts);
+      if(krs.length) await del(T.krs, krs.map(k=>k.id));
+      await del(T.objectives, [o.id]);
+      selObj = null;
+      await Promise.all([reload("objectives"), reload("krs"), reload("tasks")]);
+      toast("Deleted"); render();
+    }catch(e){ toast(e.message, true); }
+  };
+
+  /* key result edit / delete */
+  document.querySelectorAll("[data-kredit]").forEach(b=>b.onclick=()=>
+    document.getElementById("kre-"+b.dataset.kredit).classList.toggle("hidden"));
+  document.querySelectorAll("[data-krsave]").forEach(b=>b.onclick=async()=>{
+    const id = b.dataset.krsave;
+    await patch(T.krs, [{id, fields:{
+      Title: document.getElementById("et-"+id).value.trim(),
+      Unit: document.getElementById("eu-"+id).value.trim(),
+      "Current value": +document.getElementById("ec-"+id).value,
+      "Target value": +document.getElementById("eg-"+id).value}}]);
+    await reload("krs"); toast("Key result saved"); render();
+  });
+  document.querySelectorAll("[data-krdel]").forEach(b=>b.onclick=async()=>{
+    const id = b.dataset.krdel, ts = krTasks(id);
+    if(!confirm(`Delete "${nm("krs",id)}"${ts.length?` and its ${ts.length} task${ts.length===1?"":"s"}`:""}?\n\nThis cannot be undone.`)) return;
+    try{
+      if(ts.length) await del(T.tasks, ts.map(t=>t.id));
+      await del(T.krs, [id]);
+      await Promise.all([reload("krs"), reload("tasks")]);
+      toast("Key result deleted"); render();
+    }catch(e){ toast(e.message, true); }
+  });
 
   document.getElementById("krGo").onclick = async()=>{
     const t = document.getElementById("krT").value.trim(); if(!t) return;
@@ -1365,25 +1502,81 @@ function dropzone(el, cb){
   el.ondrop = e => { e.preventDefault(); el.classList.remove("over"); cb([...e.dataTransfer.files]); };
 }
 
-load().catch(e => {
+/* ============================ SIGN IN ============================ */
+// Google verifies who you are. The function decides what you may see.
+// Nothing loads until both have happened.
+
+function gate(html){
+  document.getElementById("bar").style.display = "none";
   document.getElementById("view").className = "";
-  document.getElementById("view").innerHTML = `
-    <div class="card" style="max-width:640px">
-      <h2>Couldn't reach the base</h2>
-      <div class="cap" style="font-family:'JetBrains Mono',monospace;color:var(--clay);font-size:12.5px">${esc(e.message)}</div>
-      <h3 style="margin-top:14px">Check, in order</h3>
-      <div class="row"><div><strong>1. Environment variables</strong>
-        <div class="why">In Netlify → Site configuration → Environment variables:
-        <code>AIRTABLE_BASE</code> = <code>app70cjJzoUHQZtHA</code> and <code>AIRTABLE_TOKEN</code> = your personal access token.
-        <b>Then redeploy</b> — Netlify does not pick up new variables on an existing build.</div></div></div>
-      <div class="row"><div><strong>2. Token scopes</strong>
-        <div class="why">The token needs <code>data.records:read</code> and <code>data.records:write</code>,
-        <b>and the JV OKR base must be added to the token's access list</b> — a token with the right scopes but no base attached fails exactly like this.</div></div></div>
-      <div class="row"><div><strong>3. The function itself</strong>
-        <div class="why">Open <code>${API}?table=People</code> in a tab. You should see JSON.
-        A 404 means the <code>netlify/functions/</code> folder didn't deploy.</div></div></div>
-    </div>`;
-});
+  document.getElementById("view").innerHTML =
+    `<div class="card" style="max-width:520px;margin:60px auto;text-align:center">
+       <img src="icon.svg" width="52" height="52" style="border-radius:12px"/>
+       ${html}
+     </div>`;
+}
+
+function signOut(){
+  ID_TOKEN = null;
+  try{ sessionStorage.removeItem("jvokr.tok"); }catch(e){}
+  google.accounts.id.disableAutoSelect();
+  location.reload();
+}
+
+async function onGoogle(res){
+  ID_TOKEN = res.credential;
+  try{ sessionStorage.setItem("jvokr.tok", ID_TOKEN); }catch(e){}
+  await start();
+}
+
+async function start(){
+  const r = await fetch(`${API}?action=me`, {headers: authHeaders()});
+  const j = await r.json();
+  if(!r.ok){
+    ID_TOKEN = null;
+    try{ sessionStorage.removeItem("jvokr.tok"); }catch(e){}
+    return gate(`<h2 style="margin-top:12px">Can't let you in</h2>
+      <div class="cap" style="color:var(--clay)">${esc(j.error||"Sign-in failed")}</div>
+      <div id="gbtn" style="display:flex;justify-content:center;margin-top:16px"></div>`)
+      || drawButton();
+  }
+  AUTH = j.me;
+  document.getElementById("bar").style.display = "";
+  document.getElementById("view").innerHTML = `<div class="card empty">Loading…</div>`;
+  try { await load(); }
+  catch(e){
+    document.getElementById("view").innerHTML =
+      `<div class="card" style="max-width:640px"><h2>Couldn't reach the base</h2>
+       <div class="cap" style="font-family:'JetBrains Mono',monospace;color:var(--clay);font-size:12.5px">${esc(e.message)}</div>
+       <div class="hint">Open <code>${API}?action=diag</code> to see what the function can and can't see.</div></div>`;
+  }
+}
+
+function drawButton(){
+  const el = document.getElementById("gbtn");
+  if(!el || !window.google) return;
+  google.accounts.id.initialize({ client_id: CLIENT_ID, callback: onGoogle });
+  google.accounts.id.renderButton(el, {theme:"outline", size:"large", text:"signin_with", shape:"pill"});
+}
+
+let CLIENT_ID = null;
+(async () => {
+  const cfg = await fetch(`${API}?action=config`).then(r=>r.json()).catch(()=>({}));
+  CLIENT_ID = cfg.googleClientId;
+
+  if(!CLIENT_ID)
+    return gate(`<h2 style="margin-top:12px">Almost there</h2>
+      <div class="cap">Set <code>GOOGLE_CLIENT_ID</code> in the Netlify environment variables and redeploy.
+      See the README for how to create it.</div>`);
+
+  const saved = (()=>{ try{ return sessionStorage.getItem("jvokr.tok"); }catch(e){ return null; } })();
+  if(saved){ ID_TOKEN = saved; return start(); }
+
+  gate(`<h2 style="margin-top:12px">JV OKR</h2>
+    <div class="cap">Sign in with your JV Google account.${cfg.domain?` (${esc(cfg.domain)})`:""}</div>
+    <div id="gbtn" style="display:flex;justify-content:center;margin-top:16px"></div>`);
+  const wait = setInterval(()=>{ if(window.google){ clearInterval(wait); drawButton(); } }, 120);
+})();
 </script>
 </body>
 </html>

@@ -70,3 +70,51 @@ The lettering is converted to vector paths, so it renders identically with no fo
 | `site.webmanifest` | Lets staff add JV OKR to a phone home screen; theme colour is JV orange |
 
 All of it is already wired into `index.html` — nothing else to do.
+
+## Sign-in (Google) — one-time setup
+
+Everyone signs in as themselves with their JV Google account. The app doesn't decide
+who you are; Google does, and the Netlify function verifies it. Permissions are then
+enforced **server-side**, so a coaching note is never sent to a browser that shouldn't have it.
+
+### 1. Create a Google OAuth client ID
+
+1. <https://console.cloud.google.com/> → create a project (e.g. "JV OKR")
+2. **APIs & Services → OAuth consent screen** → **Internal** (so only JV accounts can use it) → fill in app name + support email
+3. **APIs & Services → Credentials → Create credentials → OAuth client ID**
+   - Application type: **Web application**
+   - **Authorised JavaScript origins:** your Netlify URL, e.g. `https://jv-okr.netlify.app`
+     (add `http://localhost:8888` too if you ever run it locally)
+   - Leave redirect URIs empty — this uses Google Identity Services, not a redirect flow
+4. Copy the **Client ID**. It ends in `.apps.googleusercontent.com`. It is not a secret.
+
+### 2. Add two more Netlify environment variables
+
+| Key | Value |
+|---|---|
+| `GOOGLE_CLIENT_ID` | the client ID from step 1 |
+| `ALLOWED_DOMAIN` | `josiahventure.com` — optional, but locks sign-in to JV accounts |
+
+Scope them to **Functions** (as well as Builds), then **redeploy**.
+
+### 3. Put people's Google emails in the People table
+
+The **Email** field on each row in **People** is what links a Google account to a person.
+No matching row = no access, even with a valid JV Google account. That's the guest list.
+
+### Roles (the `Role` field on People)
+
+| Role | Can |
+|---|---|
+| `Staff` | See dashboards, browse all of JV, add + tick tasks, log check-ins, answer reviews |
+| `Country leader` / `Division leader` | All of the above, plus create/edit objectives, key results and decisions; see coaching notes **explicitly shared** with them |
+| `OKR Director` (Mike) | Everything, plus the whole coaching console: private notes, files, library, reports |
+| `Executive` (Mel) | Same as OKR Director |
+
+Every check-in, task, review answer and decision is stamped with the signed-in person by the
+**function**, not the browser — so the audit trail can't be faked by editing the page.
+
+### What is *not* deletable
+
+`Check-ins` and `Decisions` return **403** on delete, for anyone. They're the record of what
+happened and why a target moved. If one truly must go, it goes in Airtable, deliberately.
