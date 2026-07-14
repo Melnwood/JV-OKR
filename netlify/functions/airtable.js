@@ -28,9 +28,26 @@ const chunk = (a, n) => a.reduce((s, x, i) => (i % n ? s[s.length - 1].push(x) :
 
 exports.handler = async (event) => {
   if (event.httpMethod === "OPTIONS") return { statusCode: 204, headers: HEAD, body: "" };
+
+  const q0 = event.queryStringParameters || {};
+
+  // ---- diagnostics: /.netlify/functions/airtable?action=diag
+  // Reports what the function can see. Never prints the token itself.
+  if (q0.action === "diag") {
+    return ok({
+      node: process.version,
+      AIRTABLE_BASE: BASE ? `set (${BASE})` : "MISSING",
+      AIRTABLE_TOKEN: TOKEN
+        ? `set (${TOKEN.length} chars, starts "${TOKEN.slice(0, 3)}", ends "${TOKEN.slice(-3)}")`
+        : "MISSING",
+      airtableEnvKeysVisible: Object.keys(process.env).filter(k => /AIRTABLE/i.test(k)),
+      hint: "Both must say 'set'. If a key shows here but the value is MISSING, the name has a typo or stray space."
+    });
+  }
+
   if (!BASE || !TOKEN) return bad(500, "AIRTABLE_BASE / AIRTABLE_TOKEN not configured");
 
-  const q = event.queryStringParameters || {};
+  const q = q0;
   const table = q.table;
   const body = event.body ? JSON.parse(event.body) : {};
 
