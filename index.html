@@ -202,7 +202,17 @@ const T = {people:"People", cycles:"Cycles", objectives:"Objectives", krs:"Key R
            notes:"Coaching Notes", resources:"Resources", shares:"Resource Shares"};
 const FIELD_IDS = { notesFiles:"fldzqeq0lTRD5r5SR", resourceFile:"fld87BX3WN94SPYqY" };
 
-const get   = t => fetch(`${API}?table=${encodeURIComponent(t)}`).then(r=>r.json());
+const get = async t => {
+  let r, j;
+  try { r = await fetch(`${API}?table=${encodeURIComponent(t)}`); }
+  catch(e){ throw new Error(`Network error reaching the function (${t}): ${e.message}`); }
+  const text = await r.text();
+  try { j = JSON.parse(text); }
+  catch(e){ throw new Error(`The function didn't return JSON for "${t}" (HTTP ${r.status}). Is it deployed at ${API}? First bytes: ${text.slice(0,80)}`); }
+  if (!r.ok || j.error) throw new Error(`"${t}" — ${j.error || "HTTP "+r.status}`);
+  if (!j.records) throw new Error(`"${t}" returned no records array. Check the table name matches the base exactly.`);
+  return j;
+};
 const post  = (t,records) => fetch(`${API}?table=${encodeURIComponent(t)}`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({records})}).then(j=>j.json());
 const patch = (t,records) => fetch(`${API}?table=${encodeURIComponent(t)}`,{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify({records})}).then(j=>j.json());
 const upload = (recordId, fieldId, file) => new Promise((res,rej)=>{
@@ -1222,9 +1232,23 @@ function dropzone(el, cb){
 }
 
 load().catch(e => {
-  document.getElementById("view").innerHTML =
-    `<div class="card"><h2>Couldn't reach the base</h2><div class="cap">${esc(e.message)}</div>
-     <div class="hint">Check that AIRTABLE_TOKEN and AIRTABLE_BASE are set in the Netlify environment variables, and that the token has data.records:read + data.records:write on this base.</div></div>`;
+  document.getElementById("view").className = "";
+  document.getElementById("view").innerHTML = `
+    <div class="card" style="max-width:640px">
+      <h2>Couldn't reach the base</h2>
+      <div class="cap" style="font-family:'JetBrains Mono',monospace;color:var(--clay);font-size:12.5px">${esc(e.message)}</div>
+      <h3 style="margin-top:14px">Check, in order</h3>
+      <div class="row"><div><strong>1. Environment variables</strong>
+        <div class="why">In Netlify → Site configuration → Environment variables:
+        <code>AIRTABLE_BASE</code> = <code>app70cjJzoUHQZtHA</code> and <code>AIRTABLE_TOKEN</code> = your personal access token.
+        <b>Then redeploy</b> — Netlify does not pick up new variables on an existing build.</div></div></div>
+      <div class="row"><div><strong>2. Token scopes</strong>
+        <div class="why">The token needs <code>data.records:read</code> and <code>data.records:write</code>,
+        <b>and the JV OKR base must be added to the token's access list</b> — a token with the right scopes but no base attached fails exactly like this.</div></div></div>
+      <div class="row"><div><strong>3. The function itself</strong>
+        <div class="why">Open <code>${API}?table=People</code> in a tab. You should see JSON.
+        A 404 means the <code>netlify/functions/</code> folder didn't deploy.</div></div></div>
+    </div>`;
 });
 </script>
 </body>
