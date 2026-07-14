@@ -62,11 +62,36 @@ async function whoami(event) {
 
   const email = String(g.email || "").toLowerCase();
   const people = await readAll("People");
-  const me = people.find(p => String(p.fields.Email || "").toLowerCase() === email);
-  if (!me) throw Object.assign(new Error(`${email} isn't in the People table. Ask Mike or Mel to add you.`), { code: 403 });
+  let me = people.find(p => String(p.fields.Email || "").toLowerCase() === email);
+
+  // Auto-enrol: a verified account on the allowed domain gets a Staff row on first
+  // sign-in. The domain lock is the gate — Google won't let a non-JV account this far.
+  // Staff can look around, add tasks and check in. Nothing more. Mike or Mel promote
+  // the handful who need more.
+  if (!me) {
+    if (!DOMAIN)
+      throw Object.assign(
+        new Error(`${email} isn't in the People table. Ask Mike or Mel to add you.`),
+        { code: 403 }
+      );
+    const created = await air("People", {
+      method: "POST",
+      body: JSON.stringify({
+        records: [{ fields: {
+          Name: g.name || email.split("@")[0],
+          Email: email,
+          Role: "Staff",
+          Active: true
+        }}],
+        typecast: true
+      })
+    });
+    me = created.records[0];
+  }
 
   return { id: me.id, email, name: me.fields.Name || g.name || email,
-           role: me.fields.Role || "Staff", area: me.fields.Area || "" };
+           role: me.fields.Role || "Staff", area: me.fields.Area || "",
+           isNew: !me.fields.Area };
 }
 
 /* ---------------------------------------------------------------- */
@@ -128,6 +153,18 @@ exports.handler = async (event) => {
   catch (e) { return bad(e.code || 401, e.message); }
 
   if (q.action === "me") return ok({ me });
+
+  // A person may set their own Area — and nothing else — on their own row.
+  // Roles stay in Mike's and Mel's hands.
+  if (q.action === "setarea") {
+    const area = String(body.area || "").trim();
+    if (!area) return bad(400, "area required");
+    await air("People", {
+      method: "PATCH",
+      body: JSON.stringify({ records: [{ id: me.id, fields: { Area: area } }], typecast: true })
+    });
+    return ok({ me: { ...me, area, isNew: false } });
+  }
 
   const table = q.table;
   const body = event.body ? JSON.parse(event.body) : {};

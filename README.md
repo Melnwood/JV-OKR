@@ -118,3 +118,17 @@ Every check-in, task, review answer and decision is stamped with the signed-in p
 
 `Check-ins` and `Decisions` return **403** on delete, for anyone. They're the record of what
 happened and why a target moved. If one truly must go, it goes in Airtable, deliberately.
+
+## Auto-enrol
+
+Anyone with a verified **@josiahventure.com** Google account who signs in and isn't yet in
+**People** gets a row created for them automatically, as **Staff**, on first sign-in. They're
+then asked which country or division they belong to — the only field they can set on their own
+row. Roles are never self-assigned; Mike or Mel change those in Airtable.
+
+This depends on `ALLOWED_DOMAIN` being set. Without it, auto-enrol is off and unknown emails are
+turned away — because with no domain lock, "anyone with a Google account" would mean *anyone*.
+
+**What Staff can do:** browse every country, division and team; add and tick tasks; log check-ins;
+answer midterms and retros. They cannot create objectives or key results, cannot record decisions,
+and never receive coaching notes.

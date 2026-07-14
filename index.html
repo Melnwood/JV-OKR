@@ -350,12 +350,20 @@ V.dashboard = () => {
       ${krs.map(k=>{
         const kids = show.filter(o=>lnk(o,"Parent Key Result").includes(k.id));
         const p = pct(f(k,"Progress"));
+        const tgt = f(k,"Target value")??0, com = f(k,"Commit"), str = f(k,"Stretch");
+        const band = (com!=null && str!=null && str>0);
         return `<div class="kr5">
             <div style="display:flex;justify-content:space-between;gap:12px;align-items:center">
               <strong>${esc(f(k,"Title"))}</strong>
-              <span class="mono">${f(k,"Current value")??0} / ${f(k,"Target value")??0} ${esc(f(k,"Unit")||"")} · ${p}%</span>
+              <span class="mono">${f(k,"Current value")??0} / ${tgt} ${esc(f(k,"Unit")||"")} · ${p}%</span>
             </div>
-            <div class="prog"><span style="width:${p}%;background:var(--ink)"></span></div>
+            <div class="prog" style="position:relative;overflow:visible">
+              <span style="width:${p}%;background:var(--ink);position:relative;z-index:1"></span>
+              ${band?`
+                <span title="Commit ${com}" style="position:absolute;left:${Math.min(100,com/str*100)}%;top:-3px;width:2px;height:13px;background:#A8B2BC;border-radius:1px"></span>
+                <span title="Target ${tgt}" style="position:absolute;left:${Math.min(100,tgt/str*100)}%;top:-4px;width:2px;height:15px;background:var(--jv);border-radius:1px"></span>`:""}
+            </div>
+            ${band?`<div class="mono" style="margin-top:5px">commit ${com} · <b style="color:var(--jv)">target ${tgt}</b> · stretch ${str}</div>`:""}
           </div>
           <div class="cascade">${kids.length ? kids.map(card).join("")
             : `<div class="child" style="cursor:default"><span class="empty">Nothing laddering here in this view.</span></div>`}</div>`;
@@ -1055,6 +1063,8 @@ V.objective = () => {
               <div class="field"><label>Unit</label><input id="krU" placeholder="churches / % / teams"/></div>
               <div class="field"><label>Start value</label><input type="number" id="krS" value="0"/></div>
               <div class="field"><label>Target</label><input type="number" id="krG" value="100"/></div>
+              <div class="field"><label>Commit <span class="mono">(the floor)</span></label><input type="number" id="krC" placeholder="optional"/></div>
+              <div class="field"><label>Stretch <span class="mono">(the ceiling)</span></label><input type="number" id="krX" placeholder="optional"/></div>
             </div>
             <button class="btn" id="krGo">Add key result</button>
           </div>
@@ -1181,9 +1191,12 @@ V.objective = () => {
   document.getElementById("krGo").onclick = async()=>{
     const t = document.getElementById("krT").value.trim(); if(!t) return;
     const g = +document.getElementById("krG").value;
+    const c = document.getElementById("krC").value, x = document.getElementById("krX").value;
     await post(T.krs, [{fields:{Title:t, Unit:document.getElementById("krU").value, Type:"Number",
       "Start value":+document.getElementById("krS").value, "Current value":+document.getElementById("krS").value,
-      "Target value":g, "Original target":g, Confidence:"Not started", Objective:[o.id], Owner:lnk(o,"Owner")}}]);
+      "Target value":g, "Original target":g,
+      ...(c!==""?{Commit:+c}:{}), ...(x!==""?{Stretch:+x}:{}),
+      Confidence:"Not started", Objective:[o.id], Owner:lnk(o,"Owner")}}]);
     await reload("krs"); toast("Key result added"); render();
   };
   document.getElementById("dGo").onclick = async()=>{
@@ -1549,7 +1562,48 @@ async function start(){
       `<div class="card" style="max-width:640px"><h2>Couldn't reach the base</h2>
        <div class="cap" style="font-family:'JetBrains Mono',monospace;color:var(--clay);font-size:12.5px">${esc(e.message)}</div>
        <div class="hint">Open <code>${API}?action=diag</code> to see what the function can and can't see.</div></div>`;
+    return;
   }
+  if(AUTH.isNew) welcome();
+}
+
+/* First sign-in: they exist now, but nobody knows where they sit. */
+function welcome(){
+  const areas = [...new Set(DB.objectives.filter(o=>f(o,"Area") && f(o,"Scope")!=="JV 5-year").map(o=>f(o,"Area")))].sort();
+  document.getElementById("view").innerHTML = `
+    <div class="head"><div>
+      <h1>Welcome, ${esc(AUTH.name.split(" ")[0])}</h1>
+      <div class="sub">You're in. One question before you look around.</div>
+    </div></div>
+    <div class="card" style="max-width:560px">
+      <h2>Which country or division are you part of?</h2>
+      <div class="cap">This is what puts your work on your page — and your name on your team's reviews. You can change it later.</div>
+      <div class="field">
+        <select id="wArea">
+          ${areas.map(a=>`<option>${esc(a)}</option>`).join("")}
+          <option value="__other">Something else…</option>
+        </select>
+      </div>
+      <div class="field hidden" id="wOtherBox"><label>Type it</label><input id="wOther" placeholder="Poland / Staff Care / …"/></div>
+      <button class="btn wide" id="wGo">That's me</button>
+      <div class="hint">You're set up as <b>Staff</b> — you can browse everything across JV, add and tick tasks, log check-ins and answer reviews.
+        If you lead a country, division or team, ask Mike to change your role.</div>
+    </div>`;
+  const sel = document.getElementById("wArea");
+  sel.onchange = ()=> document.getElementById("wOtherBox").classList.toggle("hidden", sel.value!=="__other");
+  if(!areas.length){ sel.value="__other"; document.getElementById("wOtherBox").classList.remove("hidden"); }
+  document.getElementById("wGo").onclick = async()=>{
+    const area = sel.value==="__other" ? document.getElementById("wOther").value.trim() : sel.value;
+    if(!area) return toast("Pick or type one", true);
+    const r = await fetch(`${API}?action=setarea`, {method:"POST", headers:authHeaders({"Content-Type":"application/json"}), body:JSON.stringify({area})});
+    const j = await r.json();
+    if(!r.ok) return toast(j.error||"Couldn't save", true);
+    AUTH = j.me;
+    await reload("people");
+    ME = DB.people.find(p=>p.id===AUTH.id) || ME;
+    toast(`Welcome to ${area}`);
+    VIEW = "browse"; drawChrome(); render();
+  };
 }
 
 function drawButton(){
