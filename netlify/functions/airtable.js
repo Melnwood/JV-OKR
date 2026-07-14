@@ -164,11 +164,15 @@ exports.handler = async (event) => {
     const fields = {};
     if (unitId) fields["Org Unit"] = [unitId];
     if (area) fields.Area = area;   // mirror of the unit name, for readability in the grid
-    await air("People", {
-      method: "PATCH",
-      body: JSON.stringify({ records: [{ id: me.id, fields }], typecast: true })
-    });
-    return ok({ me: { ...me, area, isNew: false } });
+    try {
+      await air("People", {
+        method: "PATCH",
+        body: JSON.stringify({ records: [{ id: me.id, fields }], typecast: true })
+      });
+    } catch (e) {
+      return bad(500, `Couldn't save your unit: ${e.message}`);
+    }
+    return ok({ me: { ...me, area, unit: unitId || me.unit, isNew: false } });
   }
 
   const table = q.table;
