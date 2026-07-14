@@ -49,6 +49,19 @@
   .lens{background:none;border:0;border-radius:7px;padding:7px 14px;font:inherit;font-size:13px;color:var(--ink-2);cursor:pointer;font-weight:500}
   .lens.on{background:#fff;color:var(--jv-deep);font-weight:600;box-shadow:0 1px 3px rgba(34,30,27,.08)}
   .lens:hover:not(.on){color:var(--jv-deep)}
+  .gmodal{position:fixed;inset:0;background:rgba(34,30,27,.5);z-index:100;display:flex;align-items:flex-start;justify-content:center;overflow-y:auto;padding:40px 16px}
+  .gcard{background:var(--card);border-radius:16px;max-width:640px;width:100%;padding:30px 32px;box-shadow:0 20px 60px rgba(34,30,27,.3)}
+  .ghero{border-bottom:1px solid var(--rule);padding-bottom:18px;margin-bottom:20px}
+  .gsub{color:var(--ink-2);font-size:14.5px;margin:8px 0 0;line-height:1.6}
+  .gsec{margin-bottom:22px}
+  .gsec p{font-size:14px;line-height:1.65;margin:6px 0}
+  .gsec ul,.gsec ol{font-size:14px;line-height:1.6;margin:8px 0;padding-left:20px}
+  .gsec li{margin-bottom:6px}
+  .gsec-jv{background:var(--jv-50);border:1px solid var(--jv-edge);border-radius:12px;padding:18px 20px}
+  .gflow{counter-reset:none}
+  .gstep{display:flex;gap:14px;margin:14px 0}
+  .gn{flex:none;width:26px;height:26px;border-radius:50%;background:var(--jv-deep);color:#fff;font-family:'Bricolage Grotesque',sans-serif;font-weight:700;font-size:14px;display:flex;align-items:center;justify-content:center;margin-top:2px}
+  .gstep h3{font-family:'Bricolage Grotesque',sans-serif;font-size:15.5px;margin:0 0 2px}
   .me select{border-color:rgba(255,255,255,.5);background:rgba(255,255,255,.14);color:#fff}
   .me select option{color:var(--ink);background:#fff}
   select,input,textarea{font-family:Inter;font-size:13.5px;border:1px solid var(--rule);border-radius:8px;padding:8px 9px;background:#fff;color:var(--ink);width:100%}
@@ -388,8 +401,10 @@ function drawChrome(){
          </div>
        </div>` : "";
   document.getElementById("whobox").innerHTML =
-    `${gear}<span>${esc(AUTH.name)} · ${esc(AUTH.role)}</span>
+    `${gear}<button class="nv" id="helpbtn" title="How this works" style="font-size:15px;padding:6px 10px">?</button>
+     <span>${esc(AUTH.name)} · ${esc(AUTH.role)}</span>
      <button class="btn ghost" id="signout" style="padding:5px 9px;font-size:12px">Sign out</button>`;
+  document.getElementById("helpbtn").onclick = openGuide;
   const gb = document.getElementById("gearbtn");
   if(gb){
     gb.onclick = e=>{ e.stopPropagation(); document.getElementById("geardrop").classList.toggle("hidden"); };
@@ -400,6 +415,79 @@ function drawChrome(){
 }
 const V = {};
 function render(){ document.getElementById("view").className=""; (V[VIEW]||V.objective)(); }
+
+/* ============================ THE GUIDE ============================ */
+// Opens from the "?" in the top bar. Auto-opens once per person (remembered locally).
+// Coaches (Mike, Mel) get the coaching + director sections; everyone gets the rest.
+function openGuide(){
+  const coach = iAmCoach(), leader = iAmLeader();
+  const step = (n,h,b) => `<div class="gstep"><div class="gn">${n}</div><div><h3>${h}</h3>${b}</div></div>`;
+  const body = `
+    <div class="ghero">
+      <div class="eyebrow">JV OKR</div>
+      <h1 style="margin:4px 0 0">How this works</h1>
+      <p class="gsub">Everything JV is working toward, laddered up to the 2030 vision — and honest about the work that stands on its own. Here's the shape of it.</p>
+    </div>
+
+    <div class="gsec">
+      <div class="eyebrow">THE IDEA IN ONE BREATH</div>
+      <p>At the top sits <b>JV 2030</b> and its three key results. Countries, divisions and teams take one of those key results and make it their own objective, with their own measurable results underneath. Some work ladders up like that. Some work just <i>supports</i> the direction, and some is operational and stands alone — and the system says so plainly rather than forcing a fake link.</p>
+    </div>
+
+    <div class="gsec">
+      <div class="eyebrow">THE FOUR PLACES YOU'LL LIVE</div>
+      ${step("1","Objectives — where the work actually happens",
+        `<p>This is the main surface, and where the app opens. Pick any objective and you see its key results, the tasks under them, the decision log, and every past check-in. Two buttons matter most here:</p>
+         <ul><li><b>Check in</b> — the orange button. Slide each key result to where it is now, tick off tasks, say what moved and whether you're still confident. Two minutes. This is the heartbeat of the whole thing.</li>
+         <li><b>Review</b> — start or open a midterm or retrospective for that objective.</li></ul>`)}
+      ${step("2","My work — what needs you today",
+        `<p>Your to-do list, built automatically: objectives that have gone quiet, overdue tasks, and open reviews where your answer isn't in yet. Each line is clickable — it takes you straight to the thing that needs doing.</p>`)}
+      ${step("3","JV 2030 — the big picture, three ways",
+        `<p>One page, three lenses you switch between:</p>
+         <ul><li><b>By key result</b> — the cascade: what ladders to what.</li>
+         <li><b>By org</b> — walk down through countries, divisions, departments and teams.</li>
+         <li><b>Map</b> — hover any objective to trace its line all the way up to 2030.</li></ul>
+         <p>Everyone can see all of JV here, read-only. It's for looking around.</p>`)}
+      ${coach ? step("4","Coaching — yours and Mel's",
+        `<p>Your notebook and library, and the one place the two of you share. Notes are <b>private by default</b> — a leader only sees a note if you tick "Shared with leader." Everything else stays between you and Mel. Upload files to the library and share them with specific people; you can see who's opened what, and the ones nobody opened are the conversation to have.</p>`)
+      : step("4","Coaching",
+        `<p>Mike (as OKR Director) and Mel keep coaching notes here. You won't see this tab — it's theirs.</p>`)}
+    </div>
+
+    ${leader ? `<div class="gsec">
+      <div class="eyebrow">BECAUSE YOU LEAD</div>
+      <p>You can create and edit objectives and key results, and record decisions. When a target changes, <b>record it as a decision</b> — that keeps the original number and the reason attached, so a year from now nobody's asking "why is this only 60%?" The ⚙ menu (top right) holds <b>Org</b> (build out countries, divisions, teams) and <b>Archive</b> (finished work, kept but out of the way).</p>
+    </div>` : ""}
+
+    ${coach ? `<div class="gsec gsec-jv">
+      <div class="eyebrow">MIKE — YOUR FIRST WEEK</div>
+      <ol class="gflow">
+        <li><b>Set up the org.</b> ⚙ → Org. Add the countries and divisions first, then departments and teams inside them. Nothing else has anywhere to live until this exists.</li>
+        <li><b>Set people's roles.</b> In Airtable's People table: country and division leaders need <i>Role</i> set, and a <i>Coaching cadence</i> (e.g. 21 days) or your coaching queue stays empty.</li>
+        <li><b>Seed one real objective</b> with a country leader — laddered to a JV key result — so the pattern is visible for everyone else to copy.</li>
+        <li><b>Pilot small.</b> One country plus you, one trimester. Watch whether people actually check in and whether the midterm produces a real conversation. Fix that before rolling out sixteen countries.</li>
+      </ol>
+    </div>` : ""}
+
+    <div class="gsec">
+      <div class="eyebrow">THE ONE RULE WORTH KNOWING</div>
+      <p>A target that moves should always carry its reason. That's why check-ins and decisions can't be deleted — they're the record of what actually happened. Everything else bends; that part doesn't.</p>
+    </div>
+
+    <button class="btn jv wide" id="gclose">Got it — let's go</button>`;
+
+  const wrap = document.createElement("div");
+  wrap.className = "gmodal";
+  wrap.innerHTML = `<div class="gcard">${body}</div>`;
+  wrap.onclick = e => { if(e.target===wrap) wrap.remove(); };
+  document.body.appendChild(wrap);
+  document.getElementById("gclose").onclick = ()=>wrap.remove();
+  try{ localStorage.setItem("jvokr.guideSeen","1"); }catch(e){}
+}
+function maybeGuide(){
+  let seen=null; try{ seen=localStorage.getItem("jvokr.guideSeen"); }catch(e){}
+  if(!seen) openGuide();
+}
 
 /* ============================ JV 2030 (three lenses) ============================ */
 let jvLens = "dashboard";   // dashboard = cascade · map = alignment · browse = by org
@@ -1916,6 +2004,7 @@ async function start(){
     return;
   }
   if(AUTH.isNew) welcome();
+  else maybeGuide();
 }
 
 /* First sign-in: they exist now, but nobody knows where they sit. */
@@ -1975,6 +2064,7 @@ function welcome(){
     ME = DB.people.find(p=>p.id===AUTH.id) || ME;
     toast(`Welcome to ${area}`);
     jvLens = "browse"; VIEW = "jv"; drawChrome(); render();
+    maybeGuide();
   };
 }
 
