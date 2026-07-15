@@ -862,6 +862,7 @@ export default function App() {
   const [saved, setSaved]         = useState(false);
   const [dashCountry, setDashCountry] = useState("all");
   const [allRuns, setAllRuns]     = useState([]);       // from storage
+  const [runsLoading, setRunsLoading] = useState(true);
   const fileRef = useRef();
 
   // Load historical runs: local first (instant), then the SHARED list from Airtable
@@ -878,6 +879,7 @@ export default function App() {
         }
       } catch {}
       // 2. shared list from Airtable — merge by country+year (Airtable wins)
+      setRunsLoading(true);
       try {
         const shared = await loadAllRuns();
         if (shared && shared.length) {
@@ -891,6 +893,7 @@ export default function App() {
       } catch (e) {
         console.warn("Airtable run list load failed, using local only:", e.message);
       }
+      setRunsLoading(false);
     })();
   }, []);
 
@@ -1096,6 +1099,7 @@ export default function App() {
       setSurveyData={setSurveyData} setSelections={setSelections}
       setCountry2={setCountry} setYear2={setYear}
       isAdmin={isAdmin} toggleAdmin={toggleAdmin}
+      runsLoading={runsLoading}
     />
   );
 
@@ -1136,7 +1140,7 @@ export default function App() {
 // ─── HOME VIEW ────────────────────────────────────────────────────────────────
 function HomeView({ country, setCountry, year, setYear, fileRef, handleFile,
   generating, genProgress, allRuns, setAllRuns, setView, setSurveyData, setSelections,
-  setCountry2, setYear2, isAdmin, toggleAdmin }) {
+  setCountry2, setYear2, isAdmin, toggleAdmin, runsLoading }) {
 
   const countries = [...new Set(allRuns.map(r=>r.country))].sort();
 
@@ -1216,6 +1220,17 @@ function HomeView({ country, setCountry, year, setYear, fileRef, handleFile,
             </div>
           )}
         </div>
+        )}
+
+        {/* Empty state — never leave the body blank */}
+        {allRuns.length === 0 && !generating && (
+          <div style={{ textAlign:"center", color:"#9C8F82", padding:"48px 24px", fontSize:14 }}>
+            {runsLoading
+              ? "Loading reports…"
+              : isAdmin
+                ? "No reports yet. Upload a QuestionPro export above to create one."
+                : "No reports available yet. If you expect to see reports here, check your connection or ask an admin."}
+          </div>
         )}
 
         {/* Previous runs */}
