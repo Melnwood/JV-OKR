@@ -1,0 +1,512 @@
+{
+  "hr": [
+    {
+      "question": "I have a clear and up-to-date Position Focus with regular opportunities to work within my giftings, experience, and calling.",
+      "low": "Staff report feeling unclear about their responsibilities or how their strengths, work experience, and calling fit their role.",
+      "mid": "Staff report partial clarity about their responsibilities, and still experience uncertainties regarding how their strengths, work experience, or calling fit their role.",
+      "high": "Staff report strong clarity about their responsibilities and express that their position focus highly aligns with their strengths, work experience, and calling."
+    },
+    {
+      "question": "I have a working knowledge of JV policies and procedures",
+      "low": "Staff report confusion or uncertainty regarding how to apply JV HR policies and procedures to their context and needs.",
+      "mid": "Staff report partial understanding or occasional confusion regarding how to apply JV HR policies and procedures to their context and needs.",
+      "high": "Staff report confidence in understanding and applying JV HR policies and procedures to their context and needs."
+    },
+    {
+      "question": "I often feel unsure about my place within the organization.",
+      "low": "Staff report often feeling uncertain about their belonging, value, or future direction within the organization.",
+      "mid": "Staff report occasionally experiencing uncertainty about their belonging, value, or future direction within the organization.",
+      "high": "Staff report feeling secure, valued, and confident in their future direction within the organization."
+    },
+    {
+      "question": "I often feel confused or overwhelmed by complicated HR requirements.",
+      "low": "Staff report frequent confusion or overwhelm from complicated HR requirements.",
+      "mid": "Staff report occasional confusion or overwhelm from complicated HR requirements.",
+      "high": "The data suggests that staff understand HR processes; feel they are simple and manageable."
+    },
+    {
+      "question": "HR processes and systems are clear and efficient, making it easy to get what I need.",
+      "low": "Staff report widespread inefficiencies that make HR processes and systems difficult to access.",
+      "mid": "Staff report occasional inefficiencies that make some HR processes and systems difficult to access.",
+      "high": "Systems are efficient and user-friendly; staff easily find what they need."
+    },
+    {
+      "question": "I am able to utilize HR information, tools, and the support I need to do my job effectively.",
+      "low": "Staff report their effectiveness in ministry is often hindered due to a low usibility of HR information, tools, and support.",
+      "mid": "Staff report their effectiveness in ministry is occasionally hindered due to a low usibility of HR information, tools, and support.",
+      "high": "Staff report HR information, tools and support positively contribute to their effectiveness in ministry."
+    },
+    {
+      "question": "The compensation and benefits I receive are appropriate for the cost of living and demands of my role.",
+      "low": "Staff report feeling under-compensated relative to cost of living and the demands of their current role.",
+      "mid": "Staff report ocassionally feeling under-compensated relative to cost of living and the demands of their current role.",
+      "high": "Staff report feeling appropriately compensated relative to cost of living and the demands of their current role."
+    },
+    {
+      "question": "I believe that HR policies and decisions are applied fairly across the organization.",
+      "low": "Staff report perceiving unfairness or favoritism.",
+      "mid": "Staff report feeling decisions are mostly fair but see occasional inconsistencies.",
+      "high": "Staff report confidence in fairness and organizational integrity."
+    },
+    {
+      "question": "I feel noticed and cared for by my team when I have needs.",
+      "low": "Staff report feeling overlooked or unsupported by their immediate team.",
+      "mid": "Staff report feeling somewhat cared for but inconsistently.",
+      "high": "Staff report feeling genuinely cared for and supported."
+    }
+  ],
+  "ld": [
+    {
+      "question": "The equipping resources available enable me to be developed in my role",
+      "low": "Staff lack access to relevant development or are unaware of available opportunities, slowing growth and effectiveness.",
+      "mid": "Some access exists but is inconsistent or not well aligned to current role.",
+      "high": "Staff have clear access to relevant development and actively engage in growth."
+    },
+    {
+      "question": "I am continually learning how Christ's strategy shapes how I lead, train, and disciple others in ministry.",
+      "low": "Staff struggle to connect Christ’s life and strategy to daily ministry decisions.",
+      "mid": "Some understanding exists, but application is inconsistent.",
+      "high": "Staff consistently apply Christ’s life and strategy in ministry."
+    },
+    {
+      "question": "My uplink rhythms (meetings, guidance, support) help me thrive in ministry.",
+      "low": "Uplink rhythms lack the consistency and/or structure to provide adequate support",
+      "mid": "Uplink rhythms exist but vary in quality or consistency.",
+      "high": "Uplink rhythms are consistent, healthy, and life-giving."
+    },
+    {
+      "question": "I frequently feel unsure about how to move forward in my development.",
+      "low": "Staff feel stuck or unclear about next steps in their development.",
+      "mid": "Occasional uncertainty, often due to circumstances or unclear direction.",
+      "high": "Staff have clear direction and confidence in their development path."
+    },
+    {
+      "question": "I receive helpful feedback and encouragement that supports my learning and development.",
+      "low": "Feedback and encouragement are limited or unhelpful, slowing growth and confidence.",
+      "mid": "Feedback is present but inconsistent or too general.",
+      "high": "Staff receive regular, helpful, and encouraging feedback."
+    },
+    {
+      "question": "I am experiencing personal growth in this season.",
+      "low": "Staff feel stagnant or discouraged in personal growth.",
+      "mid": "Some personal growth occurs but is uneven or disrupted.",
+      "high": "Staff experience meaningful personal growth and formation."
+    },
+    {
+      "question": "I am experiencing professional growth in this season.",
+      "low": "Staff feel stalled in professional skill or leadership growth.",
+      "mid": "Some professional growth exists but lacks clear direction.",
+      "high": "Staff show clear growth in skills and leadership capacity."
+    },
+    {
+      "question": "I often struggle to apply Christ's strategy to daily ministry.",
+      "low": "Staff regularly struggle to apply Christ’s strategy in practical ministry.",
+      "mid": "Inconsistent application of Christ’s strategy across ministry contexts.",
+      "high": "Staff effectively apply Christ’s strategy in daily ministry."
+    },
+    {
+      "question": "I am growing in healthy rhythms that help me serve others from a place of wholeness.",
+      "low": "Staff lack sustainable work, spiritual, or rest rhythms with elevated burnout risk.",
+      "mid": "Rhythms exist but are inconsistent and easily disrupted.",
+      "high": "Staff maintain healthy, sustainable rhythms and serve from wholeness."
+    }
+  ],
+  "lc": [
+    {
+      "question": "I clearly understand the expectations for my progress in language and culture learning.",
+      "low": "Staff report unclear expectations, contributing to uncertainty and stalled language/culture growth.",
+      "mid": "Survey data suggests staff know some expectations, but they are not consistently reinforced or tracked.",
+      "high": "Responses indicate staff understand expectations clearly and feel confident about their progress path."
+    },
+    {
+      "question": "My team helps me with my language and cultural adaptation needs.",
+      "low": "Staff report feeling unsupported by their team in language or cultural adaptation, or unsure where to find help.",
+      "mid": "Some support exists, but staff say it is inconsistent or informal.",
+      "high": "Staff feel well supported by their team in language and cultural adaptation."
+    },
+    {
+      "question": "I receive regular accountability and helpful feedback on my progress in language learning.",
+      "low": "Staff report lacking regular accountability or helpful feedback, possibly contributing to slow language learning progress.",
+      "mid": "Accountability and feedback exist but are inconsistent or informal.",
+      "high": "Staff receive regular, helpful, and encouraging accountability."
+    },
+    {
+      "question": "I know who to turn to for help with cultural or language learning challenges.",
+      "low": "Staff report not knowing where to seek help and support when they experience language learning challenges.",
+      "mid": "Staff have awareness of help options but say clarity is inconsistent.",
+      "high": "Staff clearly know where to seek help for language and cultural challenges."
+    },
+    {
+      "question": "I am growing in my ability to live and function daily in another culture and language.",
+      "low": "Staff report struggling with daily-life functioning due to limited language or cultural adaptation.",
+      "mid": "Staff are functional in some areas but inconsistent or reliant on others in areas that could progress to independence.",
+      "high": "Staff function effectively in daily life using language and cultural skills."
+    },
+    {
+      "question": "I feel increasingly capable in ministry because of my language and cultural skills.",
+      "low": "Staff report not yet feeling capable in ministry due to limited L&C competence.",
+      "mid": "Staff have some capability, but confidence is uneven or fragile.",
+      "high": "Staff feel increasingly capable in ministry due to strong L&C skills."
+    },
+    {
+      "question": "I regularly feel discouraged about my pace of language learning.",
+      "low": "Staff report frequent discouragement tied to slow progress or unmet expectations.",
+      "mid": "Staff experience occasional discouragement during transitions, busy seasons, or setbacks.",
+      "high": "Staff rarely feel discouraged and maintain hope in learning."
+    },
+    {
+      "question": "I often struggle to balance ministry demands with language and culture growth.",
+      "low": "Staff report frequent imbalance, feeling torn between ministry and L&C learning.",
+      "mid": "Staff maintain some balance, but it is fragile and easily disrupted.",
+      "high": "Staff sustain a healthy balance between ministry and learning."
+    },
+    {
+      "question": "I am able to switch into English and still communicate effectively on a team where my language is not everyone's first language.",
+      "low": "Staff report struggling to communicate effectively in English, limiting clarity and collaboration.",
+      "mid": "Staff can communicate in English, but confidence or consistency is limited.",
+      "high": "Staff communicate effectively in English on a multi-language team."
+    },
+    {
+      "question": "It is important for me to grow in my English skills because I am part of such an international organization.",
+      "low": "Staff show limited motivation or urgency to grow in English despite JV’s international context.",
+      "mid": "Staff see some value in English growth, but progress is inconsistent or slow.",
+      "high": "Staff value English growth and intentionally invest in improving their skills.",
+      "aliases": [
+        "Improving my language skills matters to me as part of an international team"
+      ]
+    },
+    {
+      "question": "I am aware of cultural differences on my team and I intentionally seek to understand them.",
+      "low": "Staff show limited awareness of cultural differences, increasing risk of misunderstanding and insensitivity.",
+      "mid": "Some awareness exists, but practice is inconsistent.",
+      "high": "Staff are aware of cultural differences and seek to understand them intentionally."
+    },
+    {
+      "question": "I regularly offer grace and encouragement to teammates who experience culture shock or slow progress in language learning.",
+      "low": "Staff report struggling to extend grace to teammates facing language or culture challenges.",
+      "mid": "Grace and encouragement are offered inconsistently across staff or contexts.",
+      "high": "Staff regularly offer grace and encouragement to teammates in language and culture growth.",
+      "aliases": [
+        "I regularly show patience and support to team members experiencing culture shock."
+      ]
+    }
+  ],
+  "mpd": [
+    {
+      "question": "I have the practical MPD tools and guidance I need to raise and maintain support for long-term ministry.",
+      "low": "Survey results suggest staff report lacking practical MPD tools or clear guidance, limiting their ability to build and sustain support.",
+      "mid": "Some tools exist, but survey data suggests they are used inconsistently or without confidence.",
+      "high": "Staff report having the tools and guidance needed to sustain long-term support."
+    },
+    {
+      "question": "I am confident when sharing my ministry vision and financial needs with potential supporters.",
+      "low": "Staff report lacking confidence in sharing ministry vision and financial needs, which may hinder support-building.",
+      "mid": "Confidence is emerging but inconsistent, depending on context, relationships, or clarity of message.",
+      "high": "Staff communicate vision and financial needs with clarity and confidence."
+    },
+    {
+      "question": "I know who to turn to for encouragement or accountability in my MPD journey.",
+      "low": "Staff report lacking clear encouragement or accountability, creating isolation in MPD.",
+      "mid": "Data suggests some support exists, but staff describe it as informal or inconsistent.",
+      "high": "Staff report knowing who supports their MPD and feeling encouraged and accountable."
+    },
+    {
+      "question": "Financial pressure sometimes distracts me from focusing on ministry.",
+      "low": "Staff report financial pressure significantly affecting ministry focus, increasing stress and decreasing clarity.",
+      "mid": "Staff report experiencing some financial pressure, but it is periodic or manageable.",
+      "high": "Staff report that financial pressure rarely interferes with ministry focus."
+    },
+    {
+      "question": "I regularly communicate with my partners to let them know how their giving and praying is making an impact.",
+      "low": "Staff report irregular or infrequent communication, weakening partner connection and relational trust.",
+      "mid": "Data suggests communication happens, but is inconsistent or occasional.",
+      "high": "Data suggests staff regularly communicate with partners and share meaningful updates."
+    },
+    {
+      "question": "I receive valid and regular financial reports about my support team, and I routinely track changes to my finances.",
+      "low": "Staff report unclear, irregular, or confusing financial reporting, making it hard to track support levels.",
+      "mid": "Data suggests reports are available, but staff say they are not consistently monitored or fully understood.",
+      "high": "Data suggests staff receive and actively track clear financial reports."
+    },
+    {
+      "question": "I often feel alone in carrying the responsibility of MPD.",
+      "low": "Staff report not feeling adequately supported by uplink or team in MPD.",
+      "mid": "Staff reports that uplink or team support exists but is uneven across staff.",
+      "high": "Staff report feeling supported by their uplink and team in their MPD journey."
+    },
+    {
+      "question": "I feel supported by my uplink or ministry team in building and maintaining my support team.",
+      "low": "Staff report feeling isolated in carrying MPD responsibilities.",
+      "mid": "Staff report feeling some connection, but isolation still occurs periodically.",
+      "high": "Staff report feeling supported and not alone in MPD."
+    },
+    {
+      "question": "I am effective when sharing my ministry vision and financial needs with potential supporters. (People are excited to say \"yes!\")",
+      "low": "Staff report struggling to communicate vision and financial needs effectively, reducing engagement.",
+      "mid": "Staff report some effectiveness, but say consistency is lacking.",
+      "high": "Staff report communicating vision and needs effectively, inspiring supporters."
+    }
+  ],
+  "counseling": [
+    {
+      "question": "I know who to contact for personal or family care, especially in times of crisis.",
+      "low": "Staff report not knowing who to contact, creating vulnerability and confusion in times of need.",
+      "mid": "Some awareness exists, but survey data suggests it is not always clear or confidently known.",
+      "high": "Staff clearly report knowing who to contact for personal or family care."
+    },
+    {
+      "question": "I understand JV’s process for getting counseling help.",
+      "low": "Staff report uncertainty or confusion about counseling processes, creating hesitation to seek help.",
+      "mid": "Staff report partial understanding, but say the process does not inspire confidence.",
+      "high": "Staff clearly understand JV’s counseling process."
+    },
+    {
+      "question": "I feel encouraged to pursue counseling when needed.",
+      "low": "Staff report not feeling encouraged or supported to seek counseling.",
+      "mid": "Some encouragement exists but staff say it is inconsistent or dependent on the leader.",
+      "high": "Staff feel encouraged to pursue counseling when needed."
+    },
+    {
+      "question": "I have safe and trusted people I can talk to.",
+      "low": "Staff report lacking safe people to talk to on their team, in their church, or in their friendships.",
+      "mid": "Staff report having some safe people, but support is limited.",
+      "high": "Staff report having safe, trusted people they can talk to."
+    },
+    {
+      "question": "Counseling is viewed in our organization as a healthy and constructive step.",
+      "low": "Staff report that counseling is viewed with suspicion or stigma, limiting openness and use.",
+      "mid": "Perception is mixed, with some constructive views but not universally held.",
+      "high": "Counseling is widely viewed as healthy and constructive."
+    },
+    {
+      "question": "I feel more equipped to navigate challenges because of counseling I’ve received.",
+      "low": "Staff report not feeling equipped through past counseling, or not having experienced it.",
+      "mid": "Staff report some benefit, but is limited in its impact on them.",
+      "high": "Staff report feeling equipped through counseling to thrive as a missionary."
+    },
+    {
+      "question": "I see counseling as a proactive tool for growth, not just crisis.",
+      "low": "Staff report viewing counseling as crisis-only or have a skeptical view of it in general.",
+      "mid": "Staff show some openness to proactive counseling, but more might be needed.",
+      "high": "Staff view counseling as a proactive tool for growth."
+    },
+    {
+      "question": "Practical barriers (time, cost, access) keep me from seeking counseling.",
+      "low": "Staff report significant practical barriers, preventing them from needed counseling support.",
+      "mid": "Some barriers exist, but are manageable or occasional.",
+      "high": "Staff report minimal barriers and feel able to access counseling easily."
+    },
+    {
+      "question": "I know someone on staff who has benefitted from counseling.",
+      "low": "Staff report not being aware of examples on staff of receiving beneficial counseling.",
+      "mid": "Some awareness exists, but I don't know many or specifics.",
+      "high": "Staff report being aware of fellow workers who benefited from counseling."
+    }
+  ],
+  "women": [
+    {
+      "question": "Often I feel isolated in ministry and lack women I can easily turn to for support, prayer and encouragement.",
+      "low": "Staff report feeling isolated in ministry and lacking access to supportive women.",
+      "mid": "Some connection exists, but data suggests it is inconsistent or dependent on context.",
+      "high": "Staff report feeling connected and supported by women in ministry."
+    },
+    {
+      "question": "I have clarity and alignment with my spouse, team, and leadership regarding the ministry lane I am serving in and the responsibilities connected to it.",
+      "low": "Women often feel unclear about their place in ministry, which can lead to frustration, overextension, or feeling unseen.",
+      "mid": "Women experience mixed clarity about their role in ministry, leading to confidence in some seasons and uncertainty in others.",
+      "high": "Women feel secure in their place in ministry, allowing them to serve with confidence, peace, and a sense of purpose."
+    },
+    {
+      "question": "I often feel disconnected from my team and uninformed about its activities and decisions.",
+      "low": "Staff report feeling disconnected from team life and lacking needed communication.",
+      "mid": "Some connection exists, but data shows that communication gaps remain.",
+      "high": "Staff report feeling connected and well-informed about team life and decisions."
+    },
+    {
+      "question": "I feel my voice is valued in team and organizational settings.",
+      "low": "Staff report that their voice is not valued in team or organizational contexts.",
+      "mid": "Voice is sometimes valued, but data shows it's not consistent.",
+      "high": "Staff feel their voice is valued and respected."
+    },
+    {
+      "question": "I struggle to understand how my gifts and role fit within my ministry context and to see them being used effectively.",
+      "low": "Staff report struggling to understand or use their gifts effectivelywithin ministry.",
+      "mid": "Some alignment exists, but confidence or clarity might be inconsistent.",
+      "high": "Staff clearly understand their role and see their gifts being used effectively."
+    },
+    {
+      "question": "I feel that my organization provides clear guidance on women’s roles and leadership opportunities, and that women’s voices are represented in leadership conversations.",
+      "low": "Staff report unclear or inconsistent guidance on women’s roles or leadership pathways.",
+      "mid": "Some guidance exists, but staff say it lacks visibility or consistency.",
+      "high": "Staff report clear guidance and representation of women’s voices in leadership conversations."
+    },
+    {
+      "question": "JV gatherings (such as conferences or retreats) provide a safe and nourishing environment where I feel refreshed and able to share openly.",
+      "low": "Staff report that gatherings do not feel safe, nourishing, or open, limiting connection and refreshment.",
+      "mid": "Gatherings provide partial safety and refreshment, but not consistently.",
+      "high": "JV gatherings feel safe, nourishing, and refreshingfor women."
+    }
+  ],
+  "singles": [
+    {
+      "question": "I have access to resources that address the unique needs of single missionaries.",
+      "low": "Singles report feeling they lack tools, care, or clear supportdesigned for their unique needs; they may feel overlooked or expected to “figure it out alone.”",
+      "mid": "Some resource awareness exists, but access or clarity is inconsistent.",
+      "high": "Singles report clarity and accessibility of resources; support structures feel strong."
+    },
+    {
+      "question": "I have a clear understanding of what is expected of me in ministry, team, and community as a single staff member.",
+      "low": "Singles report unclear expectations, leading to confusion, anxiety, or feeling taken advantage of.",
+      "mid": "Expectations are somewhat understood, but inconsistently applied.",
+      "high": "Singles report clear, respected expectationsacross ministry, team, and community life."
+    },
+    {
+      "question": "My practical needs as a single (housing, financial, social) are adequately acknowledged and supported in my context.",
+      "low": "Singles report overlooked practical needs, increasing stress and discouragement.",
+      "mid": "Some needs are met, but support is uneven or incomplete.",
+      "high": "Singles feel practically cared for, supporting sustainability and retention."
+    },
+    {
+      "question": "I feel relationally connected to my team and community as a single person.",
+      "low": "Singles report relational isolation or disconnection, a key predictor of burnout and attrition.",
+      "mid": "Some relational connection exists, but depth or consistency is lacking.",
+      "high": "Singles feel a strong sense of belonging; relational support is healthy."
+    },
+    {
+      "question": "I have safe people I can turn to for support, encouragement, and prayer.",
+      "low": "Singles report lack of trusted relational or spiritual support, feeling emotionally or spiritually isolated.",
+      "mid": "Safe support exists, but singles report it is limited or inconsistent.",
+      "high": "Singles feel well-supported emotionally and spiritually, a major protective factor."
+    },
+    {
+      "question": "I feel my singleness is respected and valued by JV leadership.",
+      "low": "Singles report being misunderstood, pitied, sidelined, or subtly marginalizedby leadership culture.",
+      "mid": "Singles feel mostly respected, but some misunderstandings remain.",
+      "high": "Singles feel fully honored, respected, and appreciated."
+    },
+    {
+      "question": "I’m learning to navigate my singleness with growing peace and purpose.",
+      "low": "Singles report emotional or spiritual unsettledness, loneliness, or lack of direction.",
+      "mid": "Singles experience mixed peace and struggle, normal but requiring occasional support.",
+      "high": "Singles feel spiritually grounded and emotionally supported."
+    },
+    {
+      "question": "I see my gifts and opportunities as a single person being used effectively in ministry.",
+      "low": "Singles report not feeling their unique strengths or availability are being leveraged, leading to feeling underutilized or sidelined.",
+      "mid": "Some gifts are used, but potential remains untapped or uneven across teams.",
+      "high": "Singles feel empowered and meaningfully placed, with strong use of their ministry capacity."
+    },
+    {
+      "question": "I sometimes feel the weight of carrying ministry responsibilities on my own.",
+      "low": "Singles report feeling consistently overburdened; high burnout risk; team structure may lack shared responsibility.",
+      "mid": "Singles experience occasional pressure, but not chronic overload.",
+      "high": "Responsibilities feel manageable, and singles feel supported in their ministry load."
+    },
+    {
+      "question": "I sometimes feel emotionally or spiritually depleted when I’m carrying life and ministry responsibilities on my own.",
+      "low": "Singles report emotional or spiritual depletion, discouragement, or exhaustion; strong long-term risk indicator.",
+      "mid": "Singles experience some strain, but it is manageable; signals seasonal stress or partial support needs.",
+      "high": "Singles are emotionally resilient, spiritually grounded, and well supported."
+    }
+  ],
+  "marriages": [
+    {
+      "question": "I know where to go for help if our marriage faces challenges.",
+      "low": "Staff signal not knowing where to seek help in marriage when trouble comes.",
+      "mid": "They know about some ways to get help, but it's not quite enough.",
+      "high": "Staff clearly report knowing where to go for help when challenges arise."
+    },
+    {
+      "question": "I feel supported and encouraged by JV and my team culture to prioritize time and investment in my marriage.",
+      "low": "Staff report not feeling supported to prioritize their marriage.",
+      "mid": "Staff feel somewhat supported in prioritizing their marriage",
+      "high": "Staff report feeling supported and encouraged to prioritize their marriage."
+    },
+    {
+      "question": "I have couples or mentors I can turn to for support.",
+      "low": "Staff evaluate themselves as alone and not having others to walk with them .",
+      "mid": "Some staff have mentors to help but don't feel like it is enough.",
+      "high": "Staff report they have trusted couples or mentors for marriage support."
+    },
+    {
+      "question": "My team culture values and respects the importance of nurturing marriages in ministry.",
+      "low": "Their perception of the team culture is that it does not consistently value or protect marriages.",
+      "mid": "Team culture shows partial support but mixed signals remain.",
+      "high": "Staff report that team culture values and respects the importance of marriages."
+    },
+    {
+      "question": "We are learning to navigate ministry pressures together in healthy ways.",
+      "low": "Staff reports struggling to navigate ministry pressures together, leading to strain.",
+      "mid": "Some couples are navigating ministry and marriage well but feel like they need more.",
+      "high": "Couples report learning to navigate pressures in healthy ways."
+    },
+    {
+      "question": "I often feel that ministry demands leave me too depleted to invest in my marriage.",
+      "low": "Staff report that ministry demands regularly use up energy leaving way less capacity for marriage health.",
+      "mid": "Depletion exists but is sometimes manageable.",
+      "high": "Staff are succeeding at facing both ministry and marriage demands in their life."
+    }
+  ],
+  "jvk": [
+    {
+      "question": "I'm aware of available resources to support my children in cross-cultural life. (2nd Culture Only)",
+      "low": "Parents report being unaware of cross-cultural resources, limiting support for their kids.",
+      "mid": "Data suggests Some awareness exists, but resources are not consistently used.",
+      "high": "Parents report being aware of and able to usecross-cultural resources for their children."
+    },
+    {
+      "question": "I clearly understand JV’s approach to caring for kids.",
+      "low": "Parents report lack of clarity on JV’s approach to caring for children.",
+      "mid": "Data suggets some understanding exists, but noticeable gaps remain.",
+      "high": "Parents report they clearly understand JV’s approach to caring for kids."
+    },
+    {
+      "question": "I have someone to turn for help when my kids face challenges.",
+      "low": "Parents report not knowing where to turn for help, leading to isolation.",
+      "mid": "Parents report help options are known, but awareness is not always clear or timely.",
+      "high": "Parents report they clearly know where to seek help for their children."
+    },
+    {
+      "question": "I feel my children are cared for and supported by JV.",
+      "low": "Parents report feeling their children are not adequately cared for by JV.",
+      "mid": "Some parents feel support, but other parents report it is inconsistent.",
+      "high": "Parents report their children are cared for and supported by JV."
+    },
+    {
+      "question": "My children have 1-2 adults outside our family they can talk to if needed.",
+      "low": "Parents report children lacking trusted adults outside the family.",
+      "mid": "Surey suggests some trusted relationships exist, but data suggests they are limited.",
+      "high": "Survey results show children have trusted adults outside their family for support."
+    },
+    {
+      "question": "JV provides opportunities for my kids to connect with other kids who share similar experiences.",
+      "low": "Parents report few meaningful opportunities for kids to connect with peers who share similar experiences.",
+      "mid": "Data suggests some opportunities exist, but participation or impact is uneven.",
+      "high": "Survey results show kids have regular, meaningful opportunitiesfor peer connection."
+    },
+    {
+      "question": "My children are growing in resilience through our family’s ministry context.",
+      "low": "Parents report children struggle to develop resiliencewithin the ministry context.",
+      "mid": "Survey results show some resilience is forming, but data suggests it remains fragile.",
+      "high": "Parents report children are growing in resiliencethrough ministry life."
+    },
+    {
+      "question": "I see my children thriving in at least some areas of life.",
+      "low": "Parents report limited evidence of thriving, signaling deeper concerns.",
+      "mid": "Data suggests some areas of thriving exist, but growth is uneven.",
+      "high": "Parents report children are thriving in at least some areas of life."
+    },
+    {
+      "question": "My child/children often feel isolated or disconnected.",
+      "low": "Parents report children frequently feel isolated or disconnected, which may impact wellbeing.",
+      "mid": "Parents report periods of isolation occur but are situational.",
+      "high": "Parents report children report rarely feeling isolated and experience healthy connection."
+    },
+    {
+      "question": "I regularly feel my children’s needs are overlooked in ministry life.",
+      "low": "Parents report their children’s needs are regularly overlooked, affecting family wellbeing.",
+      "mid": "Survey suggests some needs are met, but parents report other needs are missed.",
+      "high": "Parents report their children’s needs are seen and addressed."
+    }
+  ]
+}
