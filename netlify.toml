@@ -3,11 +3,7 @@
   publish = "build"
   functions = "netlify/functions"
 
-# SPA catch-all — serve the React app for all routes. With force = false (the
-# default), Netlify matches real files and serverless functions FIRST, so calls
-# to /.netlify/functions/* reach the functions and are not replaced by index.html.
 [[redirects]]
   from = "/*"
   to = "/index.html"
   status = 200
-  force = false
