@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import SURVEY_BASICS from "./surveyBasics.json";
-import { airtablePing, upsertRun, upsertDepartment, loadSelections, saveSelections as atSaveSelections, loadRunSelections, loadAllRuns } from "./airtable";
+import { airtablePing, upsertRun, upsertDepartment, loadSelections, saveSelections as atSaveSelections, loadRunSelections, loadAllRuns, loadRunSurveyData } from "./airtable";
 
 // Map app department keys (HR, LD, LC1/LC2, JVK1/JVK2, ...) to surveyBasics.json keys
 // (which are lowercase and un-split: hr, ld, lc, jvk, ...).
@@ -1237,15 +1237,27 @@ function HomeView({ country, setCountry, year, setYear, fileRef, handleFile,
                     ))}
                   </div>
                   <div style={{ display:"flex", gap:8 }}>
-                    <button style={navBtn} onClick={() => {
+                    <button style={navBtn} onClick={async () => {
                       setCountry2(run.country); setYear2(run.year);
+                      // 1. try local data first (instant, works offline)
+                      let haveData = false;
                       try {
-                        let r = null; try { const _v = localStorage.getItem(`pulse:data:${run.country}:${run.year}`); r = _v ? {value:_v} : null; } catch(e) {}
-                        let s = null; try { const _v = localStorage.getItem(`pulse:sel:${run.country}:${run.year}`); s = _v ? {value:_v} : null; } catch(e) {}
-                        if (r) setSurveyData(JSON.parse(r.value));
-                        if (s) setSelections(JSON.parse(s.value));
-                        setView("review");
+                        const _v = localStorage.getItem(`pulse:data:${run.country}:${run.year}`);
+                        if (_v) { setSurveyData(JSON.parse(_v)); haveData = true; }
+                        const _s = localStorage.getItem(`pulse:sel:${run.country}:${run.year}`);
+                        if (_s) setSelections(JSON.parse(_s));
                       } catch {}
+                      setView("review");
+                      // 2. if no local survey data (e.g. opening on a new device), rebuild from Airtable
+                      if (!haveData) {
+                        try {
+                          const sd = await loadRunSurveyData(run.country, run.year);
+                          if (sd && Object.keys(sd.depts).length) {
+                            setSurveyData(sd);
+                            try { localStorage.setItem(`pulse:data:${run.country}:${run.year}`, JSON.stringify(sd)); } catch {}
+                          }
+                        } catch (e) { console.warn("Airtable surveyData load failed:", e.message); }
+                      }
                     }}>Open</button>
                     {isAdmin && <button style={{ ...navBtn, background:"#C0392B", color:"white" }} onClick={() => {
                       const rc = run.country;
