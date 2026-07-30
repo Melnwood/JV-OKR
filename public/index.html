@@ -1,23 +1,2138 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <link rel="icon" href="%PUBLIC_URL%/favicon.svg" type="image/svg+xml" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="theme-color" content="#0F172A" />
-    <meta name="description" content="JV Pulse Report — Staff Care Survey Platform" />
-    <title>JV Pulse Report</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
-    <style>
-      * { margin: 0; padding: 0; box-sizing: border-box; }
-      body { background: #0F172A; font-family: 'Inter', system-ui, sans-serif; }
-      #root { min-height: 100vh; }
-    </style>
-  </head>
-  <body>
-    <noscript>JavaScript is required to run this app.</noscript>
-    <div id="root"></div>
-  </body>
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>JV OKR</title>
+<link rel="icon" href="icon.svg" type="image/svg+xml"/>
+<link rel="icon" href="favicon-32.png" sizes="32x32"/>
+<link rel="apple-touch-icon" href="apple-touch-icon.png"/>
+<link rel="manifest" href="site.webmanifest"/>
+<meta name="theme-color" content="#FF6600"/>
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    /* ── the ONE thing an organization changes to rebrand ── */
+    --jv:#FF6600;          /* accent — JV orange */
+    --jv-deep:#D95400;     /* accent on white: text, edges, links, the org's own bars */
+    --jv-mid:#E8874A;      /* soft accent */
+    --jv-100:#FFF4ED;      /* faint accent fill (was page banners) */
+    --jv-50:#FFF8F3;       /* palest accent tint */
+    --jv-edge:#F3E1D3;     /* accent border */
+    /* ── neutrals: near-gray, a whisper warm — work with any accent ── */
+    --ink:#1A1A18;--ink-2:#5C5C58;--ink-3:#8E8E88;
+    --paper:#F8F8F6;--card:#FFFFFF;--rule:#E9E9E6;--rule-2:#F2F2EF;
+    /* ── status: muted so they never fight the accent ── */
+    --moss:#3F7D5A;--moss-bg:#EDF4F0;--amber:#95701A;--amber-bg:#F8F2E3;
+    --clay:#A6483C;--clay-bg:#F9ECEA;--indigo:#4F46E5;
+    /* ── depth from shadow, not colour ── */
+    --lift:0 1px 2px rgba(26,26,24,.04),0 1px 3px rgba(26,26,24,.06);
+    --lift-2:0 4px 6px -1px rgba(26,26,24,.05),0 12px 28px -8px rgba(26,26,24,.14);
+    --r:12px}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--paper);color:var(--ink);font-family:'Plus Jakarta Sans',system-ui,sans-serif;font-size:14.5px;line-height:1.55;-webkit-font-smoothing:antialiased;font-variant-numeric:tabular-nums}
+  a{color:var(--jv-deep)}
+  .bar{background:var(--card);border-bottom:1px solid var(--rule);position:sticky;top:0;z-index:20}
+  .bar-in{max-width:1120px;margin:0 auto;padding:0 24px;display:flex;gap:8px;align-items:center;height:58px;flex-wrap:wrap}
+  .logo{font-family:'Plus Jakarta Sans',sans-serif;font-weight:700;font-size:15.5px;letter-spacing:-.015em;margin-right:18px;color:var(--ink);display:flex;align-items:center;gap:9px}
+  .logo img{width:26px;height:26px;border-radius:7px}
+  nav{display:flex;gap:3px;flex-wrap:wrap;flex:1}
+  .nv{background:none;border:0;border-radius:8px;padding:8px 13px;font:inherit;font-size:14px;color:var(--ink-2);cursor:pointer;font-weight:500}
+  .nv[aria-current="true"]{background:var(--rule-2);color:var(--ink);font-weight:600}
+  .nv:hover:not([aria-current="true"]){background:var(--rule-2);color:var(--ink)}
+  .me{display:flex;align-items:center;gap:9px;font-size:13px;color:var(--ink-2)}
+  .gearwrap{position:relative}
+  .nv.gear{font-size:16px;padding:6px 9px}
+  .geardrop{position:absolute;right:0;top:34px;background:#fff;border:1px solid var(--rule);border-radius:10px;
+            box-shadow:0 8px 24px rgba(34,30,27,.14);padding:5px;z-index:40;min-width:130px}
+  .geardrop button{display:block;width:100%;text-align:left;background:none;border:0;border-radius:7px;
+            padding:8px 11px;font:inherit;font-size:13.5px;color:var(--ink);cursor:pointer}
+  .geardrop button:hover{background:var(--jv-50);color:var(--jv-deep)}
+  .lenses{display:flex;gap:4px;background:var(--jv-50);border:1px solid var(--jv-edge);border-radius:10px;
+          padding:4px;margin-bottom:16px;width:fit-content}
+  .lens{background:none;border:0;border-radius:7px;padding:7px 14px;font:inherit;font-size:13px;color:var(--ink-2);cursor:pointer;font-weight:500}
+  .lens.on{background:#fff;color:var(--jv-deep);font-weight:600;box-shadow:0 1px 3px rgba(34,30,27,.08)}
+  .lens:hover:not(.on){color:var(--jv-deep)}
+  .gmodal{position:fixed;inset:0;background:rgba(34,30,27,.5);z-index:100;display:flex;align-items:flex-start;justify-content:center;overflow-y:auto;padding:40px 16px}
+  .gcard{background:var(--card);border-radius:16px;max-width:640px;width:100%;padding:30px 32px;box-shadow:0 20px 60px rgba(34,30,27,.3)}
+  .ghero{border-bottom:1px solid var(--rule);padding-bottom:18px;margin-bottom:20px}
+  .gsub{color:var(--ink-2);font-size:14.5px;margin:8px 0 0;line-height:1.6}
+  .gsec{margin-bottom:22px}
+  .gsec p{font-size:14px;line-height:1.65;margin:6px 0}
+  .gsec ul,.gsec ol{font-size:14px;line-height:1.6;margin:8px 0;padding-left:20px}
+  .gsec li{margin-bottom:6px}
+  .gsec-jv{background:var(--jv-50);border:1px solid var(--jv-edge);border-radius:12px;padding:18px 20px}
+  .gflow{counter-reset:none}
+  .gstep{display:flex;gap:14px;margin:14px 0}
+  .gn{flex:none;width:26px;height:26px;border-radius:50%;background:var(--jv-deep);color:#fff;font-family:'Plus Jakarta Sans',sans-serif;font-weight:700;font-size:14px;display:flex;align-items:center;justify-content:center;margin-top:2px}
+  .gstep h3{font-family:'Plus Jakarta Sans',sans-serif;font-size:15.5px;margin:0 0 2px}
+  .me select{border-color:var(--rule);background:#fff;color:var(--ink)}
+  .me select option{color:var(--ink);background:#fff}
+  select,input,textarea{font-family:'Plus Jakarta Sans',sans-serif;font-size:13.5px;border:1px solid var(--rule);border-radius:8px;padding:8px 9px;background:#fff;color:var(--ink);width:100%}
+  select.sm{width:auto;padding:6px 9px;font-size:13px}
+  .wrap{max-width:1200px;margin:0 auto;padding:22px 20px 80px}
+  h1{font-family:'Plus Jakarta Sans',sans-serif;font-size:25px;margin:0;letter-spacing:-.02em}
+  h2{font-family:'Plus Jakarta Sans',sans-serif;font-size:17px;margin:0 0 2px}
+  h3{font-family:'Plus Jakarta Sans',sans-serif;font-size:15px;margin:0 0 7px}
+  .sub{color:var(--ink-2);font-size:13px;margin:3px 0 16px}
+  .eyebrow{font-family:'Plus Jakarta Sans',sans-serif;font-size:11px;font-weight:700;letter-spacing:.05em;color:var(--ink-3);text-transform:uppercase}
+  .mono{font-family:'Plus Jakarta Sans',sans-serif;font-variant-numeric:tabular-nums;font-size:11.5px;color:var(--ink-2)}
+  .card{background:var(--card);border:1px solid var(--rule);border-radius:var(--r);padding:18px 20px;margin-bottom:14px;box-shadow:var(--lift)}
+  .cap{font-size:12.5px;color:var(--ink-2);margin-bottom:12px}
+  .head{display:flex;justify-content:space-between;gap:16px;align-items:flex-end;flex-wrap:wrap;
+        margin-bottom:22px}
+  .head .sub{margin:5px 0 0;color:var(--ink-2)}
+  .head select{border-color:var(--rule);background:#fff}
+  .head .btn.ghost{border-color:var(--rule);color:var(--ink);background:#fff}
+  .head .btn.ghost:hover{background:var(--rule-2)}
+  .filters{display:flex;gap:7px;flex-wrap:wrap}
+  .two{display:grid;grid-template-columns:1.4fr 1fr;gap:14px;align-items:start}
+  .side{display:grid;grid-template-columns:300px 1fr;gap:14px;align-items:start}
+  @media(max-width:900px){.two,.side{grid-template-columns:1fr}}
+
+  .tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:18px}
+  .tile{background:var(--card);border:1px solid var(--rule);border-left:3px solid var(--rule);border-radius:var(--r);padding:13px 15px;text-align:left;cursor:pointer;font:inherit;color:inherit;box-shadow:var(--lift)}
+  .tile:hover{box-shadow:var(--lift-2);border-color:#DEDEDA}
+  .tile[aria-pressed="true"]{background:var(--ink);color:#fff}
+  .tile[aria-pressed="true"] .l{color:#A9B6C2}
+  .tile .v{font-family:'Plus Jakarta Sans',sans-serif;font-weight:700;font-size:25px;line-height:1}
+  .tile .l{font-size:10.5px;text-transform:uppercase;letter-spacing:.08em;color:var(--ink-2);margin-top:5px}
+  .b-ok{border-left-color:var(--moss)}.b-risk{border-left-color:var(--amber)}
+  .b-off{border-left-color:var(--clay)}.b-ind{border-left-color:var(--indigo)}
+
+  .prog{height:7px;border-radius:4px;background:#EDE7E1;overflow:hidden;margin-top:6px}
+  .prog span{display:block;height:100%;border-radius:4px}
+  .pill{font-family:'Plus Jakarta Sans',sans-serif;font-size:11px;font-weight:600;padding:4px 10px;border-radius:7px;white-space:nowrap;letter-spacing:0;text-transform:none}
+  .p-on{background:var(--moss-bg);color:var(--moss)}.p-risk{background:var(--amber-bg);color:var(--amber)}
+  .p-off{background:var(--clay-bg);color:var(--clay)}.p-none{background:#EDE8E3;color:var(--ink-2)}
+  .p-stale{background:#E8E8F1;color:var(--indigo)}
+
+  .btn{background:var(--ink);color:#fff;border:0;border-radius:9px;padding:10px 15px;font:inherit;font-size:13.5px;font-weight:600;cursor:pointer;box-shadow:var(--lift)}
+  .btn:disabled{opacity:.45;cursor:not-allowed}
+  .btn.ghost{background:var(--card);color:var(--ink);border:1px solid var(--rule);font-weight:600}
+  .btn.jv{background:var(--jv);color:#fff}
+  .btn.dash{background:none;color:var(--ink-2);border:1px dashed var(--rule);font-weight:500}
+  .btn.accent{background:var(--jv);color:#fff;border:0}
+  .btn.wide{width:100%}
+  .row{display:flex;justify-content:space-between;gap:12px;align-items:center;padding:10px 0;border-bottom:1px dashed var(--rule)}
+  .row:last-child{border-bottom:0}
+  .why{font-size:12px;color:var(--ink-2);margin-top:2px}
+  .field{margin-bottom:9px}
+  .field label{display:block;font-weight:600;font-size:13px;margin-bottom:4px}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .grid3{display:grid;grid-template-columns:1fr 130px 150px;gap:6px}
+  @media(max-width:560px){.grid3,.grid2{grid-template-columns:1fr}}
+
+  /* cascade */
+  .kr5{background:var(--card);border:1px solid var(--rule);border-radius:var(--r);padding:13px 16px;margin-bottom:6px}
+  .cascade{margin-left:18px;border-left:2px solid var(--rule-2);padding:5px 0}
+  .child{position:relative;background:var(--card);border:1px solid var(--rule);border-radius:10px;margin:0 0 8px 16px;padding:12px 14px;cursor:pointer;box-shadow:var(--lift)}
+  .child:hover{border-color:var(--ink-2)}
+  .child::before{content:"";position:absolute;left:-16px;top:20px;width:16px;height:2px;background:var(--rule-2)}
+  .scope{font-family:'Plus Jakarta Sans',sans-serif;font-size:10.5px;font-weight:600;padding:2px 7px;border-radius:5px;background:var(--rule-2);color:var(--ink-3);margin-right:7px;letter-spacing:.03em;text-transform:uppercase}
+
+  /* map */
+  .canvas{overflow:auto;background:var(--card);border:1px solid var(--rule);border-radius:var(--r);padding:16px;cursor:grab}
+  .canvas.drag{cursor:grabbing}
+  .link{fill:none;stroke:#D8CEC4;stroke-width:1.6}
+  .link.lit{stroke:var(--jv-deep);stroke-width:2.4}
+  .node rect{fill:#fff;stroke:var(--rule);stroke-width:1.2;rx:9}
+  .node.lit rect{stroke:var(--jv-deep);stroke-width:2}
+  .node.dim{opacity:.25}
+  .node{cursor:pointer}
+  .n-title{font-size:12.5px;font-weight:600;fill:var(--ink)}
+  .n-meta{font-size:10.5px;fill:var(--ink-2);font-family:'Plus Jakarta Sans',sans-serif;font-variant-numeric:tabular-nums}
+  .n-lvl{font-size:9px;fill:var(--ink-2);font-family:'Plus Jakarta Sans',sans-serif;font-variant-numeric:tabular-nums;letter-spacing:.09em}
+  .root rect{fill:var(--jv);stroke:var(--jv)}
+  .root .n-title{fill:#fff}.root .n-meta,.root .n-lvl{fill:rgba(255,255,255,.82)}
+  .node.root.lit rect{stroke:#B84A00;stroke-width:2.5}
+  .colhead{font-family:'Plus Jakarta Sans',sans-serif;font-variant-numeric:tabular-nums;font-size:10px;fill:var(--ink-2);letter-spacing:.1em}
+
+  /* tasks */
+  .task{display:flex;align-items:flex-start;gap:9px;padding:8px 0;border-bottom:1px dashed var(--rule)}
+  .ktasks{margin:8px 0 4px 4px;padding-left:12px;border-left:2px solid var(--rule-2)}
+  .task input[type=checkbox]{width:17px;height:17px;margin-top:3px;accent-color:var(--moss);flex:none}
+  .task .t{flex:1;font-size:13.5px}
+  .task.done .t{text-decoration:line-through;color:var(--ink-2)}
+  .task .m{font-family:'Plus Jakarta Sans',sans-serif;font-variant-numeric:tabular-nums;font-size:11px;color:var(--ink-2);white-space:nowrap}
+  .task.late .m{color:var(--clay)}
+
+  /* checkin */
+  .slider{display:flex;align-items:center;gap:12px;margin-top:6px}
+  input[type=range]{flex:1;accent-color:var(--indigo);padding:0}
+  .num{font-family:'Plus Jakarta Sans',sans-serif;font-weight:700;font-size:20px;min-width:96px;text-align:right}
+  .delta{font-family:'Plus Jakarta Sans',sans-serif;font-variant-numeric:tabular-nums;font-size:11px;min-height:15px;color:var(--ink-2)}
+  .confs{display:flex;gap:7px;flex-wrap:wrap}
+  .conf{border:1px solid var(--rule);background:none;border-radius:999px;padding:7px 13px;font:inherit;font-size:13px;cursor:pointer}
+  .conf[aria-pressed="true"]{color:#fff}
+  .conf.on[aria-pressed="true"]{background:var(--moss);border-color:var(--moss)}
+  .conf.risk[aria-pressed="true"]{background:var(--amber);border-color:var(--amber)}
+  .conf.off[aria-pressed="true"]{background:var(--clay);border-color:var(--clay)}
+  .hint{font-size:12px;color:var(--ink-2);margin-top:6px}
+
+  /* ripple */
+  .rung{opacity:.15;transform:translateY(6px);transition:.5s;margin-bottom:13px}
+  .rung.show{opacity:1;transform:none}
+  .jvbox{border:1px solid var(--rule);border-left:3px solid var(--indigo);border-radius:10px;padding:12px 14px;background:#FAFBFC}
+  .headline{font-family:'Plus Jakarta Sans',sans-serif;font-size:21px;font-weight:700;margin:2px 0 10px;opacity:0;transition:.6s}
+  .headline.show{opacity:1}
+
+  /* reviews */
+  .gate{background:var(--jv-50);border:1px dashed var(--jv-mid);border-radius:10px;padding:13px 15px;margin-bottom:12px;font-size:13px}
+  .roster{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+  .p{font-family:'Plus Jakarta Sans',sans-serif;font-variant-numeric:tabular-nums;font-size:11.5px;padding:3px 8px;border-radius:999px;background:#E5E9ED;color:var(--ink-2)}
+  .p.in{background:#E4EEE7;color:var(--moss)}
+  .scale{display:flex;gap:4px}
+  .sc{flex:1;border:1px solid var(--rule);background:none;border-radius:6px;padding:8px 0;font-family:'Plus Jakarta Sans',sans-serif;font-variant-numeric:tabular-nums;font-size:12px;cursor:pointer}
+  .sc[aria-pressed="true"]{background:var(--indigo);color:#fff;border-color:var(--indigo)}
+  .spread{display:flex;gap:3px;align-items:flex-end;height:46px;margin:8px 0 4px}
+  .spread div{flex:1;background:#E3DCD4;border-radius:2px 2px 0 0}
+  .spread div.hit{background:var(--indigo)}
+  .ans{border-left:2px solid var(--rule);padding:6px 0 6px 11px;margin-bottom:9px}
+  .ans .who{font-family:'Plus Jakarta Sans',sans-serif;font-variant-numeric:tabular-nums;font-size:11.5px;font-weight:600;color:var(--ink-2)}
+  .ans p{margin:2px 0 0;font-size:13.5px}
+
+  /* decisions */
+  .dec{border-left:3px solid var(--indigo);background:var(--jv-50);border-radius:0 10px 10px 0;padding:11px 13px;margin-bottom:10px}
+  .dec.Stopped{border-left-color:var(--clay);background:#FBF3F2}
+  .dec[class*="Held"]{border-left-color:var(--moss);background:#F3F8F4}
+  .dec .what{font-weight:600;margin:4px 0 3px}
+  .dec .why2{font-size:13.5px;color:#39454F}
+  .shift{font-family:'Plus Jakarta Sans',sans-serif;font-variant-numeric:tabular-nums;font-size:12.5px;margin:3px 0}
+  .strike{text-decoration:line-through;color:#A9B3BC}
+
+  /* coaching */
+  .qi{padding:10px 11px;border-radius:9px;cursor:pointer;margin-bottom:3px}
+  .qi:hover{background:#F7F4F1}
+  .qi[aria-current="true"]{background:var(--ink);color:#fff}
+  .qi[aria-current="true"] .why,.qi[aria-current="true"] .mono{color:#A9B6C2}
+  .note{border-left:2px solid var(--indigo);padding:9px 0 9px 12px;margin-bottom:13px}
+  .note.shared{border-left-color:var(--moss)}
+  .lock{font-family:'Plus Jakarta Sans',sans-serif;font-variant-numeric:tabular-nums;font-size:9.5px;padding:2px 7px;border-radius:4px;background:#EAE7F0;color:var(--indigo);text-transform:uppercase}
+  .lock.sh{background:#E1EDE4;color:var(--moss)}
+  .next{margin-top:7px;font-size:12.5px;background:#F4F1EC;border-radius:6px;padding:7px 9px}
+  .att{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+  .file{display:flex;align-items:center;gap:6px;border:1px solid var(--rule);border-radius:7px;padding:5px 9px;font-size:12px;background:#FCFAF8}
+  .toggle{display:flex;align-items:center;gap:9px;background:#F7F4F1;border:1px solid var(--rule);border-radius:8px;padding:9px 11px;margin-bottom:8px;font-size:13px}
+  .sw{width:40px;height:22px;border-radius:999px;background:#D3CAC1;position:relative;cursor:pointer;flex:none;transition:.15s}
+  .sw::after{content:"";position:absolute;top:2px;left:2px;width:18px;height:18px;border-radius:50%;background:#fff;transition:.15s}
+  .sw[aria-checked="true"]{background:var(--moss)}
+  .sw[aria-checked="true"]::after{left:20px}
+  .drop{border:1.5px dashed var(--rule);border-radius:10px;padding:14px;text-align:center;color:var(--ink-2);font-size:13px;cursor:pointer;background:#FCFAF8}
+  .drop:hover,.drop.over{border-color:var(--jv-mid);background:var(--jv-50);color:var(--jv-deep)}
+  .drop b{display:block;color:var(--ink);font-size:13.5px;margin-bottom:2px}
+  .lib{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:10px}
+  .res{border:1px solid var(--rule);border-radius:10px;padding:12px}
+  .seen{font-family:'Plus Jakarta Sans',sans-serif;font-variant-numeric:tabular-nums;font-size:10.5px;color:var(--moss)}
+  .unseen{font-family:'Plus Jakarta Sans',sans-serif;font-variant-numeric:tabular-nums;font-size:10.5px;color:var(--clay)}
+  .report{background:#FCFAF8;border:1px dashed var(--rule);border-radius:8px;padding:14px;font-size:13px;white-space:pre-wrap;max-height:360px;overflow:auto}
+
+  .toast{position:fixed;left:50%;bottom:22px;transform:translate(-50%,20px);background:var(--ink);color:#fff;padding:11px 16px;border-radius:10px;font-size:13.5px;opacity:0;transition:.2s;z-index:50;box-shadow:0 8px 24px rgba(0,0,0,.18)}
+  .toast.on{opacity:1;transform:translate(-50%,0)}
+  .toast.err{background:var(--clay)}
+  .loading{padding:60px 0;text-align:center;color:var(--ink-2)}
+  .empty{color:var(--ink-2);font-size:13px;font-style:italic}
+  .hidden{display:none}
+</style>
+</head>
+<body>
+<div class="bar" id="bar" style="display:none"><div class="bar-in">
+  <span class="logo"><img src="icon.svg" alt=""/>JV OKR</span>
+  <nav id="nav"></nav>
+  <div class="me" id="whobox"></div>
+</div></div>
+
+<div class="wrap"><div id="view" class="loading">Loading…</div></div>
+<div class="toast" id="toast"></div>
+
+<script>
+/* ============================ API ============================ */
+const API = "/.netlify/functions/airtable";
+const T = {people:"People", cycles:"Cycles", units:"Org Units", objectives:"Objectives", krs:"Key Results", tasks:"Tasks",
+           checkins:"Check-ins", reviews:"Reviews", responses:"Review Responses", decisions:"Decisions",
+           notes:"Coaching Notes", resources:"Resources", shares:"Resource Shares"};
+const FIELD_IDS = { notesFiles:"fldzqeq0lTRD5r5SR", resourceFile:"fld87BX3WN94SPYqY" };
+
+let ID_TOKEN = null;
+
+const authHeaders = (extra={}) => ({ ...extra, ...(ID_TOKEN ? {Authorization:`Bearer ${ID_TOKEN}`} : {}) });
+
+const get = async t => {
+  let r, j;
+  try { r = await fetch(`${API}?table=${encodeURIComponent(t)}`, {headers: authHeaders()}); }
+  catch(e){ throw new Error(`Network error reaching the function (${t}): ${e.message}`); }
+  const text = await r.text();
+  try { j = JSON.parse(text); }
+  catch(e){ throw new Error(`The function didn't return JSON for "${t}" (HTTP ${r.status}). Is it deployed at ${API}? First bytes: ${text.slice(0,80)}`); }
+  if (r.status === 401 || r.status === 403) throw Object.assign(new Error(j.error||"Not allowed"), {auth:true});
+  if (!r.ok || j.error) throw new Error(`"${t}" — ${j.error || "HTTP "+r.status}`);
+  if (!j.records) throw new Error(`"${t}" returned no records array. Check the table name matches the base exactly.`);
+  return j;
+};
+const post  = (t,records) => fetch(`${API}?table=${encodeURIComponent(t)}`,{method:"POST",headers:authHeaders({"Content-Type":"application/json"}),body:JSON.stringify({records})}).then(j=>j.json());
+const patch = (t,records) => fetch(`${API}?table=${encodeURIComponent(t)}`,{method:"PATCH",headers:authHeaders({"Content-Type":"application/json"}),body:JSON.stringify({records})}).then(j=>j.json());
+const del = async (t, ids) => {
+  const r = await fetch(`${API}?table=${encodeURIComponent(t)}&ids=${ids.join(",")}`, {method:"DELETE", headers: authHeaders()});
+  const j = await r.json();
+  if (!r.ok || j.error) throw new Error(j.error || "delete failed");
+  return j;
+};
+const upload = (recordId, fieldId, file) => new Promise((res,rej)=>{
+  const fr = new FileReader();
+  fr.onload = async () => {
+    const b64 = fr.result.split(",")[1];
+    const r = await fetch(`${API}?action=upload`,{method:"POST",headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({recordId, fieldId, filename:file.name, contentType:file.type||"application/octet-stream", base64:b64})});
+    r.ok ? res(await r.json()) : rej(await r.json());
+  };
+  fr.onerror = rej;
+  fr.readAsDataURL(file);
+});
+
+/* ============================ STATE ============================ */
+const DB = {};
+let ME = null, VIEW = "objective", TOAST_T;
+const TODAY = new Date(); TODAY.setHours(0,0,0,0);
+const STALE = 21;
+
+const f  = (r,k) => r.fields[k];
+const lnk = (r,k) => f(r,k) || [];
+const one = (r,k) => (f(r,k)||[])[0];
+const rec = (t,id) => DB[t].find(x=>x.id===id);
+const nm  = (t,id) => { const r = rec(t,id); return r ? (f(r,"Name") || f(r,"Title") || "") : ""; };
+const days = d => d ? Math.round((TODAY - new Date(d)) / 864e5) : null;
+const fmt = d => d ? new Date(d).toLocaleDateString("en-GB",{day:"numeric",month:"short"}) : "";
+const iso = d => new Date(d).toISOString().slice(0,10);
+const esc = s => String(s??"").replace(/[&<>"]/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const CONF = {"On track":["p-on","var(--moss)"], "At risk":["p-risk","var(--amber)"], "Off track":["p-off","var(--clay)"], "Not started":["p-none","#B6BEC6"]};
+const cls = c => (CONF[c]||CONF["Not started"])[0];
+const col = c => (CONF[c]||CONF["Not started"])[1];
+const pct = v => Math.max(0, Math.min(100, Math.round((v||0)*100)));
+
+function toast(msg, err){
+  const t = document.getElementById("toast");
+  t.textContent = msg; t.className = "toast on" + (err?" err":"");
+  clearTimeout(TOAST_T); TOAST_T = setTimeout(()=>t.className="toast", 2600);
+}
+
+async function load(){
+  const [people,cycles,units,objectives,krs,tasks,checkins,reviews,responses,decisions,notes,resources,shares] =
+    await Promise.all(Object.values(T).map(get));
+  Object.assign(DB, {people:people.records, cycles:cycles.records, units:units.records, objectives:objectives.records,
+    krs:krs.records, tasks:tasks.records, checkins:checkins.records, reviews:reviews.records,
+    responses:responses.records, decisions:decisions.records, notes:notes.records,
+    resources:resources.records, shares:shares.records});
+  ME = DB.people.find(p=>p.id===AUTH.id) || null;
+  drawChrome(); render();
+}
+async function reload(t){ const j = await get(T[t]); DB[t] = j.records; }
+
+/* who the signed-in person is, per the server. The browser never decides this. */
+let AUTH = null;
+const COACH_ROLES = ["OKR Director","Executive"];
+const LEADER_ROLES = ["Country leader","Division leader",...COACH_ROLES];
+const iAmCoach  = () => AUTH && COACH_ROLES.includes(AUTH.role);
+const iAmLeader = () => AUTH && LEADER_ROLES.includes(AUTH.role);
+
+/* ============================ ORG UNITS ============================ */
+// Countries and Divisions sit at the top. Departments and Teams hang under either.
+const unitOf   = r => { const u = one(r,"Org Unit"); return u ? rec("units", u) : null; };
+const areaName = r => { const u = unitOf(r); return u ? f(u,"Name") : (f(r,"Area") || ""); };
+const unitParent   = u => { const p = one(u,"Parent unit"); return p ? rec("units", p) : null; };
+// A unit with no name is an empty Airtable row, not part of JV. Never show it.
+const namedUnits   = () => DB.units.filter(u=>String(f(u,"Name")||"").trim());
+const unitChildren = id => namedUnits().filter(u=>lnk(u,"Parent unit").includes(id));
+const unitRoots    = () => namedUnits().filter(u=>!one(u,"Parent unit"));
+const unitPath     = u => { const out=[]; let c=u; while(c){ out.unshift(c); c = unitParent(c); } return out; };
+const unitCrumb    = u => unitPath(u).map(x=>f(x,"Name")).join(" › ");
+// Everything at or beneath a unit — a country's number includes its departments and teams.
+const unitTree = id => { const out=[id]; unitChildren(id).forEach(c=>out.push(...unitTree(c.id))); return out; };
+const unitObjectives = id => live(DB.objectives.filter(o=>f(o,"Scope")!=="JV 5-year" && unitTree(id).includes(one(o,"Org Unit"))));
+const unitPeople = id => DB.people.filter(p=>unitTree(id).includes(one(p,"Org Unit")));
+const UNIT_ORDER = {Country:0, Division:1, Department:2, Team:3};
+const unitsSorted = list => [...list].filter(u=>String(f(u,"Name")||"").trim()).sort((a,b)=>
+  (UNIT_ORDER[f(a,"Type")]??9)-(UNIT_ORDER[f(b,"Type")]??9) || String(f(a,"Name")).localeCompare(String(f(b,"Name"))));
+
+/* ============================ DERIVED ============================ */
+const ARCHIVED = o => ["Closed","Abandoned"].includes(f(o,"Status"));
+let showArchived = false;
+const live = list => showArchived ? list : list.filter(o=>!ARCHIVED(o));
+const jvObjectives = () => DB.objectives.filter(o=>f(o,"Scope")==="JV 5-year");
+const jvKrs = () => DB.krs.filter(k=>{ const o = one(k,"Objective"); return o && f(rec("objectives",o)||{fields:{}},"Scope")==="JV 5-year"; });
+const childObjectives = krId => live(DB.objectives.filter(o=>lnk(o,"Parent Key Result").includes(krId)));
+const KR_ARCHIVED = k => f(k,"Archived")===true;
+const objKrs    = objId => DB.krs.filter(k=>lnk(k,"Objective").includes(objId) && !KR_ARCHIVED(k));
+const objKrsAll = objId => DB.krs.filter(k=>lnk(k,"Objective").includes(objId));
+const krTasks = krId => DB.tasks.filter(t=>lnk(t,"Key Result").includes(krId));
+const objTasks = objId => objKrs(objId).flatMap(k=>krTasks(k.id));
+const objCheckins = objId => DB.checkins.filter(c=>lnk(c,"Objective").includes(objId)).sort((a,b)=>new Date(f(b,"Date"))-new Date(f(a,"Date")));
+const staleDays = o => f(o,"Days since check-in") ?? 999;
+const isStale = o => staleDays(o) > STALE;
+const isLate = t => f(t,"Status")==="Open" && f(t,"Due date") && new Date(f(t,"Due date")) < TODAY;
+const ownedBy = pid => live(DB.objectives.filter(o=>lnk(o,"Owner").includes(pid) && f(o,"Scope")!=="JV 5-year"));
+const objProgress = o => f(o,"Progress") ?? 0;
+const ladderKr = o => { const p = one(o,"Parent Key Result"); return p ? rec("krs",p) : null; };
+/* Not everything ladders. Three honest states, and the app says which. */
+const ALIGN = {LADDER:"Ladders to a JV key result", SUPPORT:"Supports JV — no single key result", ALONE:"Standalone / operational"};
+const alignOf = o => f(o,"Alignment") || (one(o,"Parent Key Result") ? ALIGN.LADDER : ALIGN.ALONE);
+const isLaddered = o => alignOf(o)===ALIGN.LADDER && !!one(o,"Parent Key Result");
+const supportsJv = o => alignOf(o)===ALIGN.SUPPORT;
+const unlanded  = () => live(DB.objectives.filter(o=>f(o,"Scope")!=="JV 5-year" && !isLaddered(o)));
+const alignPill = o => isLaddered(o) ? "" :
+  supportsJv(o) ? `<span class="pill p-risk">supports JV</span>` : `<span class="pill p-none">standalone</span>`;
+const alignLine = o => {
+  const k = ladderKr(o);
+  if(isLaddered(o) && k) return `↑ ${esc(f(k,"Title"))}`;
+  if(supportsJv(o)){ const j = one(o,"Supports JV objective"); return `≈ supports ${esc(j?nm("objectives",j):"JV 2030")} — not measured into a key result`; }
+  return `— standalone: this doesn't roll up, and that's allowed`;
+};
+
+/* ============================ CHROME ============================ */
+// Four working lines. Check-in and Reviews fold into the objective + surface in My work.
+// Dashboard, Alignment map and Browse JV merge into one "JV 2030" page with three lenses.
+// Org and Archive live in a quiet settings corner.
+const NAV = [["objective","Objectives"],["mine","My work"],["jv","JV 2030"],["coaching","Coaching"]];
+const GEAR = [["org","Org"],["archive","Archive"]];
+function drawChrome(){
+  const nav = NAV.filter(([k]) => k!=="coaching" || iAmCoach());
+  document.getElementById("nav").innerHTML = nav.map(([k,l])=>
+    `<button class="nv" data-v="${k}" aria-current="${VIEW===k||(k==='jv'&&['dashboard','map','browse'].includes(VIEW))}">${l}</button>`).join("");
+  document.querySelectorAll(".nv").forEach(b=>b.onclick=()=>{VIEW=b.dataset.v; drawChrome(); render(); scrollTo(0,0);});
+  const gear = iAmLeader()
+    ? `<div class="gearwrap">
+         <button class="nv gear" id="gearbtn" title="Setup" aria-current="${GEAR.some(([k])=>k===VIEW)}">⚙</button>
+         <div class="geardrop hidden" id="geardrop">
+           ${GEAR.map(([k,l])=>`<button data-v="${k}">${l}</button>`).join("")}
+         </div>
+       </div>` : "";
+  document.getElementById("whobox").innerHTML =
+    `${gear}<button class="nv" id="helpbtn" title="How this works" style="font-size:15px;padding:6px 10px">?</button>
+     <span>${esc(AUTH.name)} · ${esc(AUTH.role)}</span>
+     <button class="btn ghost" id="signout" style="padding:5px 9px;font-size:12px">Sign out</button>`;
+  document.getElementById("helpbtn").onclick = openGuide;
+  const gb = document.getElementById("gearbtn");
+  if(gb){
+    gb.onclick = e=>{ e.stopPropagation(); document.getElementById("geardrop").classList.toggle("hidden"); };
+    document.querySelectorAll("#geardrop button").forEach(b=>b.onclick=()=>{VIEW=b.dataset.v; drawChrome(); render(); scrollTo(0,0);});
+    document.addEventListener("click", ()=>document.getElementById("geardrop")?.classList.add("hidden"), {once:true});
+  }
+  document.getElementById("signout").onclick = signOut;
+}
+const V = {};
+function render(){ document.getElementById("view").className=""; (V[VIEW]||V.objective)(); }
+
+/* ============================ THE GUIDE ============================ */
+// Opens from the "?" in the top bar. Auto-opens once per person (remembered locally).
+// Coaches (Mike, Mel) get the coaching + director sections; everyone gets the rest.
+function openGuide(){
+  const coach = iAmCoach(), leader = iAmLeader();
+  const step = (n,h,b) => `<div class="gstep"><div class="gn">${n}</div><div><h3>${h}</h3>${b}</div></div>`;
+  const body = `
+    <div class="ghero">
+      <div class="eyebrow">JV OKR</div>
+      <h1 style="margin:4px 0 0">How this works</h1>
+      <p class="gsub">Everything JV is working toward, laddered up to the 2030 vision — and honest about the work that stands on its own. Here's the shape of it.</p>
+    </div>
+
+    <div class="gsec">
+      <div class="eyebrow">THE IDEA IN ONE BREATH</div>
+      <p>At the top sits <b>JV 2030</b> and its three key results. Countries, divisions and teams take one of those key results and make it their own objective, with their own measurable results underneath. Some work ladders up like that. Some work just <i>supports</i> the direction, and some is operational and stands alone — and the system says so plainly rather than forcing a fake link.</p>
+    </div>
+
+    <div class="gsec">
+      <div class="eyebrow">THE FOUR PLACES YOU'LL LIVE</div>
+      ${step("1","Objectives — where the work actually happens",
+        `<p>This is the main surface, and where the app opens. Pick any objective and you see its key results, the tasks under them, the decision log, and every past check-in. Two buttons matter most here:</p>
+         <ul><li><b>Check in</b> — the orange button. Slide each key result to where it is now, tick off tasks, say what moved and whether you're still confident. Two minutes. This is the heartbeat of the whole thing.</li>
+         <li><b>Review</b> — start or open a midterm or retrospective for that objective.</li></ul>`)}
+      ${step("2","My work — what needs you today",
+        `<p>Your to-do list, built automatically: objectives that have gone quiet, overdue tasks, and open reviews where your answer isn't in yet. Each line is clickable — it takes you straight to the thing that needs doing.</p>`)}
+      ${step("3","JV 2030 — the big picture, three ways",
+        `<p>One page, three lenses you switch between:</p>
+         <ul><li><b>By key result</b> — the cascade: what ladders to what.</li>
+         <li><b>By org</b> — walk down through countries, divisions, departments and teams.</li>
+         <li><b>Map</b> — hover any objective to trace its line all the way up to 2030.</li></ul>
+         <p>Everyone can see all of JV here, read-only. It's for looking around.</p>`)}
+      ${coach ? step("4","Coaching — yours and Mel's",
+        `<p>Your notebook and library, and the one place the two of you share. Notes are <b>private by default</b> — a leader only sees a note if you tick "Shared with leader." Everything else stays between you and Mel. Upload files to the library and share them with specific people; you can see who's opened what, and the ones nobody opened are the conversation to have.</p>`)
+      : step("4","Coaching",
+        `<p>Mike (as OKR Director) and Mel keep coaching notes here. You won't see this tab — it's theirs.</p>`)}
+    </div>
+
+    ${leader ? `<div class="gsec">
+      <div class="eyebrow">BECAUSE YOU LEAD</div>
+      <p>You can create and edit objectives and key results, and record decisions. When a target changes, <b>record it as a decision</b> — that keeps the original number and the reason attached, so a year from now nobody's asking "why is this only 60%?" The ⚙ menu (top right) holds <b>Org</b> (build out countries, divisions, teams) and <b>Archive</b> (finished work, kept but out of the way).</p>
+    </div>` : ""}
+
+    ${coach ? `<div class="gsec gsec-jv">
+      <div class="eyebrow">MIKE — YOUR FIRST WEEK</div>
+      <ol class="gflow">
+        <li><b>Set up the org.</b> ⚙ → Org. Add the countries and divisions first, then departments and teams inside them. Nothing else has anywhere to live until this exists.</li>
+        <li><b>Set people's roles.</b> In Airtable's People table: country and division leaders need <i>Role</i> set, and a <i>Coaching cadence</i> (e.g. 21 days) or your coaching queue stays empty.</li>
+        <li><b>Seed one real objective</b> with a country leader — laddered to a JV key result — so the pattern is visible for everyone else to copy.</li>
+        <li><b>Pilot small.</b> One country plus you, one trimester. Watch whether people actually check in and whether the midterm produces a real conversation. Fix that before rolling out sixteen countries.</li>
+      </ol>
+    </div>` : ""}
+
+    <div class="gsec">
+      <div class="eyebrow">THE ONE RULE WORTH KNOWING</div>
+      <p>A target that moves should always carry its reason. That's why check-ins and decisions can't be deleted — they're the record of what actually happened. Everything else bends; that part doesn't.</p>
+    </div>
+
+    <button class="btn jv wide" id="gclose">Got it — let's go</button>`;
+
+  const wrap = document.createElement("div");
+  wrap.className = "gmodal";
+  wrap.innerHTML = `<div class="gcard">${body}</div>`;
+  wrap.onclick = e => { if(e.target===wrap) wrap.remove(); };
+  document.body.appendChild(wrap);
+  document.getElementById("gclose").onclick = ()=>wrap.remove();
+  try{ localStorage.setItem("jvokr.guideSeen","1"); }catch(e){}
+}
+function maybeGuide(){
+  let seen=null; try{ seen=localStorage.getItem("jvokr.guideSeen"); }catch(e){}
+  if(!seen) openGuide();
+}
+
+/* ============================ JV 2030 (three lenses) ============================ */
+let jvLens = "dashboard";   // dashboard = cascade · map = alignment · browse = by org
+V.jv = () => {
+  // keep the current lens if the user clicked straight to a sub-view
+  if(["dashboard","map","browse"].includes(VIEW)){ jvLens = VIEW; VIEW = "jv"; }
+  const lensBar = `
+    <div class="lenses">
+      ${[["dashboard","By key result","the cascade — who ladders to what"],
+         ["browse","By org","countries, divisions, teams"],
+         ["map","Map","trace any objective up to JV 2030"]]
+        .map(([k,l,tip])=>`<button class="lens ${jvLens===k?"on":""}" data-lens="${k}" title="${tip}">${l}</button>`).join("")}
+    </div>`;
+  // each lens view renders into #view; we prepend the switcher after it draws
+  (LENS[jvLens] || LENS.dashboard)();
+  const host = document.getElementById("view");
+  host.insertAdjacentHTML("afterbegin", lensBar);
+  document.querySelectorAll("[data-lens]").forEach(b=>b.onclick=()=>{ jvLens=b.dataset.lens; render(); scrollTo(0,0); });
+};
+const LENS = {};
+
+/* ============================ DASHBOARD ============================ */
+let dFilter = null, dCycle = "", dArea = "";
+LENS.dashboard = () => {
+  const areas = [...new Set(DB.objectives.filter(o=>areaName(o)).map(o=>areaName(o)))].sort();
+  const base = live(DB.objectives.filter(o=>f(o,"Scope")!=="JV 5-year"
+    && (!dCycle || lnk(o,"Cycle").includes(dCycle))
+    && (!dArea  || areaName(o)===dArea)));
+  const show = base.filter(o => !dFilter || (dFilter==="stale" ? isStale(o) : f(o,"Confidence")===dFilter));
+  const late = base.flatMap(o=>objTasks(o.id)).filter(isLate).length;
+
+  const tile = (k,v,l,c) => `<button class="tile ${c}" data-k="${k}" aria-pressed="${dFilter===k}"><div class="v">${v}</div><div class="l">${l}</div></button>`;
+
+  const lanes = jvObjectives().map(j=>{
+    const krs = objKrs(j.id);
+    return `<div style="margin-bottom:24px">
+      <div style="display:flex;gap:9px;align-items:baseline;margin-bottom:7px">
+        <span class="eyebrow">JV 5-YEAR</span><h2>${esc(f(j,"Title"))}</h2></div>
+      ${krs.map(k=>{
+        const kids = show.filter(o=>lnk(o,"Parent Key Result").includes(k.id));
+        const p = pct(f(k,"Progress"));
+        const tgt = f(k,"Target value")??0, com = f(k,"Commit"), str = f(k,"Stretch");
+        const band = (com!=null && str!=null && str>0);
+        return `<div class="kr5">
+            <div style="display:flex;justify-content:space-between;gap:12px;align-items:center">
+              <strong>${esc(f(k,"Title"))}</strong>
+              <span class="mono">${f(k,"Current value")??0} / ${tgt} ${esc(f(k,"Unit")||"")} · ${p}%</span>
+            </div>
+            <div class="prog" style="position:relative;overflow:visible">
+              <span style="width:${p}%;background:var(--jv-deep);position:relative;z-index:1"></span>
+              ${band?`
+                <span title="Commit ${com}" style="position:absolute;left:${Math.min(100,com/str*100)}%;top:-3px;width:2px;height:13px;background:#A8B2BC;border-radius:1px"></span>
+                <span title="Target ${tgt}" style="position:absolute;left:${Math.min(100,tgt/str*100)}%;top:-4px;width:2px;height:15px;background:var(--jv);border-radius:1px"></span>`:""}
+            </div>
+            ${band?`<div class="mono" style="margin-top:5px">commit ${com} · <b style="color:var(--jv)">target ${tgt}</b> · stretch ${str}</div>`:""}
+          </div>
+          <div class="cascade">${kids.length ? kids.map(card).join("")
+            : `<div class="child" style="cursor:default"><span class="empty">Nothing laddering here in this view.</span></div>`}</div>`;
+      }).join("") || `<div class="empty" style="margin-bottom:10px">No key results on this JV objective yet.</div>`}
+    </div>`;}).join("");
+
+  document.getElementById("view").innerHTML = `
+    <div class="head">
+      <div><h1>Dashboard</h1><div class="sub">Every objective, laddered to the JV five-year key result it serves.</div></div>
+      <div class="filters">
+        <select class="sm" id="dc"><option value="">All cycles</option>${DB.cycles.filter(c=>f(c,"Type")!=="5-year").map(c=>`<option value="${c.id}" ${dCycle===c.id?"selected":""}>${esc(f(c,"Name"))}</option>`).join("")}</select>
+        <select class="sm" id="da"><option value="">All areas</option>${areas.map(a=>`<option ${dArea===a?"selected":""}>${esc(a)}</option>`).join("")}</select>
+      </div>
+    </div>
+    <div class="tiles">
+      ${tile("On track", base.filter(o=>f(o,"Confidence")==="On track").length, "On track", "b-ok")}
+      ${tile("At risk",  base.filter(o=>f(o,"Confidence")==="At risk").length,  "At risk",  "b-risk")}
+      ${tile("Off track",base.filter(o=>f(o,"Confidence")==="Off track").length,"Off track","b-off")}
+      ${tile("stale",    base.filter(isStale).length, `No check-in ${STALE}d+`, "b-ind")}
+      <div class="tile b-off"><div class="v">${late}</div><div class="l">Overdue tasks</div></div>
+      <div class="tile"><div class="v">${base.filter(o=>!isLaddered(o)).length}</div><div class="l">Doesn't ladder</div></div>
+    </div>
+    ${lanes || `<div class="card empty">No JV five-year objectives yet.</div>`}
+    ${(()=> {
+      const rest = show.filter(o=>!isLaddered(o));
+      if(!rest.length) return "";
+      const sup = rest.filter(supportsJv), alone = rest.filter(o=>!supportsJv(o));
+      const group = (list, title, note) => list.length ? `
+        <div style="margin-bottom:18px">
+          <div style="display:flex;gap:9px;align-items:baseline;margin-bottom:4px">
+            <span class="eyebrow">${title}</span></div>
+          <div class="cap" style="margin-bottom:8px">${note}</div>
+          ${list.map(o=>card(o,true)).join("")}
+        </div>` : "";
+      return `<div style="margin-top:26px;border-top:2px solid var(--rule);padding-top:20px">
+        <h2 style="font-size:19px;margin-bottom:2px">Work that doesn't ladder</h2>
+        <div class="cap">Real work, deliberately not rolled into a JV key result. Kept visible on purpose — an OKR system that hides it teaches people to fake the link.</div>
+        ${group(sup, "SUPPORTS JV 2030", "Pointed in the direction of JV 2030, but not measured into any single key result.")}
+        ${group(alone, "STANDALONE / OPERATIONAL", "Stands on its own. Keeping the lights on is not a failure to align.")}
+      </div>`;
+    })()}`;
+
+  document.getElementById("dc").onchange = e=>{dCycle=e.target.value; render();};
+  document.getElementById("da").onchange = e=>{dArea=e.target.value; render();};
+  document.querySelectorAll(".tile[data-k]").forEach(b=>b.onclick=()=>{
+    dFilter = dFilter===b.dataset.k ? null : b.dataset.k; render();});
+  document.querySelectorAll(".child[data-o]").forEach(c=>c.onclick=()=>openObjective(c.dataset.o));
+};
+function card(o, loose){
+  const p = pct(objProgress(o)), c = f(o,"Confidence")||"Not started";
+  return `<div class="child" data-o="${o.id}" style="${ARCHIVED(o)?"opacity:.62;":""}${loose?"margin-left:0;":""}">
+    <div style="display:flex;justify-content:space-between;gap:10px;align-items:center">
+      <div><span class="scope">${esc(areaName(o)||f(o,"Scope")||"")}</span><strong>${esc(f(o,"Title"))}</strong></div>
+      <div style="display:flex;gap:5px;align-items:center">${alignPill(o)}
+      ${ARCHIVED(o)?`<span class="pill p-none">${esc(f(o,"Status"))}</span>`:`<span class="pill ${cls(c)}">${c}</span>`}</div>
+    </div>
+    <div class="prog"><span style="width:${p}%;background:${col(c)}"></span></div>
+    <div class="mono" style="margin-top:5px">${esc(nm("people",one(o,"Owner"))||"unowned")} · ${esc(nm("cycles",one(o,"Cycle")))} · ${p}%
+      ${isStale(o)?` · <span style="color:var(--indigo)">◆ ${staleDays(o)}d silent</span>`:""}</div>
+  </div>`;
+}
+function openObjective(id){ selObj = id; VIEW="objective"; drawChrome(); render(); scrollTo(0,0); }
+
+/* ============================ ALIGNMENT MAP ============================ */
+let mArea = "", collapsed = new Set();
+LENS.map = () => {
+  const LV = ["JV OBJECTIVE","JV KEY RESULT","COUNTRY / DIVISION OBJECTIVE","THEIR KEY RESULT","TASKS"];
+  const N = [];
+  jvObjectives().forEach(j=>{
+    N.push({id:j.id, lvl:0, title:f(j,"Title"), meta:"five-year"});
+    objKrs(j.id).forEach(k=>{
+      N.push({id:k.id, lvl:1, p:j.id, title:f(k,"Title"), meta:`${f(k,"Current value")??0} / ${f(k,"Target value")??0} · ${pct(f(k,"Progress"))}%`});
+      childObjectives(k.id).filter(o=>!mArea || areaName(o)===mArea).forEach(o=>{
+        N.push({id:o.id, lvl:2, p:k.id, area:areaName(o), conf:f(o,"Confidence"),
+                title:f(o,"Title"), meta:`${nm("people",one(o,"Owner"))} · ${pct(objProgress(o))}%`});
+        objKrs(o.id).forEach(k2=>{
+          N.push({id:k2.id, lvl:3, p:o.id, area:areaName(o), conf:f(k2,"Confidence"),
+                  title:f(k2,"Title"), meta:`${pct(f(k2,"Progress"))}%`});
+          const ts = krTasks(k2.id);
+          if(ts.length) N.push({id:"T"+k2.id, lvl:4, p:k2.id, area:areaName(o),
+            title:`${ts.length} task${ts.length>1?"s":""}`,
+            meta:`${ts.filter(t=>f(t,"Status")==="Done").length} done · ${ts.filter(isLate).length} late`});
+        });
+      });
+    });
+  });
+  // work that doesn't ladder still belongs on the map — as its own lane, honestly labelled
+  const loose = unlanded().filter(o=>!mArea || areaName(o)===mArea);
+  if(loose.length){
+    N.push({id:"LOOSE", lvl:1, title:"Doesn't ladder to a key result", meta:`${loose.length} objective${loose.length===1?"":"s"}`});
+    loose.forEach(o=>{
+      N.push({id:o.id, lvl:2, p:"LOOSE", area:areaName(o), conf:f(o,"Confidence"),
+              title:f(o,"Title"), meta:`${supportsJv(o)?"supports JV":"standalone"} · ${pct(objProgress(o))}%`});
+      objKrs(o.id).forEach(k2=>{
+        N.push({id:k2.id, lvl:3, p:o.id, area:areaName(o), conf:f(k2,"Confidence"),
+                title:f(k2,"Title"), meta:`${pct(f(k2,"Progress"))}%`});
+      });
+    });
+  }
+  const areas = [...new Set(DB.objectives.filter(o=>areaName(o) && f(o,"Scope")!=="JV 5-year").map(o=>areaName(o)))].sort();
+  document.getElementById("view").innerHTML = `
+    <div class="head">
+      <div><h1>Alignment map</h1><div class="sub">Hover any box to trace its line up to JV 2030. Work that doesn't ladder sits in its own lane — visible, not hidden.</div></div>
+      <div class="filters">
+        <select class="sm" id="ma"><option value="">All areas</option>${areas.map(a=>`<option ${mArea===a?"selected":""}>${esc(a)}</option>`).join("")}</select>
+        <button class="btn ghost" id="mx">${collapsed.size?"Expand all":"Collapse all"}</button>
+      </div>
+    </div>
+    <div class="canvas" id="cv"><svg id="svg"></svg></div>`;
+  document.getElementById("ma").onchange = e=>{mArea=e.target.value; render();};
+  document.getElementById("mx").onclick = ()=>{
+    if(collapsed.size) collapsed.clear(); else N.filter(n=>n.lvl>=1&&n.lvl<=3).forEach(n=>collapsed.add(n.id));
+    render();};
+  drawMap(N, LV);
+};
+function drawMap(N, LV){
+  const byId = i=>N.find(n=>n.id===i), kids = i=>N.filter(n=>n.p===i);
+  const hidden = n => { let p=n.p; while(p){ if(collapsed.has(p)) return true; p=byId(p)?.p; } return false; };
+  const act = N.filter(n=>!hidden(n));
+  const W=250,H=68,GX=94,GY=15,PT=38,PL=8;
+  const pos = {}; let cur = PT;
+  const place = n => {
+    const ch = kids(n.id).filter(c=>act.includes(c));
+    if(!ch.length || collapsed.has(n.id)){ pos[n.id]={x:PL+n.lvl*(W+GX), y:cur}; cur += H+GY; return pos[n.id].y; }
+    const ys = ch.map(place); const y=(ys[0]+ys[ys.length-1])/2;
+    pos[n.id]={x:PL+n.lvl*(W+GX), y}; return y;
+  };
+  act.filter(n=>n.lvl===0).forEach(n=>{ place(n); cur+=22; });
+  if(!act.length){ document.getElementById("cv").innerHTML = `<div class="empty">Nothing to map yet.</div>`; return; }
+  const maxY = Math.max(...Object.values(pos).map(p=>p.y))+H+30, maxX = PL+5*(W+GX);
+  const heads = LV.map((l,i)=>`<text class="colhead" x="${PL+i*(W+GX)}" y="18">${l}</text>`).join("");
+  const links = act.filter(n=>n.p&&pos[n.p]).map(n=>{
+    const a=pos[n.p], b=pos[n.id], x1=a.x+W, y1=a.y+H/2, x2=b.x, y2=b.y+H/2, m=(x1+x2)/2;
+    return `<path class="link" data-f="${n.p}" data-t="${n.id}" marker-end="url(#ar)" d="M${x1},${y1} C${m},${y1} ${m},${y2} ${x2-7},${y2}"/>`;}).join("");
+  const nodes = act.map(n=>{
+    const p=pos[n.id], ch=kids(n.id), c=collapsed.has(n.id);
+    const acc = n.conf ? `<rect x="${p.x}" y="${p.y+10}" width="3.5" height="${H-20}" rx="2" fill="${col(n.conf)}"/>`:"";
+    const tg = ch.length ? `<g class="tog" data-id="${n.id}"><circle cx="${p.x+W}" cy="${p.y+H/2}" r="9" fill="#fff" stroke="${'#D6DCE2'}"/>
+        <text x="${p.x+W}" y="${p.y+H/2+4}" text-anchor="middle" class="n-meta" style="pointer-events:none">${c?"+":"–"}</text></g>`:"";
+    const t = s => s && s.length>32 ? s.slice(0,31)+"…" : (s||"");
+    return `<g class="node ${n.lvl===0?"root":""}" data-id="${n.id}">
+      <rect x="${p.x}" y="${p.y}" width="${W}" height="${H}"/>${acc}
+      <text class="n-lvl" x="${p.x+13}" y="${p.y+17}">${esc((n.area||LV[n.lvl].split(" ")[0]).toUpperCase())}</text>
+      <text class="n-title" x="${p.x+13}" y="${p.y+37}">${esc(t(n.title))}</text>
+      <text class="n-meta" x="${p.x+13}" y="${p.y+56}">${esc(t(n.meta||""))}</text></g>${tg}`;}).join("");
+  const svg = document.getElementById("svg");
+  svg.setAttribute("width",maxX); svg.setAttribute("height",maxY); svg.setAttribute("viewBox",`0 0 ${maxX} ${maxY}`);
+  svg.innerHTML = `<defs><marker id="ar" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L8,4 L0,8 z" fill="#B8AB9E"/></marker></defs>${heads}${links}${nodes}`;
+  svg.querySelectorAll(".tog").forEach(t=>t.onclick=e=>{e.stopPropagation();
+    const i=t.dataset.id; collapsed.has(i)?collapsed.delete(i):collapsed.add(i); render();});
+  svg.querySelectorAll(".node").forEach(g=>{
+    g.onmouseenter = ()=>{
+      const chain=[]; let c=byId(g.dataset.id);
+      while(c){ chain.push(c.id); c = c.p?byId(c.p):null; }
+      svg.querySelectorAll(".node").forEach(n=>{
+        n.classList.toggle("lit", chain.includes(n.dataset.id));
+        n.classList.toggle("dim", !chain.includes(n.dataset.id));});
+      svg.querySelectorAll(".link").forEach(l=>l.classList.toggle("lit", chain.includes(l.dataset.f)&&chain.includes(l.dataset.t)));
+    };
+    g.onmouseleave = ()=>{ svg.querySelectorAll(".node").forEach(n=>n.classList.remove("lit","dim"));
+                           svg.querySelectorAll(".link").forEach(l=>l.classList.remove("lit")); };
+    g.onclick = ()=>{ const n=byId(g.dataset.id); if(n.lvl===2) openObjective(n.id); };
+  });
+  const cv=document.getElementById("cv"); let dn=false,sx,sy,sl,st;
+  cv.onmousedown=e=>{ if(e.target.closest(".node,.tog"))return; dn=true; cv.classList.add("drag"); sx=e.pageX;sy=e.pageY;sl=cv.scrollLeft;st=cv.scrollTop; };
+  window.onmouseup=()=>{dn=false;cv.classList.remove("drag");};
+  window.onmousemove=e=>{ if(!dn)return; cv.scrollLeft=sl-(e.pageX-sx); cv.scrollTop=st-(e.pageY-sy); };
+}
+
+/* ============================ BROWSE JV (read-only) ============================ */
+// A real tree: Countries and Divisions at the top, Departments and Teams beneath.
+let bUnit = null, bType = "", bQuery = "";
+
+LENS.browse = () => {
+  const el = document.getElementById("view");
+
+  if(!bUnit){
+    const q = bQuery.toLowerCase();
+    const match = u => !q || String(f(u,"Name")).toLowerCase().includes(q)
+      || unitObjectives(u.id).some(o=>String(f(o,"Title")||"").toLowerCase().includes(q));
+    const roots = unitsSorted(unitRoots().filter(u=>(!bType || f(u,"Type")===bType)));
+    const shown = roots.filter(u => match(u) || unitTree(u.id).some(id=>{const c=rec("units",id); return c && match(c);}));
+
+    el.innerHTML = `
+      <div class="head">
+        <div><h1>Browse JV</h1>
+          <div class="sub">Every country, division, department and team. Look around all you like — nothing here can be changed.</div></div>
+        <div class="filters">
+          <select class="sm" id="bt"><option value="">Countries &amp; divisions</option>
+            <option ${bType==="Country"?"selected":""}>Country</option>
+            <option ${bType==="Division"?"selected":""}>Division</option></select>
+          <input class="sm" id="bq" placeholder="Search units or objectives…" value="${esc(bQuery)}" style="width:230px"/>
+        </div>
+      </div>
+      ${["Country","Division"].filter(t=>!bType||t===bType).map(t=>{
+        const gs = shown.filter(u=>f(u,"Type")===t);
+        if(!gs.length) return "";
+        return `<div style="margin-bottom:20px">
+          <div class="eyebrow" style="margin-bottom:8px">${t==="Country"?"COUNTRIES":"DIVISIONS"}</div>
+          <div class="lib">${gs.map(unitCard).join("")}</div>
+        </div>`;}).join("") || `<div class="card empty">No org units yet. A leader can add them under <b>Org</b>.</div>`}`;
+
+    document.getElementById("bt").onchange = e=>{bType=e.target.value; render();};
+    const qb = document.getElementById("bq");
+    qb.oninput = e=>{ bQuery=e.target.value; render();
+      const n=document.getElementById("bq"); n.focus(); n.setSelectionRange(n.value.length,n.value.length); };
+    document.querySelectorAll("[data-unit]").forEach(c=>c.onclick=()=>{bUnit=c.dataset.unit; render(); scrollTo(0,0);});
+    return;
+  }
+
+  /* --- one unit, read-only, with its children --- */
+  const U = rec("units", bUnit);
+  if(!U){ bUnit=null; return render(); }
+  const kids = unitsSorted(unitChildren(U.id));
+  const own = live(DB.objectives.filter(o=>one(o,"Org Unit")===U.id));   // this unit's own objectives
+  const all = unitObjectives(U.id);                                       // including everything beneath
+  const people = DB.people.filter(p=>one(p,"Org Unit")===U.id);
+  const avg = all.length ? Math.round(all.reduce((a,o)=>a+objProgress(o),0)/all.length*100) : 0;
+  const parent = unitParent(U);
+
+  el.innerHTML = `
+    <div class="head">
+      <div>
+        <div class="eyebrow">${esc(unitCrumb(U))}</div>
+        <h1>${esc(f(U,"Name"))}</h1>
+        <div class="sub">${esc(f(U,"Type")||"")} · ${all.length} objective${all.length===1?"":"s"} across this unit and everything under it · ${avg}% average · read-only</div>
+      </div>
+      <div class="filters">
+        ${parent?`<button class="btn ghost" data-up="${parent.id}">↑ ${esc(f(parent,"Name"))}</button>`:""}
+        <button class="btn ghost" id="bback">← All of JV</button>
+      </div>
+    </div>
+
+    ${kids.length?`<div class="card">
+      <h2>Inside ${esc(f(U,"Name"))}</h2>
+      <div class="cap">Departments and teams. Click to go down a level.</div>
+      <div class="lib">${kids.map(unitCard).join("")}</div>
+    </div>`:""}
+
+    ${people.length?`<div class="card"><h2>Who's here</h2>
+      <div class="roster" style="margin-top:8px">${people.map(p=>`<span class="p">${esc(f(p,"Name"))}${f(p,"Role")?` · ${esc(f(p,"Role"))}`:""}</span>`).join("")}</div>
+    </div>`:""}
+
+    ${own.length ? own.map(objCardRO).join("")
+      : `<div class="card empty">${esc(f(U,"Name"))} hasn't written any objectives of its own${kids.length?" — look inside the units above":""}.</div>`}`;
+
+  document.getElementById("bback").onclick = ()=>{bUnit=null; render(); scrollTo(0,0);};
+  document.querySelectorAll("[data-up]").forEach(b=>b.onclick=()=>{bUnit=b.dataset.up; render(); scrollTo(0,0);});
+  document.querySelectorAll("[data-unit]").forEach(c=>c.onclick=()=>{bUnit=c.dataset.unit; render(); scrollTo(0,0);});
+};
+
+function unitCard(u){
+  const objs = unitObjectives(u.id);
+  const avg = objs.length ? Math.round(objs.reduce((a,o)=>a+objProgress(o),0)/objs.length*100) : 0;
+  const mix = ["On track","At risk","Off track"].map(c=>objs.filter(o=>f(o,"Confidence")===c).length);
+  const quiet = objs.filter(isStale).length;
+  const kids = unitChildren(u.id);
+  return `<div class="res" style="cursor:pointer" data-unit="${u.id}">
+    <span class="mono">${esc(f(u,"Type")||"")}</span>
+    <div style="font-family:'Plus Jakarta Sans',sans-serif;font-weight:700;font-size:16px;margin-top:5px">${esc(f(u,"Name"))}</div>
+    <div class="mono">${objs.length} objective${objs.length===1?"":"s"}${kids.length?` · ${kids.length} unit${kids.length===1?"":"s"} inside`:""}${unitPeople(u.id).length?` · ${unitPeople(u.id).length} people`:""}</div>
+    <div class="prog" style="margin-top:9px"><span style="width:${avg}%;background:var(--jv-deep)"></span></div>
+    <div class="mono" style="margin-top:5px">${avg}% average</div>
+    <div style="display:flex;gap:5px;margin-top:8px;flex-wrap:wrap">
+      ${mix[0]?`<span class="pill p-on">${mix[0]} on</span>`:""}
+      ${mix[1]?`<span class="pill p-risk">${mix[1]} risk</span>`:""}
+      ${mix[2]?`<span class="pill p-off">${mix[2]} off</span>`:""}
+      ${quiet?`<span class="pill p-stale">${quiet} quiet</span>`:""}
+      ${!objs.length?`<span class="pill p-none">nothing written</span>`:""}
+    </div>
+  </div>`;
+}
+
+function objCardRO(o){
+  const krs = objKrs(o.id), c = f(o,"Confidence")||"Not started", p = pct(objProgress(o));
+  const k = ladderKr(o), decs = DB.decisions.filter(d=>lnk(d,"Objective").includes(o.id));
+  const last = objCheckins(o.id)[0];
+  return `<div class="card">
+    <div class="eyebrow">${alignLine(o)}</div>
+    <div style="display:flex;justify-content:space-between;gap:12px;align-items:baseline;margin-top:4px">
+      <h2>${esc(f(o,"Title"))}</h2><span class="pill ${cls(c)}">${c}</span>
+    </div>
+    <div class="mono">${esc(nm("people",one(o,"Owner"))||"unowned")} · ${esc(nm("cycles",one(o,"Cycle")))} · ${p}%
+      ${isStale(o)?` · <span style="color:var(--indigo)">◆ ${staleDays(o)}d since a check-in</span>`:""}</div>
+    <div class="prog"><span style="width:${p}%;background:${col(c)}"></span></div>
+    ${krs.length ? `<div style="margin-top:12px">${krs.map(kr=>{
+      const kp = pct(f(kr,"Progress")), kc = f(kr,"Confidence")||"Not started";
+      const ts = krTasks(kr.id), done = ts.filter(t=>f(t,"Status")==="Done").length;
+      return `<div style="padding:9px 0;border-top:1px dashed var(--rule)">
+        <div style="display:flex;justify-content:space-between;gap:10px">
+          <span style="font-weight:600;font-size:13.5px">${esc(f(kr,"Title"))}</span>
+          <span class="mono">${f(kr,"Current value")??0} / ${f(kr,"Target value")??0}${esc(f(kr,"Unit")||"")} · ${kp}%</span>
+        </div>
+        <div class="prog"><span style="width:${kp}%;background:${col(kc)}"></span></div>
+        ${ts.length?`<div class="mono" style="margin-top:5px">${done} of ${ts.length} tasks done${ts.filter(isLate).length?` · ${ts.filter(isLate).length} overdue`:""}</div>`:""}
+        ${f(kr,"Target changed")?`<div class="mono" style="color:var(--indigo);margin-top:4px">◆ ${esc(f(kr,"Target changed"))}</div>`:""}
+      </div>`;}).join("")}</div>` : `<div class="empty" style="margin-top:10px">No key results yet.</div>`}
+    ${last?`<div class="next" style="margin-top:12px"><span class="mono">Last check-in ${fmt(f(last,"Date"))} · ${esc(nm("people",one(last,"Person")))}</span>
+      <div style="margin-top:3px">${esc(f(last,"What moved")||"")}</div></div>`:""}
+    ${decs.length?`<div style="margin-top:12px">
+      <div class="eyebrow" style="margin-bottom:6px">Decisions on this objective</div>
+      ${decs.map(d=>`<div class="mono" style="margin-bottom:4px">◆ ${esc(f(d,"Decision"))} — ${esc((f(d,"Why")||"").slice(0,90))}${(f(d,"Why")||"").length>90?"…":""}</div>`).join("")}
+    </div>`:""}
+  </div>`;
+}
+
+/* ============================ ORG (leaders only) ============================ */
+V.org = () => {
+  const el = document.getElementById("view");
+  const rows = u => {
+    const kids = unitsSorted(unitChildren(u.id));
+    return `<div class="row" style="padding-left:${(unitPath(u).length-1)*22}px">
+        <div><strong>${esc(f(u,"Name"))}</strong>
+          <div class="mono">${esc(f(u,"Type")||"")}${one(u,"Leader")?` · led by ${esc(nm("people",one(u,"Leader")))}`:""} · ${unitObjectives(u.id).length} objectives</div></div>
+        <button class="btn dash" style="font-size:11.5px;padding:4px 8px" data-addchild="${u.id}">+ inside</button>
+      </div>${kids.map(rows).join("")}`;
+  };
+  el.innerHTML = `
+    <div class="head"><div><h1>Org</h1>
+      <div class="sub">Countries, divisions, departments and teams. A department can sit under a country or a division; a team under either, or under a department.</div></div></div>
+    <div class="two">
+      <div class="card">
+        <h2>The tree</h2><div class="cap">Everything JV is made of.</div>
+        ${unitsSorted(unitRoots()).map(rows).join("") || `<div class="empty">Nothing yet. Add your first country or division →</div>`}
+      </div>
+      <div class="card">
+        <h2>Add a unit</h2>
+        <div class="field"><label>Name</label><input id="uN" placeholder="Poland / Staff Care / Youth Ministry"/></div>
+        <div class="field"><label>Type</label>
+          <select id="uT">${["Country","Division","Department","Team"].map(t=>`<option>${t}</option>`).join("")}</select></div>
+        <div class="field"><label>Inside which unit?</label>
+          <select id="uP"><option value="">— top level (a country or division) —</option>
+            ${unitsSorted(DB.units).map(u=>`<option value="${u.id}">${esc(unitCrumb(u))}</option>`).join("")}</select></div>
+        <div class="field"><label>Leader</label>
+          <select id="uL"><option value="">— nobody yet —</option>
+            ${DB.people.map(p=>`<option value="${p.id}">${esc(f(p,"Name"))}</option>`).join("")}</select></div>
+        <button class="btn wide" id="uGo">Add unit</button>
+      </div>
+    </div>`;
+  const add = async (parentId)=>{
+    const name = document.getElementById("uN").value.trim();
+    if(!name) return toast("Give it a name", true);
+    await post(T.units, [{fields:{Name:name, Type:document.getElementById("uT").value, Active:true,
+      ...(parentId?{"Parent unit":[parentId]}:{}),
+      ...(document.getElementById("uL").value?{Leader:[document.getElementById("uL").value]}:{})}}]);
+    await reload("units"); toast("Unit added"); render();
+  };
+  document.getElementById("uGo").onclick = ()=>add(document.getElementById("uP").value);
+  document.querySelectorAll("[data-addchild]").forEach(b=>b.onclick=()=>{
+    document.getElementById("uP").value = b.dataset.addchild;
+    document.getElementById("uN").focus();
+    toast(`New unit will sit inside ${nm("units", b.dataset.addchild)}`);
+  });
+};
+
+/* ============================ MY WORK (leader view) ============================ */
+let leaderId = null;
+V.mine = () => {
+  const L = rec("people", leaderId) || ME;
+  const mine = ownedBy(L.id);
+  const late = mine.flatMap(o=>objTasks(o.id)).filter(isLate).length;
+  const avg = mine.length ? Math.round(mine.reduce((s,o)=>s+objProgress(o),0)/mine.length*100) : 0;
+  const fresh = mine.length ? Math.round(mine.filter(o=>staleDays(o)<=7).length/mine.length*100) : 0;
+
+  const needs = [];
+  mine.forEach(o=>{
+    const t = objTasks(o.id), lt = t.filter(isLate).length;
+    if(f(o,"Confidence")==="Off track") needs.push({p:0,c:"p-off",tag:"Off track",t:f(o,"Title"),o:o.id,go:"objective",
+      w:"Declared off track. Needs a decision, not a nudge."});
+    if(isStale(o)) needs.push({p:1,c:"p-stale",tag:`${staleDays(o)}d silent`,t:f(o,"Title"),o:o.id,go:"checkin",
+      w:"No check-in logged — you can't tell if it's stuck or just quiet. Check in →"});
+    if(f(o,"Confidence")==="At risk" && !t.filter(x=>f(x,"Status")==="Open").length)
+      needs.push({p:1,c:"p-risk",tag:"At risk, no tasks",t:f(o,"Title"),o:o.id,go:"objective",w:"At risk with nothing planned against it."});
+    if(lt) needs.push({p:2,c:"p-off",tag:`${lt} overdue`,t:f(o,"Title"),o:o.id,go:"objective",w:`${lt} task${lt>1?"s":""} past due.`});
+  });
+  // open reviews where this person hasn't answered yet
+  DB.reviews.filter(r=>f(r,"Status")!=="Closed").forEach(r=>{
+    const oid = one(r,"Objective");
+    if(!mine.some(o=>o.id===oid) && !teamFor(oid).some(p=>p.id===L.id)) return;
+    const answered = DB.responses.some(x=>lnk(x,"Review").includes(r.id) && lnk(x,"Person").includes(L.id));
+    if(!answered) needs.push({p:0,c:"p-risk",tag:f(r,"Type")||"Review",t:nm("objectives",oid),rev:r.id,go:"review",
+      w:`${f(r,"Type")||"A review"} is open and your answer isn't in yet. The team can't see anyone's until everyone's in.`});
+  });
+  needs.sort((a,b)=>a.p-b.p);
+
+  const feed = DB.checkins.filter(c=>mine.some(o=>lnk(c,"Objective").includes(o.id)))
+    .sort((a,b)=>new Date(f(b,"Date"))-new Date(f(a,"Date"))).slice(0,8);
+
+  document.getElementById("view").innerHTML = `
+    <div class="head">
+      <div><h1>My work</h1><div class="sub">${esc(f(L,"Name"))} · ${esc(f(L,"Role")||"")} · everything you lead, one page.</div></div>
+      <select class="sm" id="lw">${DB.people.map(p=>`<option value="${p.id}" ${p.id===L.id?"selected":""}>${esc(f(p,"Name"))}</option>`).join("")}</select>
+    </div>
+    <div class="tiles">
+      <div class="tile b-ok"><div class="v">${mine.filter(o=>f(o,"Confidence")==="On track").length}</div><div class="l">On track</div></div>
+      <div class="tile b-risk"><div class="v">${mine.filter(o=>f(o,"Confidence")==="At risk").length}</div><div class="l">At risk</div></div>
+      <div class="tile b-off"><div class="v">${mine.filter(o=>f(o,"Confidence")==="Off track").length}</div><div class="l">Off track</div></div>
+      <div class="tile b-ind"><div class="v">${fresh}%</div><div class="l">Checked in this week</div></div>
+      <div class="tile"><div class="v">${avg}%</div><div class="l">Average progress</div></div>
+      <div class="tile b-off"><div class="v">${late}</div><div class="l">Overdue tasks</div></div>
+    </div>
+    <div class="card">
+      <h2>Needs you this week</h2>
+      <div class="cap">Ranked by what's actually blocked, not by what's loudest.</div>
+      ${needs.length ? needs.map(n=>`<div class="row" style="cursor:pointer" data-need="${n.go}" data-no="${n.o||''}" data-nr="${n.rev||''}"><div><strong>${esc(n.t)}</strong><div class="why">${esc(n.w)}</div></div>
+        <span class="pill ${n.c}">${n.tag}</span></div>`).join("")
+        : `<div class="empty">Nothing flagged. Everything's checked in and moving.</div>`}
+    </div>
+    <div class="two">
+      <div class="card">
+        <h2>Your objectives</h2><div class="cap">And where each one lands up at JV.</div>
+        ${mine.length ? mine.map(o=>{
+          const p = pct(objProgress(o)), c=f(o,"Confidence")||"Not started", k=ladderKr(o);
+          const t=objTasks(o.id);
+          return `<div class="row" style="cursor:pointer" data-o="${o.id}">
+            <div><strong>${esc(f(o,"Title"))}</strong>
+              <div class="mono">${alignLine(o)}</div>
+              <div class="prog" style="width:200px"><span style="width:${p}%;background:${col(c)}"></span></div></div>
+            <div style="text-align:right">
+              <span class="pill ${cls(c)}">${c}</span>
+              <div class="mono" style="margin-top:4px;color:${isStale(o)?"var(--clay)":"var(--ink-2)"}">${staleDays(o)===999?"never":staleDays(o)+"d"} · ${t.filter(x=>f(x,"Status")==="Open").length} open</div>
+            </div></div>`;}).join("")
+          : `<div class="empty">No objectives yet. That's the conversation to have.</div>`}
+      </div>
+      <div class="card">
+        <h2>Recent movement</h2><div class="cap">Every check-in under you.</div>
+        ${feed.length ? feed.map(c=>`<div style="border-left:2px solid var(--rule);padding:4px 0 4px 11px;margin-bottom:11px">
+            <div class="mono">${fmt(f(c,"Date"))} · ${esc(nm("people",one(c,"Person")))}</div>
+            <div style="font-size:13.5px">${esc(f(c,"What moved")||"")}</div></div>`).join("")
+          : `<div class="empty">Nothing logged yet.</div>`}
+      </div>
+    </div>`;
+  document.getElementById("lw").onchange = e=>{leaderId=e.target.value; render();};
+  document.querySelectorAll("[data-o]").forEach(r=>r.onclick=()=>openObjective(r.dataset.o));
+  document.querySelectorAll("[data-need]").forEach(r=>r.onclick=()=>{
+    const go=r.dataset.need, oid=r.dataset.no, rid=r.dataset.nr;
+    if(go==="checkin"){ ciObj=oid; ciVals={}; selObj=oid; VIEW="checkin"; }
+    else if(go==="review"){ revId=rid||null; VIEW="reviews"; }
+    else { selObj=oid; VIEW="objective"; }
+    drawChrome(); render(); scrollTo(0,0);
+  });
+};
+
+/* ============================ CHECK-IN WORKSPACE ============================ */
+let ciObj = null, ciVals = {}, ciConf = "On track";
+V.checkin = () => {
+  const mine = DB.objectives.filter(o=>f(o,"Scope")!=="JV 5-year");
+  if(!ciObj) ciObj = (ownedBy(ME.id)[0] || mine[0])?.id;
+  const o = rec("objectives", ciObj);
+  if(!o){ document.getElementById("view").innerHTML = `<div class="card empty">No objectives to check in on yet.</div>`; return; }
+  const krs = objKrs(o.id);
+  krs.forEach(k=>{ if(ciVals[k.id]===undefined) ciVals[k.id] = f(k,"Current value") ?? 0; });
+  const last = objCheckins(o.id)[0];
+
+  document.getElementById("view").innerHTML = `
+    <div class="head">
+      <div><h1>Check in</h1><div class="sub">${esc(f(o,"Title"))} · takes about two minutes.</div></div>
+      <div class="filters">
+        <select class="sm" id="cio">${mine.map(x=>`<option value="${x.id}" ${x.id===ciObj?"selected":""}>${esc(areaName(x)||"")} — ${esc(f(x,"Title"))}</option>`).join("")}</select>
+        <button class="btn ghost" onclick="selObj='${ciObj}';VIEW='objective';drawChrome();render();scrollTo(0,0)">← Back to objective</button>
+      </div>
+    </div>
+    <div style="max-width:680px">
+    ${krs.map(k=>{
+      const prev = f(k,"Current value") ?? 0, tgt = f(k,"Target value") ?? 100, unit = f(k,"Unit")||"";
+      const ts = krTasks(k.id);
+      return `<div class="card">
+        <strong>${esc(f(k,"Title"))}</strong>
+        <div class="slider">
+          <input type="range" min="0" max="${tgt}" step="${tgt<=20?1:tgt/100}" value="${ciVals[k.id]}" data-kr="${k.id}"/>
+          <div class="num"><span id="n-${k.id}">${ciVals[k.id]}</span><span style="font-size:13px;color:var(--ink-2)"> / ${tgt}${esc(unit)}</span></div>
+        </div>
+        <div class="delta" id="d-${k.id}">was ${prev}${esc(unit)} last check-in</div>
+
+        <div style="border-top:1px solid var(--rule);margin-top:11px;padding-top:10px">
+          <div class="eyebrow" style="margin-bottom:6px">Tasks under this key result</div>
+          ${ts.length ? ts.map(t=>`<div class="task ${f(t,"Status")==="Done"?"done":""} ${isLate(t)?"late":""}">
+              <input type="checkbox" data-task="${t.id}" ${f(t,"Status")==="Done"?"checked":""}/>
+              <span class="t">${esc(f(t,"Title"))}</span>
+              <span class="m">${esc((nm("people",one(t,"Owner"))||"").split(" ")[0])} · ${f(t,"Status")==="Done"?"done":fmt(f(t,"Due date"))||"no date"}</span>
+              <span class="m" data-tdel="${t.id}" style="cursor:pointer;padding:0 2px" title="Delete task">✕</span>
+            </div>`).join("") : `<div class="empty">No tasks yet.</div>`}
+          <div class="grid3" style="margin-top:9px">
+            <input type="text" id="nt-${k.id}" placeholder="Add a task…"/>
+            <input type="date" id="nd-${k.id}"/>
+            <select id="nw-${k.id}">${DB.people.map(p=>`<option value="${p.id}" ${p.id===ME.id?"selected":""}>${esc(f(p,"Name"))}</option>`).join("")}</select>
+          </div>
+          <button class="btn dash wide" style="margin-top:6px" data-add="${k.id}">+ Add task</button>
+        </div>
+      </div>`;}).join("") || `<div class="card empty">This objective has no key results yet.</div>`}
+
+    <div class="card">
+      <div class="field"><label>What moved this week?</label><textarea rows="3" id="ciMoved" placeholder="…"></textarea></div>
+      <div class="field"><label>Anything in the way?</label><textarea rows="2" id="ciBlock"></textarea></div>
+      <div class="field"><label>Honestly — how's it going?</label>
+        <div class="confs">${["On track","At risk","Off track"].map(c=>
+          `<button class="conf ${c==="On track"?"on":c==="At risk"?"risk":"off"}" data-c="${c}" aria-pressed="${ciConf===c}">${c}</button>`).join("")}</div>
+        <div class="hint">"At risk" is not a failure. It's the most useful thing you can tell your leader.</div>
+      </div>
+      ${last?`<div class="mono">Last check-in ${fmt(f(last,"Date"))} by ${esc(nm("people",one(last,"Person")))}</div>`:""}
+    </div>
+    <button class="btn wide" id="ciSend">Log check-in</button>
+    </div>
+    <div id="ripple" class="hidden" style="max-width:680px"></div>`;
+
+  document.getElementById("cio").onchange = e=>{ciObj=e.target.value; ciVals={}; render();};
+  document.querySelectorAll("input[data-kr]").forEach(s=>s.oninput=()=>{
+    const k = rec("krs", s.dataset.kr), v = +s.value, prev = f(k,"Current value")??0, u = f(k,"Unit")||"";
+    ciVals[k.id] = v;
+    document.getElementById("n-"+k.id).textContent = (Math.round(v*10)/10);
+    const d = v-prev, el = document.getElementById("d-"+k.id);
+    el.textContent = d>0?`+${Math.round(d*10)/10}${u} since last check-in`:d<0?`${Math.round(d*10)/10}${u} since last check-in`:`was ${prev}${u} last check-in`;
+    el.style.color = d>0?"var(--moss)":d<0?"var(--clay)":"var(--ink-2)";
+  });
+  document.querySelectorAll(".conf").forEach(b=>b.onclick=()=>{ciConf=b.dataset.c;
+    document.querySelectorAll(".conf").forEach(x=>x.setAttribute("aria-pressed", x===b));});
+  document.querySelectorAll("input[data-task]").forEach(c=>c.onchange=async()=>{
+    const done = c.checked;
+    await patch(T.tasks, [{id:c.dataset.task, fields:{Status: done?"Done":"Open", "Done date": done?iso(TODAY):null}}]);
+    await reload("tasks"); toast(done?"Task done":"Task reopened"); render();
+  });
+  document.querySelectorAll("[data-tdel]").forEach(x=>x.onclick=async()=>{
+    if(!confirm(`Delete "${nm("tasks", x.dataset.tdel)}"?`)) return;
+    try{ await del(T.tasks, [x.dataset.tdel]); await reload("tasks"); toast("Task deleted"); render(); }
+    catch(e){ toast(e.message, true); }
+  });
+  document.querySelectorAll("button[data-add]").forEach(b=>b.onclick=async()=>{
+    const k = b.dataset.add, title = document.getElementById("nt-"+k).value.trim();
+    if(!title) return;
+    await post(T.tasks, [{fields:{Title:title, Status:"Open",
+      "Due date": document.getElementById("nd-"+k).value || null,
+      "Key Result":[k], Owner:[document.getElementById("nw-"+k).value]}}]);
+    await reload("tasks"); toast("Task added"); render();
+  });
+  document.getElementById("ciSend").onclick = () => sendCheckin(o, krs);
+};
+
+async function sendCheckin(o, krs){
+  const moved = document.getElementById("ciMoved").value.trim();
+  const before = {}; krs.forEach(k=>before[k.id] = f(k,"Current value") ?? 0);
+  const btn = document.getElementById("ciSend"); btn.disabled = true; btn.textContent = "Saving…";
+  try{
+    if(krs.length) await patch(T.krs, krs.map(k=>({id:k.id, fields:{"Current value": ciVals[k.id]}})));
+    await post(T.checkins, [{fields:{
+      Summary: `${f(o,"Title")} — ${fmt(TODAY)}`, Date: iso(TODAY),
+      "What moved": moved, Blockers: document.getElementById("ciBlock").value.trim(),
+      Confidence: ciConf, Objective:[o.id], Person:[ME.id]}}]);
+    await patch(T.objectives, [{id:o.id, fields:{Confidence: ciConf}}]);
+    await Promise.all([reload("krs"), reload("checkins"), reload("objectives")]);
+    ripple(o, krs, before);
+  }catch(e){ toast("Couldn't save: "+e.message, true); btn.disabled=false; btn.textContent="Log check-in"; }
+}
+
+function ripple(o, krs, before){
+  const jv = ladderKr(o);
+  const gained = krs.reduce((s,k)=>s + ((ciVals[k.id]??0) - before[k.id]), 0);
+  const box = document.getElementById("ripple");
+  document.querySelectorAll(".wrap .card, #ciSend, .head select").forEach(e=>e.classList.add("hidden"));
+  box.classList.remove("hidden");
+  box.innerHTML = `
+    <div class="eyebrow">Check-in logged · ${fmt(TODAY)}</div>
+    <div class="headline" id="hl">${gained>0?"You moved it.":"Logged. Thank you for being honest."}</div>
+    <div class="card">
+      ${krs.map((k,i)=>{
+        const now = ciVals[k.id]??0, p = pct(f(k,"Target value") ? (now - (f(k,"Start value")||0))/((f(k,"Target value")||1)-(f(k,"Start value")||0)) : 0);
+        return `<div class="rung" id="r${i}">
+          <div style="display:flex;justify-content:space-between;gap:10px"><span style="font-weight:600;font-size:13px">${esc(f(k,"Title"))}</span>
+            <span class="mono">${before[k.id]} → <b style="color:var(--ink)">${now}</b> / ${f(k,"Target value")??0}</span></div>
+          <div class="prog"><span style="width:0;background:var(--moss)" data-w="${p}"></span></div>
+        </div>`;}).join("")}
+      <div style="color:#B8C2CB;margin:0 0 8px 6px">↳</div>
+      <div class="rung" id="ro">
+        <div style="display:flex;justify-content:space-between"><span style="font-weight:600;font-size:13px">${esc(f(o,"Title"))}</span>
+          <span class="mono">${pct(objProgress(o))}%</span></div>
+        <div class="prog"><span style="width:0;background:var(--moss)" data-w="${pct(objProgress(o))}"></span></div>
+      </div>
+      ${jv?`<div style="color:#B8C2CB;margin:0 0 8px 6px">↳</div>
+      <div class="rung" id="rj"><div class="jvbox">
+        <div class="eyebrow">JV five-year key result</div>
+        <div style="display:flex;justify-content:space-between;margin-top:4px">
+          <span style="font-weight:600;font-size:13px">${esc(f(jv,"Title"))}</span>
+          <span class="mono">${f(jv,"Current value")??0} / ${f(jv,"Target value")??0}</span></div>
+        <div class="prog"><span style="width:0;background:var(--indigo)" data-w="${pct(f(jv,"Progress"))}"></span></div>
+        <div class="hint">Your number feeds this. Update the JV key result at the leadership level when the roll-up is agreed.</div>
+      </div></div>`:""}
+    </div>
+    <button class="btn wide" onclick="ciVals={};render();">Back to my objectives</button>`;
+  const rungs = [...box.querySelectorAll(".rung")];
+  setTimeout(()=>document.getElementById("hl").classList.add("show"), 120);
+  rungs.forEach((r,i)=>setTimeout(()=>{
+    r.classList.add("show");
+    r.querySelectorAll(".prog span").forEach(s=>s.style.width = s.dataset.w+"%");
+  }, 400 + i*750));
+  toast("Check-in saved");
+}
+
+/* ============================ REVIEWS ============================ */
+const MID = [
+  {k:"Confidence 1-10", q:"Are we going to hit this objective by the end of the cycle?", h:"Your gut, not the dashboard.", t:"scale"},
+  {k:"M — KR that worries you most", q:"Which key result worries you most, and why?", t:"text"},
+  {k:"M — What I personally moved", q:"What have you personally moved since the cycle started?", h:"Name the thing you did. It counts.", t:"text"},
+  {k:"M — Most likely to stop us", q:"What's the one thing most likely to stop us?", t:"text"},
+  {k:"M — What we should stop doing", q:"What should we stop doing?", h:"Halfway is the last honest chance to drop something.", t:"text"},
+  {k:"M — Still the right objective?", q:"Is this still the right objective?", t:"choice", o:["Yes, keep going","Adjust the key results","No — this was the wrong bet"]}
+];
+const RET = [
+  {k:"R — Did we do what we said?", q:"Did we do what we said we'd do?", t:"choice", o:["Yes","Mostly","No"]},
+  {k:"R — What actually happened", q:"What actually happened — in your own words?", t:"text"},
+  {k:"R — What worked", q:"What worked that we should do again?", t:"text"},
+  {k:"R — What didn't work", q:"What didn't work?", h:"Be specific. \"Communication\" isn't an answer.", t:"text"},
+  {k:"R — Where I saw God at work", q:"Where did you see God at work in this, whether we hit the number or not?", h:"The numbers don't capture everything. This does.", t:"text"},
+  {k:"R — What we carry forward", q:"What do we carry into the next cycle?", t:"text"},
+  {k:"R — One thing I'd change about how we worked", q:"One thing you'd change about how we worked together?", t:"text"}
+];
+let revId = null, revDraft = {};
+let rvNewObj = null;
+V.reviews = () => {
+  if(!revId) revId = DB.reviews[0]?.id;
+  const el = document.getElementById("view");
+  const backBtn = selObj ? `<button class="btn ghost" onclick="VIEW='objective';drawChrome();render();scrollTo(0,0)">← Back to objective</button>` : "";
+  // jumped in from an objective that has no review yet → offer to start one for it
+  if(rvNewObj && !DB.reviews.some(r=>lnk(r,"Objective").includes(rvNewObj))){
+    el.innerHTML = `<div class="head"><div><h1>Start a review</h1>
+        <div class="sub">${esc(nm("objectives",rvNewObj))} · a midterm or retrospective. Everyone answers before you meet.</div></div>${backBtn}</div>
+      <div class="card">${newReviewForm()}</div>`;
+    wireNewReview(); return;
+  }
+  rvNewObj = null;   // past the new-review branch; don't let it stick
+  if(!DB.reviews.length){
+    el.innerHTML = `<div class="head"><div><h1>Reviews</h1><div class="sub">A midterm or retrospective for one objective. Everyone answers before you meet.</div></div>${backBtn}</div>
+      <div class="card"><h3>Start a review</h3>${newReviewForm()}</div>`;
+    wireNewReview(); return;
+  }
+  const R = rec("reviews", revId);
+  const set = f(R,"Type")==="Retrospective" ? RET : MID;
+  const objId = one(R,"Objective");
+  const resp = DB.responses.filter(r=>lnk(r,"Review").includes(R.id));
+  const mineDone = resp.find(r=>lnk(r,"Person").includes(ME.id));
+  const team = teamFor(objId);
+  const inList = resp.map(r=>one(r,"Person"));
+
+  el.innerHTML = `
+    <div class="head">
+      <div><h1>${esc(f(R,"Type")||"Review")}</h1>
+        <div class="sub">${esc(nm("objectives",objId))} · everyone answers before the meeting. Attributed, never anonymous.</div></div>
+      <div class="filters">
+        <select class="sm" id="rv">${DB.reviews.map(r=>`<option value="${r.id}" ${r.id===revId?"selected":""}>${esc(f(r,"Name"))}</option>`).join("")}</select>
+        <button class="btn ghost" id="rnew">+ New review</button>
+      </div>
+    </div>
+    <div id="rnewbox" class="card hidden"><h3>Start a review</h3>${newReviewForm()}</div>
+
+    <div class="gate">
+      <strong>${resp.length} of ${team.length}</strong> answered.
+      ${mineDone ? `You're in — everyone's answers are below.`
+        : `You'll see everyone else's answers <strong>after</strong> you submit yours, so nobody just agrees with whoever spoke first.`}
+      <div class="roster">${team.map(p=>`<span class="p ${inList.includes(p.id)?"in":""}">${esc(f(p,"Name"))}${inList.includes(p.id)?" ✓":""}</span>`).join("")}</div>
+    </div>
+
+    ${mineDone ? facilitator(R,set,resp) : set.map((q,i)=>`
+      <div class="card" style="max-width:700px">
+        <div style="font-weight:600;margin-bottom:5px">${esc(q.q)}</div>
+        ${q.h?`<div class="cap">${esc(q.h)}</div>`:""}
+        ${q.t==="text" ? `<textarea rows="3" data-q="${i}"></textarea>`
+        : q.t==="scale" ? `<div class="scale">${[1,2,3,4,5,6,7,8,9,10].map(n=>`<button class="sc" data-q="${i}" data-v="${n}" aria-pressed="${revDraft[q.k]===n}">${n}</button>`).join("")}</div>`
+        : `<div class="confs">${q.o.map(o=>`<button class="conf" data-q="${i}" data-v="${esc(o)}" aria-pressed="${revDraft[q.k]===o}" style="${revDraft[q.k]===o?"background:var(--ink);color:#fff;border-color:var(--ink)":""}">${esc(o)}</button>`).join("")}</div>`}
+      </div>`).join("") + `<button class="btn wide" id="rsub" style="max-width:700px">Submit my answers</button>`}`;
+
+  document.getElementById("rv").onchange = e=>{revId=e.target.value; revDraft={}; render();};
+  document.getElementById("rnew").onclick = ()=>document.getElementById("rnewbox").classList.toggle("hidden");
+  wireNewReview();
+  if(!mineDone){
+    document.querySelectorAll("textarea[data-q]").forEach(t=>t.oninput=()=>revDraft[set[+t.dataset.q].k]=t.value);
+    document.querySelectorAll(".sc,[data-q].conf").forEach(b=>b.onclick=()=>{
+      const q = set[+b.dataset.q];
+      revDraft[q.k] = q.t==="scale" ? +b.dataset.v : b.dataset.v;
+      render();
+    });
+    document.getElementById("rsub").onclick = async()=>{
+      const fields = {...revDraft, Name:`${f(R,"Name")} — ${f(ME,"Name")}`, Submitted: iso(TODAY), Review:[R.id], Person:[ME.id]};
+      await post(T.responses, [{fields}]);
+      await reload("responses"); revDraft={}; toast("Submitted"); render();
+    };
+  }
+};
+function teamFor(objId){
+  const o = rec("objectives", objId); if(!o) return DB.people;
+  const u = one(o,"Org Unit");
+  const t = u ? DB.people.filter(p=>unitTree(u).includes(one(p,"Org Unit")) && f(p,"Active")!==false) : [];
+  return t.length ? t : DB.people.filter(p=>areaName(p)===areaName(o) && f(p,"Active")!==false);
+}
+function newReviewForm(){
+  const objs = DB.objectives.filter(o=>f(o,"Scope")!=="JV 5-year");
+  return `<div class="grid2">
+    <div class="field"><label>Objective</label><select id="nrObj">${objs.map(o=>`<option value="${o.id}" ${o.id===rvNewObj?"selected":""}>${esc(areaName(o)||"")} — ${esc(f(o,"Title"))}</option>`).join("")}</select></div>
+    <div class="field"><label>Type</label><select id="nrType"><option>Midterm review</option><option>Retrospective</option></select></div>
+    <div class="field"><label>Cycle</label><select id="nrCyc">${DB.cycles.map(c=>`<option value="${c.id}">${esc(f(c,"Name"))}</option>`).join("")}</select></div>
+    <div class="field"><label>Meeting date</label><input type="date" id="nrDate"/></div>
+  </div><button class="btn" id="nrGo">Create review</button>`;
+}
+function wireNewReview(){
+  const b = document.getElementById("nrGo"); if(!b) return;
+  b.onclick = async()=>{
+    const o = document.getElementById("nrObj").value, ty = document.getElementById("nrType").value;
+    const j = await post(T.reviews, [{fields:{ Name:`${nm("objectives",o)} — ${ty}`, Type:ty,
+      Objective:[o], Cycle:[document.getElementById("nrCyc").value],
+      "Meeting date": document.getElementById("nrDate").value || null, Status:"Collecting responses"}}]);
+    await reload("reviews"); revId = j.records[0].id; toast("Review created"); render();
+  };
+}
+function facilitator(R, set, resp){
+  const scores = resp.map(r=>f(r,"Confidence 1-10")).filter(Boolean);
+  const avg = scores.length ? (scores.reduce((a,b)=>a+b,0)/scores.length).toFixed(1) : "—";
+  const spread = scores.length ? Math.max(...scores)-Math.min(...scores) : 0;
+  const bars = [...Array(10)].map((_,i)=>{
+    const n = scores.filter(s=>s===i+1).length;
+    return `<div class="${n?"hit":""}" style="height:${n?12+n*15:5}px"></div>`;}).join("");
+  const block = q => `<div class="card"><h3>${esc(q.q)}</h3>
+    ${resp.map(r=>{ const a=f(r,q.k); return a ? `<div class="ans"><div class="who">${esc(nm("people",one(r,"Person")))}</div><p>${esc(a)}</p></div>`:"";}).join("") || `<div class="empty">No answers.</div>`}</div>`;
+  return `
+    ${scores.length?`<div class="card"><h3>Are we going to hit this?</h3>
+      <div class="spread">${bars}</div>
+      <div class="mono" style="display:flex;justify-content:space-between"><span>No chance</span><span>Certain</span></div>
+      <div style="margin-top:8px"><strong>Average ${avg}/10 — spread of ${spread} points.</strong></div>
+      <div class="hint">${spread>=3?"That gap is the meeting. Someone believes something the others don't — start there, don't average it away.":"The team is aligned on this one."}</div>
+    </div>`:""}
+    ${set.filter(q=>q.t!=="scale").map(block).join("")}
+    <div class="card"><h3>Record the outcome</h3>
+      <div class="cap">What the team decided goes on the objective, not in a meeting note.</div>
+      <button class="btn" onclick="selObj='${one(R,"Objective")}';VIEW='objective';drawChrome();render();scrollTo(0,0)">Record a decision on this objective →</button>
+    </div>`;
+}
+
+/* ============================ OBJECTIVE RECORD ============================ */
+let selObj = null;
+V.objective = () => {
+  const objs = live(DB.objectives.filter(o=>f(o,"Scope")!=="JV 5-year"));
+  if(!selObj || !rec("objectives",selObj)) selObj = objs[0]?.id;
+  const o = rec("objectives", selObj);
+  const el = document.getElementById("view");
+  if(!o){ el.innerHTML = `<h1>Objectives</h1><div class="card">${objForm()}</div>`; wireObjForm(); return; }
+  const krs = objKrs(o.id), decs = DB.decisions.filter(d=>lnk(d,"Objective").includes(o.id))
+    .sort((a,b)=>new Date(f(b,"Date"))-new Date(f(a,"Date")));
+  const k = ladderKr(o);
+
+  el.innerHTML = `
+    <div class="head">
+      <div>
+        <div class="eyebrow">${esc(areaName(o)||"")} · ${esc(nm("people",one(o,"Owner")))} · ${esc(nm("cycles",one(o,"Cycle")))} · ${alignLine(o)}</div>
+        <h1>${esc(f(o,"Title"))}</h1>
+        <div class="sub">The objective, and every decision that shaped it.</div>
+      </div>
+      <div class="filters">
+        <select class="sm" id="so">${(ARCHIVED(o)?[o,...objs]:objs).map(x=>`<option value="${x.id}" ${x.id===selObj?"selected":""}>${ARCHIVED(x)?"[archived] ":""}${esc(areaName(x)||"")} — ${esc(f(x,"Title"))}</option>`).join("")}</select>
+        <button class="btn jv" id="ocheckin">Check in</button>
+        <button class="btn ghost" id="oreview">Review</button>
+        <button class="btn ghost" id="oedit">Edit</button>
+        <button class="btn ghost" id="oarch">${ARCHIVED(o)?"Reopen":"Archive"}</button>
+        <button class="btn ghost" id="onew">+ New objective</button>
+      </div>
+    </div>
+    ${ARCHIVED(o)?`<div class="card" style="border-left:3px solid var(--ink-2);background:#F7F8F9">
+      <strong>This objective is ${esc(f(o,"Status")).toLowerCase()}.</strong>
+      <div class="cap" style="margin:2px 0 0">It's kept, not deleted — the decisions and check-ins under it are the record of what was tried. Reopen it if it's live again.</div>
+    </div>`:""}
+
+    <div id="oeditbox" class="card hidden">
+      <h3>Edit objective</h3>
+      <div class="grid2">
+        <div class="field"><label>Title</label><input id="eT" value="${esc(f(o,"Title")||"")}"/></div>
+        <div class="field"><label>How does this relate to JV 2030?</label>
+          <select id="eAl">${Object.values(ALIGN).map(a=>`<option ${alignOf(o)===a?"selected":""}>${esc(a)}</option>`).join("")}</select></div>
+        <div class="field"><label>Which JV key result? <span class="mono">(only if it ladders)</span></label>
+          <select id="eP"><option value="">— none —</option>${jvKrs().map(k=>`<option value="${k.id}" ${one(o,"Parent Key Result")===k.id?"selected":""}>${esc(f(k,"Title"))}</option>`).join("")}</select></div>
+        <div class="field"><label>Whose objective is it?</label>
+          <select id="eU">${unitsSorted(DB.units).map(u=>`<option value="${u.id}" ${one(o,"Org Unit")===u.id?"selected":""}>${esc(unitCrumb(u))}</option>`).join("")}</select></div>
+        <div class="field"><label>Owner</label>
+          <select id="eO">${DB.people.map(p=>`<option value="${p.id}" ${one(o,"Owner")===p.id?"selected":""}>${esc(f(p,"Name"))}</option>`).join("")}</select></div>
+        <div class="field"><label>Cycle</label>
+          <select id="eC">${DB.cycles.filter(c=>f(c,"Type")!=="5-year").map(c=>`<option value="${c.id}" ${one(o,"Cycle")===c.id?"selected":""}>${esc(f(c,"Name"))}</option>`).join("")}</select></div>
+        <div class="field"><label>Status</label>
+          <select id="eS">${["Draft","Active","Closed","Abandoned"].map(s=>`<option ${f(o,"Status")===s?"selected":""}>${s}</option>`).join("")}</select></div>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn" id="eGo">Save changes</button>
+        <button class="btn ghost" id="eDel" style="color:var(--clay);border-color:#E9C7C3">Delete permanently</button>
+      </div>
+      <div class="hint">Deleting is only possible while an objective has no check-ins and no decisions. Once it has history, archive it instead — that history is the point.</div>
+    </div>
+    <div id="onewbox" class="card hidden"><h3>New objective</h3>${objForm()}</div>
+
+    <div class="two">
+      <div>
+        <div class="card">
+          <h2>Key results</h2><div class="cap">A changed target keeps its history. You can't quietly move a goalpost.</div>
+          ${krs.length ? krs.map(kr=>{
+            const p = pct(f(kr,"Progress")), c = f(kr,"Confidence")||"Not started", ch = f(kr,"Target changed");
+            return `<div style="padding:11px 0;border-top:1px dashed var(--rule)">
+              <div style="display:flex;justify-content:space-between;gap:10px">
+                <strong style="font-size:13.5px">${esc(f(kr,"Title"))}</strong>
+                <span class="mono">${f(kr,"Current value")??0} / ${ch?`<span class="strike">${f(kr,"Original target")}</span> `:""}<b style="color:var(--ink)">${f(kr,"Target value")??0}</b>${esc(f(kr,"Unit")||"")}</span>
+              </div>
+              <div class="prog"><span style="width:${p}%;background:${col(c)}"></span></div>
+              ${ch?`<div class="mono" style="color:var(--indigo);margin-top:5px">◆ ${esc(ch)} — see decisions</div>`:""}
+              ${(()=>{ const ts=krTasks(kr.id); return `
+                <div class="ktasks">
+                  ${ts.map(t=>`<div class="task ${f(t,"Status")==="Done"?"done":""} ${isLate(t)?"late":""}">
+                      <input type="checkbox" data-otask="${t.id}" ${f(t,"Status")==="Done"?"checked":""}/>
+                      <span class="t">${esc(f(t,"Title"))}</span>
+                      <span class="m">${esc((nm("people",one(t,"Owner"))||"").split(" ")[0])}${f(t,"Status")==="Done"?" · done":f(t,"Due date")?" · "+fmt(f(t,"Due date")):""}</span>
+                      <span class="m" data-otdel="${t.id}" style="cursor:pointer;padding:0 3px" title="Delete task">✕</span>
+                    </div>`).join("") || `<div class="mono" style="padding:3px 0">No tasks yet.</div>`}
+                  <div style="display:flex;gap:6px;margin-top:6px">
+                    <input type="text" id="ont-${kr.id}" placeholder="Add a task…" style="flex:1;font-size:12.5px;padding:5px 8px"/>
+                    <button class="btn dash" style="font-size:11.5px;padding:4px 10px" data-oadd="${kr.id}">Add</button>
+                  </div>
+                </div>`; })()}
+              <div style="display:flex;gap:6px;margin-top:7px">
+                <button class="btn dash" style="font-size:11.5px;padding:4px 8px" data-kredit="${kr.id}">Edit</button>
+                <button class="btn dash" style="font-size:11.5px;padding:4px 8px" data-krarch="${kr.id}">Archive</button>
+                <button class="btn dash" style="font-size:11.5px;padding:4px 8px;color:var(--clay)" data-krdel="${kr.id}">Delete</button>
+              </div>
+              <div class="hidden" id="kre-${kr.id}" style="margin-top:8px;border-left:2px solid var(--rule);padding-left:10px">
+                <div class="grid2">
+                  <div class="field"><label>Title</label><input id="et-${kr.id}" value="${esc(f(kr,"Title")||"")}"/></div>
+                  <div class="field"><label>Unit</label><input id="eu-${kr.id}" value="${esc(f(kr,"Unit")||"")}"/></div>
+                  <div class="field"><label>Current</label><input type="number" id="ec-${kr.id}" value="${f(kr,"Current value")??0}"/></div>
+                  <div class="field"><label>Target</label><input type="number" id="eg-${kr.id}" value="${f(kr,"Target value")??0}"/></div>
+                </div>
+                <button class="btn" style="font-size:12.5px;padding:7px 11px" data-krsave="${kr.id}">Save</button>
+                <div class="hint">Changing a target here does <b>not</b> record why. If the team decided to move it, record a decision instead — that's the one that keeps the original and leaves a trace.</div>
+              </div>
+            </div>`;}).join("") : `<div class="empty">No key results yet.</div>`}
+          <button class="btn dash wide" style="margin-top:10px" id="krnew">+ Add a key result</button>
+          <div id="krbox" class="hidden" style="margin-top:10px">
+            <div class="grid2">
+              <div class="field"><label>Title</label><input id="krT" placeholder="2 sending churches committed"/></div>
+              <div class="field"><label>Unit</label><input id="krU" placeholder="churches / % / teams"/></div>
+              <div class="field"><label>Start value</label><input type="number" id="krS" value="0"/></div>
+              <div class="field"><label>Target</label><input type="number" id="krG" value="100"/></div>
+              <div class="field"><label>Commit <span class="mono">(the floor)</span></label><input type="number" id="krC" placeholder="optional"/></div>
+              <div class="field"><label>Stretch <span class="mono">(the ceiling)</span></label><input type="number" id="krX" placeholder="optional"/></div>
+            </div>
+            <button class="btn" id="krGo">Add key result</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <h2>Decisions</h2>
+          <div class="cap">Attached to the objective. This is the answer to "why is the target only 2?"</div>
+          ${decs.length ? decs.map(d=>`
+            <div class="dec ${esc(f(d,"Type")||"")}">
+              <div style="display:flex;justify-content:space-between"><span class="pill p-none">${esc(f(d,"Type")||"")}</span>
+                <span class="mono">${fmt(f(d,"Date"))}</span></div>
+              <div class="what">${esc(f(d,"Decision"))}</div>
+              ${f(d,"From")||f(d,"To")?`<div class="shift"><b>${esc(f(d,"From")||"")}</b> → <b>${esc(f(d,"To")||"")}</b></div>`:""}
+              <div class="why2">${esc(f(d,"Why")||"")}</div>
+              <div class="mono" style="margin-top:6px">${esc(f(d,"Source")||"")} · ${esc(f(d,"Decided by")||"")}</div>
+            </div>`).join("") : `<div class="empty">No decisions recorded yet.</div>`}
+          <button class="btn dash wide" style="margin-top:8px" id="dnew">+ Record a decision</button>
+          <div id="dbox" class="hidden" style="margin-top:12px;border-top:1px solid var(--rule);padding-top:12px">
+            <div class="field"><label>What kind?</label>
+              <select id="dType"><option>Target change</option><option>Stopped</option><option>Scope change</option><option>Held the line</option><option>Learning</option></select></div>
+            <div class="field"><label>What did the team decide?</label><input id="dWhat" placeholder="Cut the leader target from 4 to 2"/></div>
+            <div class="field"><label>Which key result? (for a target change)</label>
+              <select id="dKr"><option value="">— none —</option>${krs.map(kr=>`<option value="${kr.id}">${esc(f(kr,"Title"))}</option>`).join("")}</select></div>
+            <div class="grid2">
+              <div class="field"><label>From</label><input id="dFrom" placeholder="4 leaders"/></div>
+              <div class="field"><label>To</label><input id="dTo" placeholder="2 leaders"/></div>
+            </div>
+            <div class="field"><label>New target value (updates the key result)</label><input type="number" id="dTgt" placeholder="leave blank to keep the target"/></div>
+            <div class="field"><label>Why? — the part future-you will need</label><textarea rows="3" id="dWhy"></textarea></div>
+            <div class="grid2">
+              <div class="field"><label>Source</label><select id="dSrc"><option>Midterm review</option><option>Retrospective</option><option>Weekly check-in</option><option>Leadership call</option></select></div>
+              <div class="field"><label>Decided by</label><input id="dBy" value="${esc(areaName(o)||"")} team"/></div>
+            </div>
+            <button class="btn jv wide" id="dGo">Record decision</button>
+            <div class="hint">Recording it updates the target, keeps the original, and shows up in the leadership report. A number that moves with no reason attached is how OKR systems become fiction.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Check-in history</h2><div class="cap">Proof the conversation happened.</div>
+        ${objCheckins(o.id).length ? objCheckins(o.id).map(c=>`
+          <div style="border-left:2px solid ${col(f(c,"Confidence"))};padding:6px 0 6px 11px;margin-bottom:13px">
+            <div class="mono">${fmt(f(c,"Date"))} · ${esc(nm("people",one(c,"Person")))} · ${esc(f(c,"Confidence")||"")}</div>
+            <div style="font-size:13.5px;margin-top:3px">${esc(f(c,"What moved")||"")}</div>
+            ${f(c,"Blockers")?`<div class="why">In the way: ${esc(f(c,"Blockers"))}</div>`:""}
+            ${f(c,"Reply")?`<div class="next">↩ ${esc(f(c,"Replied by")||"")}: ${esc(f(c,"Reply"))}</div>`
+              :`<button class="btn dash" style="margin-top:6px;font-size:12px;padding:5px 9px" data-reply="${c.id}">Reply</button>`}
+          </div>`).join("") : `<div class="empty">No check-ins yet.</div>`}
+      </div>
+    </div>`;
+
+  document.getElementById("so").onchange = e=>{selObj=e.target.value; render();};
+  document.getElementById("ocheckin").onclick = ()=>{ ciObj=o.id; ciVals={}; VIEW="checkin"; drawChrome(); render(); scrollTo(0,0); };
+  document.getElementById("oreview").onclick = ()=>{
+    const rev = DB.reviews.find(r=>lnk(r,"Objective").includes(o.id));
+    revId = rev ? rev.id : null; rvNewObj = o.id;
+    VIEW="reviews"; drawChrome(); render(); scrollTo(0,0);
+  };
+  document.getElementById("onew").onclick = ()=>document.getElementById("onewbox").classList.toggle("hidden");
+  document.getElementById("oedit").onclick = ()=>document.getElementById("oeditbox").classList.toggle("hidden");
+  document.getElementById("krnew").onclick = ()=>document.getElementById("krbox").classList.toggle("hidden");
+  document.getElementById("dnew").onclick = ()=>document.getElementById("dbox").classList.toggle("hidden");
+  wireObjForm();
+
+  /* archive / reopen */
+  document.getElementById("oarch").onclick = async()=>{
+    if(ARCHIVED(o)){
+      await patch(T.objectives, [{id:o.id, fields:{Status:"Active"}}]);
+      await reload("objectives"); toast("Reopened"); return render();
+    }
+    const why = confirm(`Archive "${f(o,"Title")}"?\n\nIt disappears from dashboards but keeps every check-in, decision and key result. You can reopen it any time.`);
+    if(!why) return;
+    await patch(T.objectives, [{id:o.id, fields:{Status:"Closed"}}]);
+    await reload("objectives"); toast("Archived"); render();
+  };
+
+  /* edit objective */
+  document.getElementById("eGo").onclick = async()=>{
+    const eu = rec("units", document.getElementById("eU").value);
+    const eal = document.getElementById("eAl").value;
+    const ekr = document.getElementById("eP").value;
+    await patch(T.objectives, [{id:o.id, fields:{
+      Title: document.getElementById("eT").value.trim() || f(o,"Title"),
+      ...(eu ? {"Org Unit":[eu.id], Area:f(eu,"Name")} : {}),
+      Status: document.getElementById("eS").value, Alignment: eal,
+      Owner:[document.getElementById("eO").value],
+      Cycle:[document.getElementById("eC").value],
+      "Parent Key Result": (eal===ALIGN.LADDER && ekr) ? [ekr] : []}}]);
+    await reload("objectives"); toast("Saved"); render();
+  };
+
+  /* delete objective — only when it has no history */
+  document.getElementById("eDel").onclick = async()=>{
+    const hist = objCheckins(o.id).length + decs.length;
+    if(hist) return toast(`Can't delete — this objective has ${hist} check-in/decision record${hist>1?"s":""} on it. Archive it instead.`, true);
+    if(!confirm(`Delete "${f(o,"Title")}" and its ${krs.length} key result${krs.length===1?"":"s"} for good?\n\nThis cannot be undone.`)) return;
+    try{
+      const ts = objTasks(o.id).map(t=>t.id);
+      if(ts.length) await del(T.tasks, ts);
+      if(krs.length) await del(T.krs, krs.map(k=>k.id));
+      await del(T.objectives, [o.id]);
+      selObj = null;
+      await Promise.all([reload("objectives"), reload("krs"), reload("tasks")]);
+      toast("Deleted"); render();
+    }catch(e){ toast(e.message, true); }
+  };
+
+  /* key result edit / delete */
+  document.querySelectorAll("[data-kredit]").forEach(b=>b.onclick=()=>
+    document.getElementById("kre-"+b.dataset.kredit).classList.toggle("hidden"));
+
+  /* tasks under each key result, right here on the objective */
+  document.querySelectorAll("input[data-otask]").forEach(c=>c.onchange=async()=>{
+    const done = c.checked;
+    await patch(T.tasks, [{id:c.dataset.otask, fields:{Status: done?"Done":"Open", "Done date": done?new Date().toISOString().slice(0,10):null}}]);
+    await reload("tasks"); render();
+  });
+  document.querySelectorAll("[data-otdel]").forEach(x=>x.onclick=async()=>{
+    if(!confirm(`Delete "${nm("tasks", x.dataset.otdel)}"?`)) return;
+    try{ await del(T.tasks, [x.dataset.otdel]); await reload("tasks"); toast("Task deleted"); render(); }
+    catch(e){ toast(e.message, true); }
+  });
+  document.querySelectorAll("[data-oadd]").forEach(b=>b.onclick=async()=>{
+    const kid = b.dataset.oadd, inp = document.getElementById("ont-"+kid);
+    const title = inp.value.trim(); if(!title) return;
+    await post(T.tasks, [{fields:{Title:title, Status:"Open", "Key Result":[kid], Owner:[ME.id]}}]);
+    await reload("tasks"); toast("Task added"); render();
+  });
+
+  document.querySelectorAll("[data-krsave]").forEach(b=>b.onclick=async()=>{
+    const id = b.dataset.krsave;
+    await patch(T.krs, [{id, fields:{
+      Title: document.getElementById("et-"+id).value.trim(),
+      Unit: document.getElementById("eu-"+id).value.trim(),
+      "Current value": +document.getElementById("ec-"+id).value,
+      "Target value": +document.getElementById("eg-"+id).value}}]);
+    await reload("krs"); toast("Key result saved"); render();
+  });
+  document.querySelectorAll("[data-krarch]").forEach(b=>b.onclick=async()=>{
+    if(!confirm(`Archive "${nm("krs", b.dataset.krarch)}"?\n\nIt leaves every working view but keeps its numbers and history. You can bring it back from the Archive.`)) return;
+    await patch(T.krs, [{id:b.dataset.krarch, fields:{Archived:true}}]);
+    await reload("krs"); toast("Key result archived"); render();
+  });
+  document.querySelectorAll("[data-krdel]").forEach(b=>b.onclick=async()=>{
+    const id = b.dataset.krdel, ts = krTasks(id);
+    if(!confirm(`Delete "${nm("krs",id)}"${ts.length?` and its ${ts.length} task${ts.length===1?"":"s"}`:""}?\n\nThis cannot be undone.`)) return;
+    try{
+      if(ts.length) await del(T.tasks, ts.map(t=>t.id));
+      await del(T.krs, [id]);
+      await Promise.all([reload("krs"), reload("tasks")]);
+      toast("Key result deleted"); render();
+    }catch(e){ toast(e.message, true); }
+  });
+
+  document.getElementById("krGo").onclick = async()=>{
+    const t = document.getElementById("krT").value.trim(); if(!t) return;
+    const g = +document.getElementById("krG").value;
+    const c = document.getElementById("krC").value, x = document.getElementById("krX").value;
+    await post(T.krs, [{fields:{Title:t, Unit:document.getElementById("krU").value, Type:"Number",
+      "Start value":+document.getElementById("krS").value, "Current value":+document.getElementById("krS").value,
+      "Target value":g, "Original target":g,
+      ...(c!==""?{Commit:+c}:{}), ...(x!==""?{Stretch:+x}:{}),
+      Confidence:"Not started", Objective:[o.id], Owner:lnk(o,"Owner")}}]);
+    await reload("krs"); toast("Key result added"); render();
+  };
+  document.getElementById("dGo").onclick = async()=>{
+    const what = document.getElementById("dWhat").value.trim(), why = document.getElementById("dWhy").value.trim();
+    if(!what || !why) return toast("A decision needs both what and why", true);
+    const krId = document.getElementById("dKr").value, tgt = document.getElementById("dTgt").value;
+    await post(T.decisions, [{fields:{Decision:what, Type:document.getElementById("dType").value,
+      From:document.getElementById("dFrom").value, To:document.getElementById("dTo").value, Why:why,
+      Source:document.getElementById("dSrc").value, "Decided by":document.getElementById("dBy").value,
+      Date:iso(TODAY), Objective:[o.id], ...(krId?{"Key Result":[krId]}:{})}}]);
+    if(krId && tgt !== "") await patch(T.krs, [{id:krId, fields:{"Target value": +tgt}}]);
+    await Promise.all([reload("decisions"), reload("krs")]);
+    toast("Decision recorded"); render();
+  };
+  document.querySelectorAll("[data-reply]").forEach(b=>b.onclick=async()=>{
+    const txt = prompt("Your reply — the thing that makes them write a second check-in:");
+    if(!txt) return;
+    await patch(T.checkins, [{id:b.dataset.reply, fields:{Reply:txt, "Replied by":f(ME,"Name")}}]);
+    await reload("checkins"); toast("Replied"); render();
+  });
+};
+function objForm(){
+  const parents = jvKrs();
+  return `<div class="grid2">
+    <div class="field"><label>Title</label><input id="oT" placeholder="Launch 4 new church-planting teams"/></div>
+    <div class="field"><label>How does this relate to JV 2030?</label>
+      <select id="oAl">
+        <option value="${ALIGN.LADDER}">It ladders to a JV key result — its numbers roll up</option>
+        <option value="${ALIGN.SUPPORT}">It supports JV, but doesn't measure into one key result</option>
+        <option value="${ALIGN.ALONE}">Standalone — operational work that stands on its own</option>
+      </select></div>
+    <div class="field" id="oPBox"><label>Which JV key result?</label>
+      <select id="oP">${parents.map(k=>`<option value="${k.id}">${esc(f(k,"Title"))}</option>`).join("")}</select></div>
+    <div class="field hidden" id="oJBox"><label>Which JV objective is it pointed at?</label>
+      <select id="oJ">${jvObjectives().map(j=>`<option value="${j.id}">${esc(f(j,"Title"))}</option>`).join("")}</select>
+      <div class="hint">Direction, not arithmetic. It'll show under "Supporting work" rather than in the cascade.</div></div>
+    <div class="field"><label>Whose objective is it?</label>
+      <select id="oU">${unitsSorted(DB.units).map(u=>`<option value="${u.id}">${esc(unitCrumb(u))} · ${esc(f(u,"Type")||"")}</option>`).join("")}</select></div>
+    <div class="field"><label>Owner</label><select id="oO">${DB.people.map(p=>`<option value="${p.id}" ${p.id===ME?.id?"selected":""}>${esc(f(p,"Name"))}</option>`).join("")}</select></div>
+    <div class="field"><label>Cycle</label><select id="oC">${DB.cycles.filter(c=>f(c,"Type")!=="5-year").map(c=>`<option value="${c.id}">${esc(f(c,"Name"))} · ${esc(f(c,"Type"))}</option>`).join("")}</select></div>
+  </div><button class="btn" id="oGo">Create objective</button>`;
+}
+function wireObjForm(){
+  const b = document.getElementById("oGo"); if(!b) return;
+  const al = document.getElementById("oAl");
+  if(al) al.onchange = ()=>{
+    document.getElementById("oPBox").classList.toggle("hidden", al.value!==ALIGN.LADDER);
+    document.getElementById("oJBox").classList.toggle("hidden", al.value!==ALIGN.SUPPORT);
+  };
+  b.onclick = async()=>{
+    const t = document.getElementById("oT").value.trim(); if(!t) return toast("Give it a title", true);
+    const uid = document.getElementById("oU").value;
+    const u = rec("units", uid);
+    if(!u) return toast("Add an org unit first, under Org", true);
+    const align = document.getElementById("oAl").value;
+    const j = await post(T.objectives, [{fields:{Title:t,
+      Scope: f(u,"Type")==="Department" ? "Team" : f(u,"Type"),   // Scope is legacy; the unit is the truth
+      "Org Unit":[uid], Area:f(u,"Name"), Alignment: align,
+      Confidence:"Not started", Status:"Active",
+      Owner:[document.getElementById("oO").value], Cycle:[document.getElementById("oC").value],
+      ...(align===ALIGN.LADDER ? {"Parent Key Result":[document.getElementById("oP").value]} : {}),
+      ...(align===ALIGN.SUPPORT ? {"Supports JV objective":[document.getElementById("oJ").value]} : {})}}]);
+    await reload("objectives"); selObj = j.records[0].id; toast("Objective created"); render();
+  };
+}
+
+/* ============================ COACHING CONSOLE ============================ */
+let cSel = null, cTab = "notes", cShared = false, cFiles = [];
+const cadence = p => f(p,"Coaching cadence (days)") || 21;
+const cScore = p => {
+  const objs = ownedBy(p.id);
+  return objs.filter(o=>f(o,"Confidence")==="Off track").length*3
+       + objs.filter(isStale).length*2
+       + (f(p,"Overdue for a 1:1") ? 3 : 0)
+       + (objs.length===0 && ["Country leader","Division leader","Team leader"].includes(f(p,"Role")) ? 4 : 0);
+};
+V.coaching = () => {
+  const leaders = DB.people.filter(p=>["Country leader","Division leader","Team leader"].includes(f(p,"Role")));
+  const pool = leaders.length ? leaders : DB.people;
+  if(!cSel || !rec("people",cSel)) cSel = [...pool].sort((a,b)=>cScore(b)-cScore(a))[0]?.id;
+  const P = rec("people", cSel);
+  const notes = DB.notes.filter(n=>lnk(n,"Person").includes(cSel)).sort((a,b)=>new Date(f(b,"Date"))-new Date(f(a,"Date")));
+  const shares = DB.shares.filter(s=>lnk(s,"Person").includes(cSel));
+  const objs = P ? ownedBy(P.id) : [];
+  const overdue = pool.filter(p=>f(p,"Overdue for a 1:1"));
+  const follow = DB.notes.filter(n=>f(n,"Next step") && !f(n,"Follow-up done"));
+  const noOkr = pool.filter(p=>!ownedBy(p.id).length);
+
+  document.getElementById("view").innerHTML = `
+    <div class="head"><div><h1>Coaching console</h1>
+      <div class="sub">Who needs you, what you said, what you gave them. Notes are private unless you share them.</div></div></div>
+    <div class="tiles">
+      <div class="tile b-off"><div class="v">${overdue.length}</div><div class="l">Overdue for a 1:1</div></div>
+      <div class="tile b-ind"><div class="v">${follow.length}</div><div class="l">Open follow-ups</div></div>
+      <div class="tile b-risk"><div class="v">${noOkr.length}</div><div class="l">No objectives written</div></div>
+      <div class="tile b-ok"><div class="v">${DB.shares.filter(s=>f(s,"Opened")).length}/${DB.shares.length}</div><div class="l">Resources opened</div></div>
+    </div>
+
+    <div class="side">
+      <div class="card">
+        <h2>Coaching queue</h2><div class="cap">Ranked by need, not alphabet.</div>
+        ${[...pool].sort((a,b)=>cScore(b)-cScore(a)).map(p=>{
+          const o = ownedBy(p.id), bits=[];
+          if(!o.length) bits.push("no objectives written");
+          if(f(p,"Overdue for a 1:1")) bits.push(`${f(p,"Days since 1:1")===999?"never":f(p,"Days since 1:1")+"d"} since last 1:1`);
+          if(o.some(x=>f(x,"Confidence")==="Off track")) bits.push("off-track work");
+          if(o.some(isStale)) bits.push("check-ins gone quiet");
+          const s = cScore(p), c = s>=6?"var(--clay)":s>=3?"var(--amber)":"var(--moss)";
+          return `<div class="qi" data-p="${p.id}" aria-current="${p.id===cSel}">
+            <div style="display:flex;justify-content:space-between;gap:8px"><strong style="font-size:13.5px">${esc(f(p,"Name"))}</strong>
+              <span style="width:7px;height:7px;border-radius:50%;background:${c};margin-top:6px;flex:none"></span></div>
+            <div class="mono">${esc(areaName(p)||"")}</div>
+            <div class="why">${bits.join(" · ")||"Healthy"}</div></div>`;}).join("")}
+      </div>
+
+      <div>
+        <div class="card">
+          <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;align-items:baseline">
+            <div><h2>${esc(P?f(P,"Name"):"—")}</h2>
+              <div class="cap" style="margin:0">${esc(f(P,"Role")||"")} · ${esc(areaName(P)||"")} · last talked ${f(P,"Days since 1:1")===999?"never":f(P,"Days since 1:1")+"d ago"} (cadence ${cadence(P)}d)</div></div>
+            <div class="mono">${objs.length} objectives · ${notes.length} notes · ${shares.length} files</div>
+          </div>
+          <div style="display:flex;gap:5px;border-bottom:1px solid var(--rule);margin:14px 0">
+            ${[["notes","Coaching notes"],["files","Files & resources"],["okrs","Their OKRs"]].map(([k,l])=>
+              `<button class="nv" data-t="${k}" style="border-radius:0;border-bottom:2px solid ${cTab===k?"var(--ink)":"transparent"};color:${cTab===k?"var(--ink)":"var(--ink-2)"};font-weight:600">${l}</button>`).join("")}
+          </div>
+          <div id="cpane"></div>
+        </div>
+
+        <div class="card">
+          <h2>Coaching library</h2><div class="cap">Upload once, share with anyone. You can see who's actually opened it.</div>
+          <div class="drop" id="libdrop"><b>Drop a file here, or click to upload</b>Guides, templates, recordings, decks.</div>
+          <div class="lib" style="margin-top:12px">
+            ${DB.resources.map(r=>{
+              const sh = DB.shares.filter(s=>lnk(s,"Resource").includes(r.id));
+              const op = sh.filter(s=>f(s,"Opened")).length;
+              const url = (f(r,"File")||[])[0]?.url;
+              return `<div class="res">
+                <span class="mono">${esc(f(r,"Kind")||"File")}</span>
+                <div style="font-weight:600;font-size:13.5px;margin:6px 0 3px">${url?`<a href="${url}" target="_blank">${esc(f(r,"Name"))}</a>`:esc(f(r,"Name"))}</div>
+                <div class="mono">shared with ${sh.length} · <span class="${op?"seen":"unseen"}">${op} opened</span></div>
+                <button class="btn dash" style="margin-top:8px;width:100%;font-size:12px;padding:5px" data-share="${r.id}">Share with ${esc(P?f(P,"Name").split(" ")[0]:"")}</button>
+              </div>`;}).join("") || `<div class="empty">Library is empty.</div>`}
+          </div>
+        </div>
+
+        <div class="card">
+          <h2>Send a report</h2><div class="cap">Pulled live from the base — nobody retypes anything.</div>
+          <div style="display:flex;gap:7px;flex-wrap:wrap;margin-bottom:11px">
+            <select class="sm" id="rpKind"><option>Leadership summary</option><option>Coaching digest (private)</option><option>Nudge to owners who've gone quiet</option></select>
+            <button class="btn ghost" id="rpGo">Preview</button>
+          </div>
+          <div class="report" id="rpOut">Pick a report and press Preview.</div>
+        </div>
+      </div>
+    </div>`;
+
+  document.querySelectorAll(".qi").forEach(q=>q.onclick=()=>{cSel=q.dataset.p; cFiles=[]; render();});
+  document.querySelectorAll("[data-t]").forEach(b=>b.onclick=()=>{cTab=b.dataset.t; render();});
+  document.querySelectorAll("[data-share]").forEach(b=>b.onclick=async()=>{
+    await post(T.shares, [{fields:{Name:`${nm("resources",b.dataset.share)} → ${f(P,"Name")}`,
+      "Shared on":iso(TODAY), Opened:false, Resource:[b.dataset.share], Person:[cSel]}}]);
+    await reload("shares"); toast("Shared"); render();
+  });
+  dropzone(document.getElementById("libdrop"), async files=>{
+    for(const file of files){
+      const j = await post(T.resources, [{fields:{Name:file.name, Kind:"Guide", Uploaded:iso(TODAY)}}]);
+      await upload(j.records[0].id, FIELD_IDS.resourceFile, file);
+    }
+    await reload("resources"); toast("Uploaded to library"); render();
+  });
+  document.getElementById("rpGo").onclick = () => buildReport();
+  cPane(P, notes, shares, objs);
+};
+
+function cPane(P, notes, shares, objs){
+  const el = document.getElementById("cpane");
+  if(cTab==="notes"){
+    el.innerHTML = `
+      <div style="border:1px solid var(--rule);border-radius:10px;padding:12px;margin-bottom:16px;background:#FCFAF8">
+        <h3>New coaching note</h3>
+        <textarea rows="3" id="nTxt" placeholder="What did you talk about?"></textarea>
+        <div class="toggle" style="margin-top:8px">
+          <div class="sw" id="nSw" role="switch" aria-checked="${cShared}"></div>
+          <div><strong>${cShared?`Visible to ${esc(f(P,"Name"))}`:"Private to you"}</strong>
+            <div class="mono">${cShared?"They'll see this note on their page.":"Default. Only you can read this."}</div></div>
+        </div>
+        <input id="nNext" placeholder="Next step you're committing to"/>
+        <input type="date" id="nDue" style="margin-top:8px"/>
+        <div class="drop" id="nDrop" style="margin-top:8px;padding:12px"><b>Attach a file to this note</b>Their KR draft, meeting notes, a doc you're walking them through.</div>
+        <div class="att" id="nAtt">${cFiles.map((f2,i)=>`<span class="file">📎 ${esc(f2.name)} <span class="mono" data-rm="${i}" style="cursor:pointer">✕</span></span>`).join("")}</div>
+        <button class="btn wide" id="nSave" style="margin-top:9px">Save note</button>
+      </div>
+      <h3>Note history</h3>
+      ${notes.length ? notes.map(n=>{
+        const sh = f(n,"Visibility")==="Shared with leader";
+        const files = f(n,"Files")||[];
+        return `<div class="note ${sh?"shared":""}">
+          <div style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap">
+            <span class="mono"><b>${esc(f(n,"Title")||"Note")}</b> · ${fmt(f(n,"Date"))}</span>
+            <span class="lock ${sh?"sh":""}">${sh?"Shared":"Private"}</span></div>
+          <p style="margin:5px 0 0;font-size:13.5px">${esc(f(n,"Note")||"")}</p>
+          ${f(n,"Next step")?`<div class="next">${f(n,"Follow-up done")?"✓":"→"} <strong>Next:</strong> ${esc(f(n,"Next step"))}
+            ${f(n,"Follow-up due")?`<span class="mono">· due ${fmt(f(n,"Follow-up due"))}</span>`:""}
+            ${!f(n,"Follow-up done")?`<button class="btn dash" style="margin-left:6px;font-size:11px;padding:3px 7px" data-done="${n.id}">Mark done</button>`:""}</div>`:""}
+          ${files.length?`<div class="att">${files.map(x=>`<span class="file">📎 <a href="${x.url}" target="_blank">${esc(x.filename)}</a></span>`).join("")}</div>`:""}
+        </div>`;}).join("") : `<div class="empty">No notes yet. The first conversation is the one that matters.</div>`}`;
+
+    document.getElementById("nSw").onclick = ()=>{cShared=!cShared; cPane(P,notes,shares,objs);};
+    document.querySelectorAll("[data-rm]").forEach(x=>x.onclick=()=>{cFiles.splice(+x.dataset.rm,1); cPane(P,notes,shares,objs);});
+    dropzone(document.getElementById("nDrop"), files=>{ cFiles.push(...files); cPane(P,notes,shares,objs); });
+    document.querySelectorAll("[data-done]").forEach(b=>b.onclick=async()=>{
+      await patch(T.notes, [{id:b.dataset.done, fields:{"Follow-up done":true}}]);
+      await reload("notes"); toast("Follow-up closed"); render();
+    });
+    document.getElementById("nSave").onclick = async()=>{
+      const txt = document.getElementById("nTxt").value.trim();
+      if(!txt) return toast("Write something first", true);
+      const btn = document.getElementById("nSave"); btn.disabled=true; btn.textContent="Saving…";
+      const j = await post(T.notes, [{fields:{
+        Title:`${f(P,"Name")} — ${fmt(TODAY)}`, Date:iso(TODAY), Note:txt,
+        Visibility: cShared?"Shared with leader":"Private",
+        "Next step": document.getElementById("nNext").value.trim(),
+        "Follow-up due": document.getElementById("nDue").value || null,
+        Person:[P.id]}}]);
+      for(const file of cFiles) await upload(j.records[0].id, FIELD_IDS.notesFiles, file);
+      cFiles=[]; cShared=false;
+      await reload("notes"); toast("Note saved"); render();
+    };
+  }
+
+  if(cTab==="files"){
+    el.innerHTML = `
+      <div class="cap">Files you've given ${esc(f(P,"Name"))}. "Not opened yet" is the coaching conversation.</div>
+      ${shares.length ? shares.map(s=>{
+        const r = rec("resources", one(s,"Resource"));
+        const url = r ? (f(r,"File")||[])[0]?.url : null;
+        return `<div class="row">
+          <div><strong style="font-size:13.5px">📎 ${url?`<a href="${url}" target="_blank">${esc(nm("resources",one(s,"Resource")))}</a>`:esc(nm("resources",one(s,"Resource")))}</strong>
+            <div class="mono">shared ${fmt(f(s,"Shared on"))}</div></div>
+          <span class="${f(s,"Opened")?"seen":"unseen"}">${f(s,"Opened")?"opened ✓":"not opened yet"}</span>
+        </div>`;}).join("") : `<div class="empty">Nothing shared with ${esc(f(P,"Name"))} yet. Use the library below.</div>`}`;
+  }
+
+  if(cTab==="okrs"){
+    el.innerHTML = objs.length ? objs.map(o=>{
+      const p = pct(objProgress(o)), c = f(o,"Confidence")||"Not started";
+      return `<div class="row" style="cursor:pointer" data-go="${o.id}">
+        <div><strong style="font-size:13.5px">${esc(f(o,"Title"))}</strong>
+          <div class="prog" style="width:220px"><span style="width:${p}%;background:${col(c)}"></span></div>
+          <div class="mono">${p}% · ${esc(nm("cycles",one(o,"Cycle")))}</div></div>
+        <span class="mono" style="color:${isStale(o)?"var(--clay)":"var(--ink-2)"}">check-in ${staleDays(o)===999?"never":staleDays(o)+"d ago"}</span>
+      </div>`;}).join("")
+      : `<div class="empty">${esc(f(P,"Name"))} hasn't written any objectives. That's the conversation.</div>`;
+    document.querySelectorAll("[data-go]").forEach(r=>r.onclick=()=>openObjective(r.dataset.go));
+  }
+}
+
+function buildReport(){
+  const kind = document.getElementById("rpKind").value;
+  const objs = DB.objectives.filter(o=>f(o,"Scope")!=="JV 5-year");
+  const off = objs.filter(o=>f(o,"Confidence")==="Off track");
+  const risk = objs.filter(o=>f(o,"Confidence")==="At risk");
+  const on = objs.filter(o=>f(o,"Confidence")==="On track");
+  const stale = objs.filter(isStale);
+  const late = objs.flatMap(o=>objTasks(o.id)).filter(isLate).length;
+  const orphanKrs = jvKrs().filter(k=>!childObjectives(k.id).length);
+  const line = o => `• ${areaName(o)||""} — ${f(o,"Title")} (${pct(objProgress(o))}%)`;
+  let out;
+
+  if(kind==="Leadership summary"){
+    out = `JV OKR — ${fmt(TODAY)}
+
+WHERE WE ARE
+${on.length} on track · ${risk.length} at risk · ${off.length} off track · ${late} overdue tasks.
+${objs.length?Math.round(objs.filter(o=>staleDays(o)<=7).length/objs.length*100):0}% of objectives were checked in this week.
+
+NEEDS A DECISION
+${off.map(o=>`${line(o)} — off track, ${staleDays(o)}d since last check-in.`).join("\n") || "• Nothing off track."}
+
+WATCH LIST
+${risk.map(line).join("\n") || "• Nothing at risk."}
+
+GONE QUIET (no check-in in ${STALE}+ days)
+${stale.map(o=>`${line(o)} — ${staleDays(o)}d.`).join("\n") || "• None."}
+
+DECISIONS MADE THIS CYCLE
+${DB.decisions.slice(-6).map(d=>`• ${f(d,"Decision")} — ${(f(d,"Why")||"").slice(0,110)}`).join("\n") || "• None recorded."}
+
+NOTHING POINTED AT THESE JV KEY RESULTS
+${orphanKrs.map(k=>`• ${f(k,"Title")}`).join("\n") || "• Every JV key result has work laddering to it."}
+
+WORK THAT DOESN'T LADDER (${unlanded().length})
+${unlanded().map(o=>`• ${areaName(o)} — ${f(o,"Title")} (${supportsJv(o)?"supports JV":"standalone"})`).join("\n") || "• None."}`;
+  } else if(kind==="Coaching digest (private)"){
+    const pool = DB.people.filter(p=>["Country leader","Division leader","Team leader"].includes(f(p,"Role")));
+    out = `COACHING DIGEST — private to the OKR director
+${fmt(TODAY)}
+
+OVERDUE FOR A CONVERSATION
+${pool.filter(p=>f(p,"Overdue for a 1:1")).map(p=>`• ${f(p,"Name")} (${areaName(p)||""}) — ${f(p,"Days since 1:1")===999?"never talked":f(p,"Days since 1:1")+"d"}, cadence ${cadence(p)}d.`).join("\n") || "• Everyone's current."}
+
+FOLLOW-UPS YOU COMMITTED TO
+${DB.notes.filter(n=>f(n,"Next step") && !f(n,"Follow-up done"))
+  .map(n=>`• ${nm("people",one(n,"Person"))} — ${f(n,"Next step")}${f(n,"Follow-up due")?` (due ${fmt(f(n,"Follow-up due"))})`:""}`).join("\n") || "• None open."}
+
+NO OBJECTIVES WRITTEN
+${pool.filter(p=>!ownedBy(p.id).length).map(p=>`• ${f(p,"Name")} (${areaName(p)||""})`).join("\n") || "• Everyone has objectives."}
+
+RESOURCES SENT BUT NEVER OPENED
+${DB.shares.filter(s=>!f(s,"Opened")).map(s=>`• ${nm("people",one(s,"Person"))} — ${nm("resources",one(s,"Resource"))} (sent ${fmt(f(s,"Shared on"))})`).join("\n") || "• None."}`;
+  } else {
+    out = `To: owners of objectives that have gone quiet
+Subject: Quick OKR check-in
+
+Hi —
+
+Your objective hasn't had a check-in in over ${STALE} days, or has tasks past due. Two minutes:
+
+• What moved since last time?
+• What's in the way?
+• Still on track, at risk, or off track?
+
+[Log check-in →]
+
+Going to: ${stale.map(o=>nm("people",one(o,"Owner"))).filter(Boolean).join(", ") || "nobody — everyone's current"}`;
+  }
+  document.getElementById("rpOut").textContent = out;
+}
+
+/* ============================ ARCHIVE ============================ */
+// Finished work doesn't vanish and doesn't clutter. It comes here, by cycle,
+// with what it achieved and why it ended the way it did.
+let aCycle = "";
+V.archive = () => {
+  const done = DB.objectives.filter(o=>f(o,"Scope")!=="JV 5-year" && ARCHIVED(o));
+  const shown = done.filter(o=>!aCycle || lnk(o,"Cycle").includes(aCycle));
+  const cycles = DB.cycles.filter(c=>done.some(o=>lnk(o,"Cycle").includes(c.id)));
+  const krsArch = DB.krs.filter(KR_ARCHIVED);
+
+  const byCycle = {};
+  shown.forEach(o=>{ const c = one(o,"Cycle") || "none"; (byCycle[c] ||= []).push(o); });
+
+  document.getElementById("view").innerHTML = `
+    <div class="head">
+      <div><h1>Archive</h1>
+        <div class="sub">Closed and abandoned work, by cycle. Nothing is deleted — this is what JV tried, and how it went.</div></div>
+      <div class="filters">
+        <select class="sm" id="ac"><option value="">All cycles</option>
+          ${cycles.map(c=>`<option value="${c.id}" ${aCycle===c.id?"selected":""}>${esc(f(c,"Name"))}</option>`).join("")}</select>
+      </div>
+    </div>
+
+    <div class="tiles">
+      <div class="tile"><div class="v">${done.length}</div><div class="l">Archived objectives</div></div>
+      <div class="tile b-ok"><div class="v">${done.filter(o=>f(o,"Status")==="Closed").length}</div><div class="l">Closed</div></div>
+      <div class="tile b-off"><div class="v">${done.filter(o=>f(o,"Status")==="Abandoned").length}</div><div class="l">Abandoned</div></div>
+      <div class="tile b-ind"><div class="v">${krsArch.length}</div><div class="l">Retired key results</div></div>
+    </div>
+
+    ${Object.entries(byCycle).map(([cid, list])=>`
+      <div style="margin-bottom:22px">
+        <div class="eyebrow" style="margin-bottom:8px">${esc(cid==="none" ? "NO CYCLE" : nm("cycles",cid).toUpperCase())}</div>
+        ${list.map(o=>{
+          const krs = objKrsAll(o.id);
+          const decs = DB.decisions.filter(d=>lnk(d,"Objective").includes(o.id));
+          const retro = DB.reviews.find(r=>lnk(r,"Objective").includes(o.id) && f(r,"Type")==="Retrospective");
+          const hit = krs.length ? Math.round(krs.reduce((a,k)=>a+(f(k,"Progress")||0),0)/krs.length*100) : 0;
+          return `<div class="card" style="opacity:.92">
+            <div style="display:flex;justify-content:space-between;gap:12px;align-items:baseline;flex-wrap:wrap">
+              <div>
+                <div class="eyebrow">${esc(areaName(o)||"")} · ${esc(nm("people",one(o,"Owner")))}</div>
+                <h2 style="margin-top:3px">${esc(f(o,"Title"))}</h2>
+              </div>
+              <div style="display:flex;gap:6px;align-items:center">
+                <span class="pill ${f(o,"Status")==="Abandoned"?"p-off":"p-none"}">${esc(f(o,"Status"))}</span>
+                <button class="btn ghost" style="padding:5px 10px;font-size:12px" data-reopen="${o.id}">Reopen</button>
+              </div>
+            </div>
+            <div class="mono">${alignLine(o)}</div>
+            <div class="prog" style="margin-top:8px"><span style="width:${hit}%;background:#93A0AB"></span></div>
+            <div class="mono" style="margin-top:4px">finished at ${hit}%</div>
+
+            ${krs.length?`<div style="margin-top:11px">
+              ${krs.map(k=>`<div class="task"><span class="t">${esc(f(k,"Title"))}</span>
+                <span class="m">${f(k,"Current value")??0} / ${f(k,"Target value")??0}${esc(f(k,"Unit")||"")} · ${pct(f(k,"Progress"))}%</span></div>`).join("")}
+            </div>`:""}
+
+            ${decs.length?`<div style="margin-top:12px">
+              <div class="eyebrow" style="margin-bottom:6px">Decisions along the way</div>
+              ${decs.map(d=>`<div class="dec ${esc(f(d,"Type")||"")}" style="margin-bottom:7px">
+                <div class="what" style="margin:0">${esc(f(d,"Decision"))}</div>
+                <div class="why2">${esc(f(d,"Why")||"")}</div>
+                <div class="mono" style="margin-top:5px">${esc(f(d,"Source")||"")} · ${fmt(f(d,"Date"))}</div>
+              </div>`).join("")}
+            </div>`:""}
+
+            ${retro && f(retro,"Outcome")?`<div class="next" style="margin-top:10px">
+              <strong>From the retro:</strong> ${esc(f(retro,"Outcome"))}</div>`:""}
+          </div>`;}).join("")}
+      </div>`).join("") || `<div class="card empty">Nothing archived yet. When an objective closes, it lands here.</div>`}
+
+    ${krsArch.length?`<div class="card">
+      <h2>Retired key results</h2>
+      <div class="cap">Measures that stopped being the right measure. Their objective may still be running.</div>
+      ${krsArch.map(k=>`<div class="row">
+        <div><strong>${esc(f(k,"Title"))}</strong>
+          <div class="mono">${esc(nm("objectives", one(k,"Objective")))} · finished at ${pct(f(k,"Progress"))}%</div></div>
+        <button class="btn ghost" style="padding:5px 10px;font-size:12px" data-unarch="${k.id}">Restore</button>
+      </div>`).join("")}
+    </div>`:""}`;
+
+  document.getElementById("ac").onchange = e=>{aCycle=e.target.value; render();};
+  document.querySelectorAll("[data-reopen]").forEach(b=>b.onclick=async()=>{
+    await patch(T.objectives, [{id:b.dataset.reopen, fields:{Status:"Active"}}]);
+    await reload("objectives"); toast("Reopened — it's back on the dashboard"); render();
+  });
+  document.querySelectorAll("[data-unarch]").forEach(b=>b.onclick=async()=>{
+    await patch(T.krs, [{id:b.dataset.unarch, fields:{Archived:false}}]);
+    await reload("krs"); toast("Key result restored"); render();
+  });
+};
+
+/* ============================ FILE DROP ============================ */
+function dropzone(el, cb){
+  if(!el) return;
+  const inp = document.createElement("input");
+  inp.type="file"; inp.multiple=true; inp.style.display="none"; el.appendChild(inp);
+  el.onclick = e => { if(e.target!==inp) inp.click(); };
+  inp.onchange = () => cb([...inp.files]);
+  el.ondragover = e => { e.preventDefault(); el.classList.add("over"); };
+  el.ondragleave = () => el.classList.remove("over");
+  el.ondrop = e => { e.preventDefault(); el.classList.remove("over"); cb([...e.dataTransfer.files]); };
+}
+
+/* ============================ SIGN IN ============================ */
+// Google verifies who you are. The function decides what you may see.
+// Nothing loads until both have happened.
+
+function gate(html){
+  document.getElementById("bar").style.display = "none";
+  document.getElementById("view").className = "";
+  document.getElementById("view").innerHTML =
+    `<div class="card" style="max-width:520px;margin:60px auto;text-align:center">
+       <img src="icon.svg" width="52" height="52" style="border-radius:12px"/>
+       ${html}
+     </div>`;
+}
+
+function signOut(){
+  ID_TOKEN = null;
+  try{ sessionStorage.removeItem("jvokr.tok"); }catch(e){}
+  google.accounts.id.disableAutoSelect();
+  location.reload();
+}
+
+async function onGoogle(res){
+  ID_TOKEN = res.credential;
+  try{ sessionStorage.setItem("jvokr.tok", ID_TOKEN); }catch(e){}
+  await start();
+}
+
+async function start(){
+  const r = await fetch(`${API}?action=me`, {headers: authHeaders()});
+  const j = await r.json();
+  if(!r.ok){
+    ID_TOKEN = null;
+    try{ sessionStorage.removeItem("jvokr.tok"); }catch(e){}
+    return gate(`<h2 style="margin-top:12px">Can't let you in</h2>
+      <div class="cap" style="color:var(--clay)">${esc(j.error||"Sign-in failed")}</div>
+      <div id="gbtn" style="display:flex;justify-content:center;margin-top:16px"></div>`)
+      || drawButton();
+  }
+  AUTH = j.me;
+  document.getElementById("bar").style.display = "";
+  document.getElementById("view").innerHTML = `<div class="card empty">Loading…</div>`;
+  try { await load(); }
+  catch(e){
+    document.getElementById("view").innerHTML =
+      `<div class="card" style="max-width:640px"><h2>Couldn't reach the base</h2>
+       <div class="cap" style="font-family:'Plus Jakarta Sans',sans-serif;font-variant-numeric:tabular-nums;color:var(--clay);font-size:12.5px">${esc(e.message)}</div>
+       <div class="hint">Open <code>${API}?action=diag</code> to see what the function can and can't see.</div></div>`;
+    return;
+  }
+  if(AUTH.isNew) welcome();
+  else maybeGuide();
+}
+
+/* First sign-in: they exist now, but nobody knows where they sit. */
+function welcome(){
+  const units = unitsSorted(namedUnits());
+
+  // Empty org: don't strand anyone at a dead dropdown.
+  if(!units.length){
+    document.getElementById("view").innerHTML = `
+      <div class="head"><div>
+        <h1>Welcome, ${esc(AUTH.name.split(" ")[0])}</h1>
+        <div class="sub">You're in.</div>
+      </div></div>
+      <div class="card" style="max-width:560px">
+        ${iAmLeader() ? `
+          <h2>Nothing's set up yet — that's your first job</h2>
+          <div class="cap">JV's countries, divisions, departments and teams don't exist in here yet.
+            Build a couple and everything else has somewhere to live.</div>
+          <button class="btn jv wide" id="wOrg">Set up the org →</button>`
+        : `
+          <h2>Almost ready</h2>
+          <div class="cap">The org hasn't been set up yet. Ask Mike or Mel to add your country or division,
+            then reload — you'll be able to pick where you sit.</div>`}
+      </div>`;
+    const org = document.getElementById("wOrg");
+    if(org) org.onclick = ()=>{ VIEW="org"; AUTH.isNew=false; drawChrome(); render(); };
+    return;
+  }
+
+  document.getElementById("view").innerHTML = `
+    <div class="head"><div>
+      <h1>Welcome, ${esc(AUTH.name.split(" ")[0])}</h1>
+      <div class="sub">You're in. One question before you look around.</div>
+    </div></div>
+    <div class="card" style="max-width:560px">
+      <h2>Which unit are you part of?</h2>
+      <div class="cap">This is what puts your work on your page — and your name on your team's reviews. You can change it later.</div>
+      <div class="field">
+        <select id="wArea">
+          ${units.map(u=>`<option value="${u.id}">${esc(unitCrumb(u))} · ${esc(f(u,"Type")||"")}</option>`).join("")}
+        </select>
+      </div>
+      <button class="btn wide" id="wGo">That's me</button>
+      <div class="hint">You're set up as <b>Staff</b> — you can browse everything across JV, add and tick tasks, log check-ins and answer reviews.
+        If you lead a country, division or team, ask Mike to change your role.</div>
+    </div>`;
+  const sel = document.getElementById("wArea");
+  document.getElementById("wGo").onclick = async()=>{
+    const unitId = sel.value;
+    if(!unitId) return toast("Pick one", true);
+    const area = f(rec("units", unitId), "Name");
+    const r = await fetch(`${API}?action=setarea`, {method:"POST", headers:authHeaders({"Content-Type":"application/json"}), body:JSON.stringify({unitId, area})});
+    const j = await r.json();
+    if(!r.ok) return toast(j.error||"Couldn't save", true);
+    AUTH = j.me;
+    await reload("people");
+    ME = DB.people.find(p=>p.id===AUTH.id) || ME;
+    toast(`Welcome to ${area}`);
+    jvLens = "browse"; VIEW = "jv"; drawChrome(); render();
+    maybeGuide();
+  };
+}
+
+function drawButton(){
+  const el = document.getElementById("gbtn");
+  if(!el || !window.google) return;
+  google.accounts.id.initialize({ client_id: CLIENT_ID, callback: onGoogle });
+  google.accounts.id.renderButton(el, {theme:"outline", size:"large", text:"signin_with", shape:"pill"});
+}
+
+let CLIENT_ID = null;
+(async () => {
+  const cfg = await fetch(`${API}?action=config`).then(r=>r.json()).catch(()=>({}));
+  CLIENT_ID = cfg.googleClientId;
+
+  if(!CLIENT_ID)
+    return gate(`<h2 style="margin-top:12px">Almost there</h2>
+      <div class="cap">Set <code>GOOGLE_CLIENT_ID</code> in the Netlify environment variables and redeploy.
+      See the README for how to create it.</div>`);
+
+  const saved = (()=>{ try{ return sessionStorage.getItem("jvokr.tok"); }catch(e){ return null; } })();
+  if(saved){ ID_TOKEN = saved; return start(); }
+
+  gate(`<h2 style="margin-top:12px">JV OKR</h2>
+    <div class="cap">Sign in with your JV Google account.${cfg.domain?` (${esc(cfg.domain)})`:""}</div>
+    <div id="gbtn" style="display:flex;justify-content:center;margin-top:16px"></div>`);
+  const wait = setInterval(()=>{ if(window.google){ clearInterval(wait); drawButton(); } }, 120);
+})();
+</script>
+</body>
 </html>
