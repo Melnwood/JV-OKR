@@ -332,8 +332,14 @@ const get = async t => {
   if (!j.records) throw new Error(`"${t}" returned no records array. Check the table name matches the base exactly.`);
   return j;
 };
-const post  = (t,records) => fetch(`${API}?table=${encodeURIComponent(t)}`,{method:"POST",headers:authHeaders({"Content-Type":"application/json"}),body:JSON.stringify({records})}).then(j=>j.json());
-const patch = (t,records) => fetch(`${API}?table=${encodeURIComponent(t)}`,{method:"PATCH",headers:authHeaders({"Content-Type":"application/json"}),body:JSON.stringify({records})}).then(j=>j.json());
+const write = async (t, records, method) => {
+  const r = await fetch(`${API}?table=${encodeURIComponent(t)}`,{method,headers:authHeaders({"Content-Type":"application/json"}),body:JSON.stringify({records})});
+  const j = await r.json().catch(()=>({}));
+  if (!r.ok || j.error){ const m = `Didn't save — ${j.error || "HTTP "+r.status}`; toast(m, true); throw new Error(m); }
+  return j;
+};
+const post  = (t,records) => write(t,records,"POST");
+const patch = (t,records) => write(t,records,"PATCH");
 const del = async (t, ids) => {
   const r = await fetch(`${API}?table=${encodeURIComponent(t)}&ids=${ids.join(",")}`, {method:"DELETE", headers: authHeaders()});
   const j = await r.json();
@@ -756,7 +762,7 @@ function drawMap(N, LV){
     const ys = ch.map(place); const y=(ys[0]+ys[ys.length-1])/2;
     pos[n.id]={x:PL+n.lvl*(W+GX), y}; return y;
   };
-  act.filter(n=>n.lvl===0).forEach(n=>{ place(n); cur+=22; });
+  act.filter(n=>!n.p).forEach(n=>{ place(n); cur+=22; });
   if(!act.length){ document.getElementById("cv").innerHTML = `<div class="empty">Nothing to map yet.</div>`; return; }
   const maxY = Math.max(...Object.values(pos).map(p=>p.y))+H+30, maxX = PL+5*(W+GX);
   const heads = LV.map((l,i)=>`<text class="colhead" x="${PL+i*(W+GX)}" y="18">${l}</text>`).join("");

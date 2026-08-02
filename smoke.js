@@ -5,7 +5,7 @@
 const fs = require('fs');
 const html = fs.readFileSync('index.html', 'utf8');
 const body = html.match(/<script>([\s\S]*)<\/script>/)[1];
-const el = () => ({innerHTML:"",className:"",style:{},dataset:{},
+const el = () => ({innerHTML:"",className:"",style:{},dataset:{},setAttribute(){},
   classList:{add(){},remove(){},toggle(){},contains(){return false}},
   appendChild(){},append(){},insertAdjacentHTML(){},querySelectorAll:()=>[],
   querySelector:()=>null,closest:()=>null,focus(){},setSelectionRange(){},
@@ -27,9 +27,10 @@ const k0={id:"k0",fields:{Title:"JV KR1",Objective:["jv"],"Current value":42,"Ta
 const o={id:"o",fields:{Title:"Coach team leads",Scope:"Country","Org Unit":["u"],"Parent Key Result":["k0"],Alignment:"Ladders to a JV key result",Owner:["p"],Confidence:"On track",Progress:.62,Cycle:["c"]}};
 const k1={id:"k1",fields:{Title:"Leads with a plan",Objective:["o"],"Current value":8,"Target value":12,Progress:.67,Confidence:"On track"}};
 const t1={id:"t1",fields:{Title:"Sit with each lead",Status:"Open","Key Result":["k1"],Owner:["p"],"Due date":"2026-08-05"}};
+const o2={id:"o2",fields:{Title:"Build intern pipeline",Scope:"Country","Org Unit":["u"],Alignment:"Standalone",Owner:["p"],Confidence:"On track",Progress:.3,Cycle:["c"]}};
 const p={id:"p",fields:{Name:"Mel",Role:"Executive","Org Unit":["u"]}};
 const c={id:"c",fields:{Name:"FY2026",Type:"Annual"}};
-Object.assign(global.__DB,{people:[p],cycles:[c],units:[u],objectives:[jv,o],krs:[k0,k1],tasks:[t1],checkins:[],reviews:[],responses:[],decisions:[],notes:[],resources:[],shares:[]});
+Object.assign(global.__DB,{people:[p],cycles:[c],units:[u],objectives:[jv,o,o2],krs:[k0,k1],tasks:[t1],checkins:[],reviews:[],responses:[],decisions:[],notes:[],resources:[],shares:[]});
 global.__A({id:"p",name:"Mel",role:"Executive"});global.__M(p);
 
 let ok=true;
@@ -37,7 +38,7 @@ for(const n of ["jv","okrs","objective","mine","org","archive","coaching","check
   try{ global.__V[n](); process.stdout.write(n+" ✓ "); }
   catch(e){ ok=false; console.log("\n"+n+" ✗ "+e.message); }
 }
-for(const n of ["dashboard","browse"]){
+for(const n of ["dashboard","map","browse"]){
   try{ global.__LENS[n](); process.stdout.write("lens:"+n+" ✓ "); }
   catch(e){ ok=false; console.log("\nlens:"+n+" ✗ "+e.message); }
 }
