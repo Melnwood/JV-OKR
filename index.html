@@ -269,6 +269,9 @@
   .tckr{display:flex;align-items:center;gap:12px;padding:9px 0;border-bottom:1px dashed var(--rule)}
   .tcnum{width:90px;font:inherit;font-size:15px;font-weight:600;padding:7px 10px;border:1px solid var(--rule);border-radius:8px;text-align:right}
   .krwin{border:1px solid var(--rule);border-radius:10px;padding:12px 14px;margin:12px 0;background:#fff}
+  .viztog{display:flex;gap:3px;background:var(--jv-50);border:1px solid var(--jv-edge);border-radius:999px;padding:3px;flex:none}
+  .viztog button{font:inherit;font-size:11px;padding:4px 11px;border-radius:999px;border:none;cursor:pointer;background:transparent;color:var(--ink-2)}
+  .viztog button.on{background:var(--jv);color:#fff;font-weight:700}
   .prog.hist{position:relative;overflow:visible}
   .hmark{position:absolute;top:-2.5px;width:2.5px;height:14px;background:var(--ink-2);opacity:.5;border-radius:2px}
   .hdates{position:relative;height:14px;margin-top:3px}
@@ -660,6 +663,116 @@ V.jv = () => {
 };
 const LENS = {};
 
+/* movement — how far a number actually traveled lately, from KR History */
+const histOf = k => (f(k,"History")||"").split("\n").filter(x=>/^\d{4}-\d{2}-\d{2}/.test(x))
+  .map(l=>{const i=l.indexOf(" · "); return {d:l.slice(0,10), v:+l.slice(i+3)};}).filter(m=>!isNaN(m.v));
+const krMove = (k, days=7) => {
+  const h = histOf(k); if(!h.length) return 0;
+  const cutoff = iso(new Date(TODAY.getTime()-days*864e5));
+  if(!h.some(m=>m.d>=cutoff)) return 0;
+  const before = [...h].reverse().find(m=>m.d<cutoff);
+  const base = before ? before.v : (f(k,"Start value")||0);
+  const now = f(k,"Current value")??0, st = f(k,"Start value")||0, tv = f(k,"Target value")??0;
+  return (tv-st) ? (now-base)/(tv-st) : 0;
+};
+const objMove = (o, days=7) => {
+  const ks = objKrs(o.id); if(!ks.length) return 0;
+  return ks.reduce((s,k)=>s+krMove(k,days),0)/ks.length;
+};
+const movePill = m => { const pp = Math.round(m*100);
+  return pp>0 ? `<span class="pill p-on">↑ ${pp}% this wk</span>` : pp<0 ? `<span class="pill p-off">↓ ${-pp}% this wk</span>` : ""; };
+
+/* ── dial & line: the two faces of a key result ── */
+let VIZ = {}; try{ VIZ = JSON.parse(localStorage.getItem("jvViz")||"{}"); }catch(e){}
+const setViz = (id,m) => { VIZ[id]=m; try{ localStorage.setItem("jvViz", JSON.stringify(VIZ)); }catch(e){} };
+const vizPolar=(cx,cy,r,fr)=>{const a=Math.PI*(1-Math.max(0,Math.min(1,fr)));return [cx+r*Math.cos(a),cy-r*Math.sin(a)];};
+const vizArc=(cx,cy,r,f0,f1,w,color,op)=>{const [x0,y0]=vizPolar(cx,cy,r,f0),[x1,y1]=vizPolar(cx,cy,r,f1);
+  return `<path d="M${x0},${y0} A${r},${r} 0 ${f1-f0>.5?1:0} 1 ${x1},${y1}" fill="none" stroke="${color}" stroke-width="${w}" stroke-opacity="${op??1}"/>`;};
+const vizTick=(cx,cy,r,fr,len,color,w)=>{const [x0,y0]=vizPolar(cx,cy,r-len/2,fr),[x1,y1]=vizPolar(cx,cy,r+len/2,fr);
+  return `<line x1="${x0}" y1="${y0}" x2="${x1}" y2="${y1}" stroke="${color}" stroke-width="${w||2}"/>`;};
+
+function svgDial(kr, big){
+  const S = big?430:300, cx=S/2, cy=S/2-6, R=S/2-(big?52:42), W2=big?26:18;
+  const st=f(kr,"Start value")||0, tgt=f(kr,"Target value")??0, cur=f(kr,"Current value")??0, unit=f(kr,"Unit")||"";
+  const com=f(kr,"Commit"), str=f(kr,"Stretch");
+  const max=Math.max(str||0, tgt, cur) || 1;
+  const fr=v=>(v-st)/((max-st)||1);
+  const h=histOf(kr); const pts=[st, ...h.map(m=>m.v)]; if(pts[pts.length-1]!==cur) pts.push(cur);
+  let segs=""; for(let i=1;i<pts.length;i++) segs+=vizArc(cx,cy,R,fr(pts[i-1]),fr(pts[i]),W2,"var(--jv)",.35+i*(.65/(pts.length-1||1)));
+  const seams=pts.slice(1,-1).map(v=>vizTick(cx,cy,R,fr(v),W2+7,"#fff",2.2)).join("");
+  const mark=(v,lab,colr)=>{ if(v==null||v===tgt&&lab==="commit") return ""; const frv=fr(v);
+    const [lx,ly]=vizPolar(cx,cy,R+W2/2+(big?18:13),frv);
+    return vizTick(cx,cy,R,frv,W2+14,colr,2.4)+`<text x="${lx}" y="${ly}" font-size="${big?11:9.5}" font-weight="700" fill="${colr}" text-anchor="${frv>.7?"end":frv<.3?"start":"middle"}">${lab} ${v}</text>`; };
+  const lastH=h[h.length-1];
+  const lastJump = lastH ? Math.round((lastH.v-(h.length>1?h[h.length-2].v:st))*10)/10 : 0;
+  const [nx,ny]=vizPolar(cx,cy,R,fr(cur));
+  return `<svg width="100%" viewBox="0 0 ${S} ${S/2+52}" style="max-width:${big?560:340}px;display:block;margin:0 auto">
+    ${vizArc(cx,cy,R,0,1,W2,"var(--rule-2)")}${segs}${seams}
+    ${mark(com,"commit","#98928A")}${mark(tgt,"target","var(--jv-deep)")}
+    <circle cx="${nx}" cy="${ny}" r="${big?6:4.5}" fill="var(--jv)"/>
+    <text x="${cx}" y="${cy-(big?16:10)}" font-size="${big?42:26}" font-weight="800" fill="var(--ink)" text-anchor="middle">${cur}</text>
+    <text x="${cx}" y="${cy+(big?10:9)}" font-size="${big?13.5:11}" fill="var(--ink-3)" text-anchor="middle">of ${tgt}${esc(unit)}</text>
+    <text x="${cx}" y="${cy+(big?31:26)}" font-size="${big?12:10.5}" font-weight="700" fill="${lastH?"var(--moss)":"var(--ink-3)"}" text-anchor="middle">${lastH?`last moved ${esc(fmt(lastH.d))} · ${lastJump>=0?"+":""}${lastJump}`:"no movement yet"}</text>
+    <text x="${cx-R}" y="${cy+26}" font-size="10" fill="var(--ink-3)" text-anchor="middle">${st}</text>
+    <text x="${cx+R}" y="${cy+26}" font-size="10" fill="var(--ink-3)" text-anchor="middle">${max}</text>
+  </svg>`;
+}
+
+function svgLine(kr){
+  const W=840,Hh=220,PADL=46,PADR=56;
+  const st=f(kr,"Start value")||0, tgt=f(kr,"Target value")??0, cur=f(kr,"Current value")??0;
+  const com=f(kr,"Commit");
+  const max=Math.max(tgt,cur,f(kr,"Stretch")||0)||1;
+  const obj=rec("objectives",one(kr,"Objective")); const cyc=obj&&rec("cycles",one(obj,"Cycle"));
+  const h=histOf(kr);
+  let cs=(cyc&&f(cyc,"Start"))||null, ce=(cyc&&f(cyc,"End"))||null;
+  if(!cs) cs = h.length? h[0].d : iso(new Date(TODAY.getTime()-30*864e5));
+  if(!ce || ce<=cs) ce = iso(new Date(new Date(cs).getTime()+120*864e5));
+  const t0=new Date(cs).getTime(), t1=new Date(ce).getTime();
+  const dx=d=>PADL+((new Date(d).getTime()-t0)/(t1-t0))*(W-PADL-PADR);
+  const yv=v=>Hh-32-((v-st)/((max-st)||1))*(Hh-78);
+  const todayX=Math.min(W-PADR,Math.max(PADL,dx(iso(TODAY))));
+  let months=""; let mcur=new Date(t0); mcur.setDate(1); mcur.setMonth(mcur.getMonth()+1);
+  while(mcur.getTime()<t1){ const x=dx(iso(mcur));
+    if(x>=PADL-2 && x<=W-PADR) months+=`<line x1="${x}" y1="${Hh-32}" x2="${x}" y2="12" stroke="var(--rule-2)"/><text x="${x+4}" y="${Hh-16}" font-size="11" fill="var(--ink-3)">${mcur.toLocaleDateString("en-GB",{month:"short"})}</text>`;
+    mcur.setMonth(mcur.getMonth()+1); }
+  const pts=[{d:cs,v:st},...h.filter(m=>m.d>=cs)];
+  let ridge=`M${dx(pts[0].d)},${yv(pts[0].v)}`;
+  for(let i=1;i<pts.length;i++) ridge+=` L${dx(pts[i].d)},${yv(pts[i-1].v)} L${dx(pts[i].d)},${yv(pts[i].v)}`;
+  ridge+=` L${todayX},${yv(cur)}`;
+  const area=ridge+` L${todayX},${yv(st)} L${dx(pts[0].d)},${yv(st)} Z`;
+  const gid="lg"+kr.id;
+  return `<svg width="100%" viewBox="0 0 ${W} ${Hh}" style="display:block">
+    <defs><linearGradient id="${gid}" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="var(--jv)" stop-opacity=".8"/><stop offset="100%" stop-color="var(--jv)" stop-opacity=".08"/></linearGradient></defs>
+    ${months}
+    <line x1="${PADL}" y1="${yv(tgt)}" x2="${W-PADR}" y2="${yv(tgt)}" stroke="var(--jv-deep)" stroke-dasharray="5 5" opacity=".5"/>
+    <text x="${W-PADR+4}" y="${yv(tgt)+4}" font-size="10.5" font-weight="700" fill="var(--jv-deep)">${tgt}</text>
+    ${com!=null&&com!==tgt?`<line x1="${PADL}" y1="${yv(com)}" x2="${W-PADR}" y2="${yv(com)}" stroke="var(--ink-3)" stroke-dasharray="4 4" opacity=".5"/><text x="${W-PADR+4}" y="${yv(com)+4}" font-size="10" fill="var(--ink-3)">${com}</text>`:""}
+    <path d="${area}" fill="url(#${gid})"/><path d="${ridge}" fill="none" stroke="var(--jv)" stroke-width="3" stroke-linejoin="round"/>
+    ${pts.slice(1).map((p,i)=>`<circle cx="${dx(p.d)}" cy="${yv(p.v)}" r="4.5" fill="#fff" stroke="var(--jv)" stroke-width="3"/><text x="${dx(p.d)}" y="${yv(p.v)-11}" font-size="11.5" font-weight="700" fill="var(--moss)" text-anchor="middle">${p.v-pts[i].v>=0?"+":""}${Math.round((p.v-pts[i].v)*10)/10}</text>`).join("")}
+    <line x1="${todayX}" y1="${Hh-32}" x2="${todayX}" y2="10" stroke="var(--ink)" stroke-width="1.8"/>
+    <text x="${todayX}" y="8" font-size="10.5" font-weight="700" fill="var(--ink)" text-anchor="middle">today</text>
+    <text x="${Math.min(todayX+10,W-100)}" y="${yv(cur)-8}" font-size="22" font-weight="800" fill="var(--ink)">${cur}${esc(f(kr,"Unit")||"")}</text>
+    <line x1="${PADL}" y1="${yv(st)}" x2="${W-PADR}" y2="${yv(st)}" stroke="var(--rule)" stroke-width="1.5"/>
+  </svg>`;
+}
+const vizToggle = id => `<div class="viztog">${["dial","line"].map(m=>`<button data-viz="${id}" data-m="${m}" class="${(VIZ[id]||"dial")===m?"on":""}">${m==="dial"?"◠ dial":"⟋ line"}</button>`).join("")}</div>`;
+const krViz = (kr,big) => (VIZ[kr.id]||"dial")==="dial" ? svgDial(kr,big) : svgLine(kr);
+const wireViz = () => document.querySelectorAll("[data-viz]").forEach(b=>b.onclick=(e)=>{e.stopPropagation(); setViz(b.dataset.viz,b.dataset.m); render();});
+const moveLabel = o => { const ks=objKrs(o.id); if(!ks.length) return "";
+  if(ks.length===1){ const k=ks[0], h=histOf(k), cutoff=iso(new Date(TODAY.getTime()-7*864e5));
+    if(!h.some(m=>m.d>=cutoff)) return `<span class="mono" style="color:var(--ink-3)">quiet</span>`;
+    const before=[...h].reverse().find(m=>m.d<cutoff); const base=before?before.v:(f(k,"Start value")||0);
+    const d=Math.round(((f(k,"Current value")??0)-base)*10)/10;
+    return d? `<span class="mono" style="color:var(--moss);font-weight:700">↑ ${d>0?"+":""}${d}${esc(f(k,"Unit")||"")} this wk</span>`:`<span class="mono" style="color:var(--ink-3)">quiet</span>`; }
+  const m=Math.round(objMove(o)*100);
+  return m? `<span class="mono" style="color:var(--moss);font-weight:700">↑ ${m}% this wk</span>`:`<span class="mono" style="color:var(--ink-3)">quiet</span>`; };
+const chipRow = o => { const c=f(o,"Confidence")||"Not started";
+  return `<div class="row" style="cursor:pointer;padding:8px 0" data-o="${o.id}">
+    <div style="display:flex;align-items:center;gap:10px;flex:1;min-width:0">
+      <span class="scope">${esc(areaName(o)||"")}</span><strong style="font-size:13px">${esc(f(o,"Title"))}</strong></div>
+    <div style="display:flex;align-items:center;gap:9px">${moveLabel(o)}<span class="pill ${cls(c)}">${c}</span></div></div>`; };
+
 /* ============================ DASHBOARD ============================ */
 let dFilter = null, dCycle = "", dArea = "";
 LENS.dashboard = () => {
@@ -674,80 +787,58 @@ LENS.dashboard = () => {
 
   const lanes = jvObjectives().map(j=>{
     const krs = objKrs(j.id);
-    return `<div style="margin-bottom:24px">
-      <div style="display:flex;gap:9px;align-items:baseline;margin-bottom:7px">
+    return `<div style="margin-bottom:26px">
+      <div style="display:flex;gap:9px;align-items:baseline;margin-bottom:8px">
         <span class="eyebrow">JV 5-YEAR</span><h2>${esc(f(j,"Title"))}</h2></div>
       ${krs.map(k=>{
         const kids = show.filter(o=>lnk(o,"Parent Key Result").includes(k.id));
-        const p = pct(f(k,"Progress"));
-        const tgt = f(k,"Target value")??0, com = f(k,"Commit"), str = f(k,"Stretch");
-        const band = (com!=null && str!=null && str>0);
-        return `<div class="kr5">
-            <div style="display:flex;justify-content:space-between;gap:12px;align-items:center">
-              <strong>${esc(f(k,"Title"))}</strong>
-              <span class="mono">${f(k,"Current value")??0} / ${tgt} ${esc(f(k,"Unit")||"")} · ${p}%</span>
-            </div>
-            <div class="prog" style="position:relative;overflow:visible">
-              <span style="width:${p}%;background:var(--jv-deep);position:relative;z-index:1"></span>
-              ${band?`
-                <span title="Commit ${com}" style="position:absolute;left:${Math.min(100,com/str*100)}%;top:-3px;width:2px;height:13px;background:#A8B2BC;border-radius:1px"></span>
-                <span title="Target ${tgt}" style="position:absolute;left:${Math.min(100,tgt/str*100)}%;top:-4px;width:2px;height:15px;background:var(--jv);border-radius:1px"></span>`:""}
-            </div>
-            ${band?`<div class="mono" style="margin-top:5px">commit ${com} · <b style="color:var(--jv)">target ${tgt}</b> · stretch ${str}</div>`:""}
+        const moving = kids.filter(o=>objMove(o)>0).length;
+        return `<div class="card" style="margin-bottom:14px">
+          <div style="display:flex;justify-content:space-between;gap:12px;align-items:center;margin-bottom:4px">
+            <strong style="font-size:15px;cursor:pointer" data-o="${j.id}">${esc(f(k,"Title"))}</strong>
+            ${vizToggle(k.id)}
           </div>
-          <div class="cascade">${kids.length ? kids.map(card).join("")
-            : `<div class="child" style="cursor:default"><span class="empty">Nothing laddering here in this view.</span></div>`}</div>`;
+          <div style="cursor:pointer" data-o="${j.id}" title="Open the JV objective">${krViz(k,true)}</div>
+          ${kids.length?`<div style="margin-top:8px;padding-top:10px;border-top:1px dashed var(--rule)">
+            <div class="mono" style="margin-bottom:4px">${moving?`<b style="color:var(--moss)">↑ ${moving} of ${kids.length} team${kids.length>1?"s":""} moved this week</b>`:`${kids.length} team${kids.length>1?"s":""} on this — quiet week`}</div>
+            ${kids.map(chipRow).join("")}
+          </div>`:`<div class="cap" style="margin-top:8px">No team objectives laddering here yet.</div>`}
+        </div>`;
       }).join("") || `<div class="empty" style="margin-bottom:10px">No key results on this JV objective yet.</div>`}
     </div>`;}).join("");
 
   document.getElementById("view").innerHTML = `
     <div class="head">
-      <div><h1>Dashboard</h1><div class="sub">Every objective, laddered to the JV five-year key result it serves.</div></div>
+      <div><h1>Dashboard</h1><div class="sub">The organization in motion — every team's movement rolls up to the key result it serves. Click anything to go deeper.</div></div>
       <div class="filters">
         <select class="sm" id="dc"><option value="">All cycles</option>${DB.cycles.filter(c=>f(c,"Type")!=="5-year").map(c=>`<option value="${c.id}" ${dCycle===c.id?"selected":""}>${esc(f(c,"Name"))}</option>`).join("")}</select>
         <select class="sm" id="da"><option value="">All areas</option>${areas.map(a=>`<option ${dArea===a?"selected":""}>${esc(a)}</option>`).join("")}</select>
       </div>
     </div>
-    <div class="tiles">
-      ${tile("On track", base.filter(o=>f(o,"Confidence")==="On track").length, "On track", "b-ok")}
-      ${tile("At risk",  base.filter(o=>f(o,"Confidence")==="At risk").length,  "At risk",  "b-risk")}
-      ${tile("Off track",base.filter(o=>f(o,"Confidence")==="Off track").length,"Off track","b-off")}
-      ${tile("stale",    base.filter(isStale).length, `No check-in ${STALE}d+`, "b-ind")}
-      <div class="tile b-off"><div class="v">${late}</div><div class="l">Overdue tasks</div></div>
-      <div class="tile"><div class="v">${base.filter(o=>!isLaddered(o)).length}</div><div class="l">Doesn't ladder</div></div>
-    </div>
     ${lanes || `<div class="card empty">No JV five-year objectives yet.</div>`}
-    ${(()=> {
-      const rest = show.filter(o=>!isLaddered(o));
-      if(!rest.length) return "";
-      const sup = rest.filter(supportsJv), alone = rest.filter(o=>!supportsJv(o));
-      const group = (list, title, note) => list.length ? `
-        <div style="margin-bottom:18px">
-          <div style="display:flex;gap:9px;align-items:baseline;margin-bottom:4px">
-            <span class="eyebrow">${title}</span></div>
-          <div class="cap" style="margin-bottom:8px">${note}</div>
-          ${list.map(o=>card(o,true)).join("")}
-        </div>` : "";
-      return `<div style="margin-top:26px;border-top:2px solid var(--rule);padding-top:20px">
-        <h2 style="font-size:19px;margin-bottom:2px">Work that doesn't ladder</h2>
-        <div class="cap">Real work, deliberately not rolled into a JV key result. Kept visible on purpose — an OKR system that hides it teaches people to fake the link.</div>
-        ${group(sup, "SUPPORTS JV 2030", "Pointed in the direction of JV 2030, but not measured into any single key result.")}
-        ${group(alone, "STANDALONE / OPERATIONAL", "Stands on its own. Keeping the lights on is not a failure to align.")}
-      </div>`;
-    })()}`;
+    ${(()=>{ const feed = DB.checkins.slice().sort((a,b)=>new Date(f(b,"Date"))-new Date(f(a,"Date"))).slice(0,8);
+      return `<div class="card" style="margin-top:26px"><h2>What moved lately</h2><div class="cap">Live from the teams' check-ins — click a line to go deeper.</div>
+        ${feed.map(c=>{ const oid=one(c,"Objective"), o=rec("objectives",oid);
+          return `<div class="row" style="cursor:pointer" data-feed="${oid}">
+            <div><strong>${esc((o&&areaName(o))||nm("objectives",oid)||"")}</strong>
+              <div class="why">${esc((f(c,"What moved")||"").split("\n")[0]||"—")}</div></div>
+            <div style="text-align:right"><span class="pill ${cls(f(c,"Confidence"))}">${esc(f(c,"Confidence")||"")}</span>
+              <div class="mono" style="margin-top:3px">${fmt(f(c,"Date"))} · ${esc((nm("people",one(c,"Person"))||"").split(" ")[0])}</div></div>
+          </div>`;}).join("") || `<div class="empty">No check-ins yet — the first team meeting starts the pulse.</div>`}
+      </div>`; })()}`;
 
   document.getElementById("dc").onchange = e=>{dCycle=e.target.value; render();};
   document.getElementById("da").onchange = e=>{dArea=e.target.value; render();};
-  document.querySelectorAll(".tile[data-k]").forEach(b=>b.onclick=()=>{
-    dFilter = dFilter===b.dataset.k ? null : b.dataset.k; render();});
-  document.querySelectorAll(".child[data-o]").forEach(c=>c.onclick=()=>openObjective(c.dataset.o));
+  document.querySelectorAll("[data-o]").forEach(c=>c.onclick=()=>openObjective(c.dataset.o));
+  wireViz();
+  document.querySelectorAll("[data-feed]").forEach(r=>r.onclick=()=>openObjective(r.dataset.feed));
 };
 function card(o, loose){
   const p = pct(objProgress(o)), c = f(o,"Confidence")||"Not started";
   return `<div class="child" data-o="${o.id}" style="${ARCHIVED(o)?"opacity:.62;":""}${loose?"margin-left:0;":""}">
     <div style="display:flex;justify-content:space-between;gap:10px;align-items:center">
       <div><span class="scope">${esc(areaName(o)||f(o,"Scope")||"")}</span><strong>${esc(f(o,"Title"))}</strong></div>
-      <div style="display:flex;gap:5px;align-items:center">${alignPill(o)}
+      <div style="display:flex;gap:5px;align-items:center">${movePill(objMove(o))}${alignPill(o)}
       ${ARCHIVED(o)?`<span class="pill p-none">${esc(f(o,"Status"))}</span>`:`<span class="pill ${cls(c)}">${c}</span>`}</div>
     </div>
     <div class="prog"><span style="width:${p}%;background:${col(c)}"></span></div>
@@ -949,6 +1040,8 @@ LENS.browse = () => {
   document.getElementById("bback").onclick = ()=>{bUnit=null; render(); scrollTo(0,0);};
   document.querySelectorAll("[data-up]").forEach(b=>b.onclick=()=>{bUnit=b.dataset.up; render(); scrollTo(0,0);});
   document.querySelectorAll("[data-unit]").forEach(c=>c.onclick=()=>{bUnit=c.dataset.unit; render(); scrollTo(0,0);});
+  document.querySelectorAll("[data-o]").forEach(x=>x.onclick=(e)=>{e.stopPropagation(); openObjective(x.dataset.o);});
+  wireViz();
 };
 
 function unitCard(u){
@@ -986,14 +1079,13 @@ function objCardRO(o){
       ${isStale(o)?` · <span style="color:var(--indigo)">◆ ${staleDays(o)}d since a check-in</span>`:""}</div>
     <div class="prog"><span style="width:${p}%;background:${col(c)}"></span></div>
     ${krs.length ? `<div style="margin-top:12px">${krs.map(kr=>{
-      const kp = pct(f(kr,"Progress")), kc = f(kr,"Confidence")||"Not started";
       const ts = krTasks(kr.id), done = ts.filter(t=>f(t,"Status")==="Done").length;
-      return `<div style="padding:9px 0;border-top:1px dashed var(--rule)">
-        <div style="display:flex;justify-content:space-between;gap:10px">
-          <span style="font-weight:600;font-size:13.5px">${esc(f(kr,"Title"))}</span>
-          <span class="mono">${f(kr,"Current value")??0} / ${f(kr,"Target value")??0}${esc(f(kr,"Unit")||"")} · ${kp}%</span>
+      return `<div style="padding:10px 0;border-top:1px dashed var(--rule)">
+        <div style="display:flex;justify-content:space-between;gap:10px;align-items:center;margin-bottom:4px">
+          <span style="font-weight:600;font-size:13.5px;cursor:pointer" data-o="${o.id}">${esc(f(kr,"Title"))}</span>
+          ${vizToggle(kr.id)}
         </div>
-        <div class="prog"><span style="width:${kp}%;background:${col(kc)}"></span></div>
+        <div style="cursor:pointer" data-o="${o.id}" title="Open this objective — tasks, notes, the record">${krViz(kr,false)}</div>
         ${ts.length?`<div class="mono" style="margin-top:5px">${done} of ${ts.length} tasks done${ts.filter(isLate).length?` · ${ts.filter(isLate).length} overdue`:""}</div>`:""}
         ${f(kr,"Target changed")?`<div class="mono" style="color:var(--indigo);margin-top:4px">◆ ${esc(f(kr,"Target changed"))}</div>`:""}
       </div>`;}).join("")}</div>` : `<div class="empty" style="margin-top:10px">No key results yet.</div>`}
