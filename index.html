@@ -262,6 +262,11 @@
   .season-fill{position:absolute;left:0;top:0;bottom:0;border-radius:5px;background:linear-gradient(to right,#C9CFD6,var(--jv))}
   .season-dot{position:absolute;top:-4px;width:16px;height:16px;border-radius:50%;background:#fff;border:3px solid var(--jv-deep);transform:translateX(-8px)}
   .season-today{position:absolute;top:-7px;width:2.5px;height:22px;background:var(--ink);transform:translateX(-1px);border-radius:2px}
+  .meetbtns{display:flex;gap:9px;margin:0 0 16px;flex-wrap:wrap}
+  .mtb{font:inherit;text-align:left;background:#fff;border:1px solid var(--rule);border-radius:11px;padding:9px 18px;cursor:pointer;font-weight:650;font-size:13px}
+  .mtb span{display:block;font-size:10.5px;color:var(--ink-3);font-weight:400;margin-top:2px}
+  .mtb.on{border-color:var(--jv);box-shadow:0 0 0 1px var(--jv);background:var(--jv-50)}
+  .mtb:hover{border-color:var(--ink-3)}
   .meets{display:flex;gap:10px;margin-top:16px;flex-wrap:wrap}
   .meet{flex:1;min-width:180px;background:#fff;border:1px solid var(--rule);border-radius:10px;padding:11px 14px}
   .meet.past{opacity:.55}
@@ -1423,7 +1428,7 @@ V.mine = () => {
 };
 
 /* ============================ TEAM — the rhythm page ============================ */
-let TC = null, seasonOpen = false;   // team check-in in progress · season accordion
+let TC = null, seasonOpen = false, teamMeetTab;   // team check-in · season accordion · open meeting tab
 
 const teamUnit = () => rec("units", one(ME,"Org Unit"));
 const teamObjectives = () => { const u = teamUnit(); return u ? live(DB.objectives.filter(o=>f(o,"Scope")!=="JV 5-year" && one(o,"Org Unit")===u.id)) : []; };
@@ -1440,7 +1445,7 @@ V.team = () => {
   const cycle = teamCycle();
   const mates = myTeammates(ME.id);
   const leaderName = nm("people", one(u,"Leader")) || "";
-  const mid = f(u,"Midterm date"), ret = f(u,"Retro date");
+  const mid = f(u,"Midterm date"), ret = f(u,"Retro date"), ntd = f(u,"New trimester date");
   const cs = cycle && f(cycle,"Start"), ce = cycle && f(cycle,"End");
   const canSetDates = iAmLeader();
 
@@ -1458,17 +1463,21 @@ V.team = () => {
         : (val ? "" : `<div class="cap">${leaderName?esc(leaderName)+" sets this":"your leader sets this"}</div>`)}
     </div>`;
 
+  const edge = p => p>86 ? "transform:translateX(-92%)" : p<8 ? "transform:translateX(-8%)" : "";
   const seasonBar = cs&&ce ? `<div class="season-bar">
       <span class="season-fill" style="width:${todayPos??0}%"></span>
-      ${midPos!==null?`<span class="season-dot" style="left:${midPos}%"></span><b class="hlabel" style="left:${midPos}%;top:-19px">midterm${mid?" · "+esc(fmt(mid)):""}</b>`:""}
-      ${retPos!==null?`<span class="season-dot" style="left:${retPos}%"></span><b class="hlabel" style="left:${retPos}%;top:-19px">retro${ret?" · "+esc(fmt(ret)):""}</b>`:""}
+      ${midPos!==null?`<span class="season-dot" style="left:${midPos}%"></span><b class="hlabel" style="left:${midPos}%;top:-19px;${edge(midPos)}">midterm${mid?" · "+esc(fmt(mid)):""}</b>`:""}
+      ${retPos!==null?`<span class="season-dot" style="left:${retPos}%"></span><b class="hlabel" style="left:${retPos}%;top:-19px;${edge(retPos)}">retro${ret?" · "+esc(fmt(ret)):""}</b>`:""}
+      ${posOf(ntd)!==null?`<span class="season-dot" style="left:${posOf(ntd)}%"></span><b class="hlabel" style="left:${posOf(ntd)}%;top:15px;${edge(posOf(ntd))}">new trimester${ntd?" · "+esc(fmt(ntd)):""}</b>`:""}
       ${todayPos!==null?`<span class="season-today" style="left:${todayPos}%" title="Today"></span>`:""}
     </div>` : "";
-  const meetingBlock = (type, label, date) => {
-    if(!date || !objs.length) return "";
+  const meetingBlock = (type, label, date, forced) => {
+    if(!objs.length) return "";
+    if(!date) return forced ? `<div class="card"><h2>${label}</h2>
+      <div class="cap">No date set yet — open <b>The season</b> above and set the ${type==="Midterm"?"midterm":"retro"} date${iAmLeader()?"":" (your leader sets it)"}. The questions go out from here once it has a day.</div></div>` : "";
     const days = Math.round((new Date(date)-TODAY)/864e5);
     const open = DB.reviews.filter(r=>f(r,"Type")===type && f(r,"Status")!=="Closed" && objs.some(o=>o.id===one(r,"Objective")));
-    if(!open.length && (days>10 || days<0)) return "";
+    if(!forced && !open.length && (days>10 || days<0)) return "";
     const when = days>1?`in ${days} days`:days===1?"tomorrow":days===0?"today":`was ${fmt(date)}`;
     return `<div class="card">
       <h2>${label} · ${fmt(date)} <span class="cap" style="display:inline">— ${when}</span></h2>
@@ -1486,28 +1495,45 @@ V.team = () => {
     </div>`;
   };
   const daysPast = d => Math.round((TODAY-new Date(d))/864e5);
-  const newTri = (()=>{
-    if(!(ret && ret<iso(TODAY) && daysPast(ret)<=30)) return "";
+  const newTriCard = (forced)=>{
+    if(!forced && !(ret && ret<iso(TODAY) && daysPast(ret)<=30)) return "";
     const retroRevs = DB.reviews.filter(r=>f(r,"Type")==="Retrospective" && objs.some(o=>o.id===one(r,"Objective")));
     const carries = DB.responses
       .filter(x=>retroRevs.some(r=>lnk(x,"Review").includes(r.id)) && (f(x,"R — Carrying forward, leaving behind")||"").trim())
       .map(x=>({who:(nm("people",one(x,"Person"))||"").split(" ")[0], txt:f(x,"R — Carrying forward, leaving behind")}));
     return `<div class="card">
-    <h2>The trimester is closing</h2>
+    <h2>New trimester${(f(u,"New trimester date"))?` · ${fmt(f(u,"New trimester date"))}`:""}</h2>
     <div class="cap">Retro done? Plan the new one in the same sitting — that's the rhythm you and Mike set.</div>
     ${carries.length?`<div class="since" style="margin-top:10px">
       <div class="cap">What the team is carrying forward</div>
       ${carries.map(c=>`<div class="noteline"><b>${esc(c.who)}</b> — ${esc(c.txt)}</div>`).join("")}
-    </div>`:""}
+    </div>`:`<div class="cap" style="margin-top:8px">Once the retro answers are in, the team's "carrying forward" words appear here to build from.</div>`}
     <div style="font-size:13.5px;line-height:1.7;margin-top:8px">
       Write the new objectives with these words on the table — the <b>Sounding Board</b> will think it through with you
       and press gently toward the behavioral change it should lead to. Then set the new season's midterm and retro dates above.</div>
     <div style="margin-top:12px"><button class="btn jv" id="gotoOkrs">Write the new objective with the Sounding Board →</button></div>
-  </div>`; })();
+  </div>`; };
+  // which meeting greets you: the one that's near, open, or due
+  if(teamMeetTab===undefined){
+    const near = d => d && Math.round((new Date(d)-TODAY)/864e5)<=10 && Math.round((new Date(d)-TODAY)/864e5)>=-3;
+    const openT = t => DB.reviews.some(r=>f(r,"Type")===t && f(r,"Status")!=="Closed" && objs.some(o=>o.id===one(r,"Objective")));
+    teamMeetTab = (near(mid)||openT("Midterm")) ? "Midterm"
+                : (near(ret)||openT("Retrospective")) ? "Retrospective"
+                : (ret && ret<iso(TODAY) && daysPast(ret)<=30) ? "newtri" : null;
+  }
 
   el.innerHTML = `
     <div class="head"><div><h1>${esc(f(u,"Name"))}</h1>
       <div class="sub">${mates.length} of us${leaderName?` · led by ${esc(leaderName)}`:""}${cycle?` · ${esc(f(cycle,"Name"))}`:""} · one team, one rhythm.</div></div></div>
+
+    <div class="meetbtns">
+      <button class="mtb ${teamMeetTab==="Midterm"?"on":""}" data-meettab="Midterm">Midterm review${mid?`<span>${fmt(mid)}</span>`:`<span>no date yet</span>`}</button>
+      <button class="mtb ${teamMeetTab==="Retrospective"?"on":""}" data-meettab="Retrospective">Retrospective${ret?`<span>${fmt(ret)}</span>`:`<span>no date yet</span>`}</button>
+      <button class="mtb ${teamMeetTab==="newtri"?"on":""}" data-meettab="newtri">New trimester${ntd?`<span>${fmt(ntd)}</span>`:`<span>no date yet</span>`}</button>
+    </div>
+    ${teamMeetTab==="Midterm" ? meetingBlock("Midterm","Midterm review",mid,true)
+     : teamMeetTab==="Retrospective" ? meetingBlock("Retrospective","Retrospective",ret,true)
+     : teamMeetTab==="newtri" ? newTriCard(true) : ""}
 
     <div class="wobj ${seasonOpen?"open":""}">
       <div class="wobj-top" data-seasontog>
@@ -1522,6 +1548,7 @@ V.team = () => {
         <div class="meets">
           ${meetingCard("Midterm review", mid, "Midterm date", mid && mid<iso(TODAY))}
           ${meetingCard("Retrospective", ret, "Retro date", ret && ret<iso(TODAY))}
+          ${meetingCard("New trimester planning", ntd, "New trimester date", ntd && ntd<iso(TODAY))}
         </div>` : ""}
       </div>
     </div>
@@ -1536,9 +1563,6 @@ V.team = () => {
       ${objs.length?`<div style="margin-top:12px"><button class="btn jv" id="teamci">Run this week's check-in →</button></div>`:""}
     </div>
 
-    ${meetingBlock("Midterm","Midterm review",mid)}
-    ${meetingBlock("Retrospective","Retrospective",ret)}
-    ${newTri}
 
     <div class="card">
       <h2>The record</h2><div class="cap">What this team has said, week by week.</div>
@@ -1551,9 +1575,11 @@ V.team = () => {
     </div>`;
 
   el.querySelectorAll("[data-seasontog]").forEach(h=>h.onclick=()=>{ seasonOpen=!seasonOpen; V.team(); });
+  el.querySelectorAll("[data-meettab]").forEach(b=>b.onclick=()=>{
+    teamMeetTab = teamMeetTab===b.dataset.meettab ? null : b.dataset.meettab; V.team(); });
   el.querySelectorAll("[data-udate]").forEach(d=>d.onchange=async()=>{
     await patch(T.units,[{id:u.id, fields:{[d.dataset.udate]: d.value||null}}]);
-    await reload("units"); toast(d.value?`${d.dataset.udate==="Midterm date"?"Midterm":"Retro"} set — ${fmt(d.value)}`:"Date cleared"); V.team();
+    await reload("units"); toast(d.value?`${d.dataset.udate.replace(" date","")} set — ${fmt(d.value)}`:"Date cleared"); V.team();
   });
   const tci = document.getElementById("teamci");
   if(tci) tci.onclick = ()=>{ TC=null; VIEW="teamcheckin"; drawChrome(); render(); scrollTo(0,0); };
