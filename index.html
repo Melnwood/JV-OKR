@@ -433,6 +433,24 @@ const staleDays = o => f(o,"Days since check-in") ?? 999;
 const isStale = o => staleDays(o) > STALE;
 const isLate = t => f(t,"Status")==="Open" && f(t,"Due date") && new Date(f(t,"Due date")) < TODAY;
 const ownedBy = pid => live(DB.objectives.filter(o=>lnk(o,"Owner").includes(pid) && f(o,"Scope")!=="JV 5-year"));
+// My ground-level OKRs: ones I own, ones on my team(s), and ones where I own a task — combined, de-duped.
+function myOkrs(pid){
+  const p = rec("people", pid); if(!p) return [];
+  const myUnit = one(p,"Org Unit");
+  const seen = new Set(), out = [];
+  const add = o => { if(o && !seen.has(o.id)){ seen.add(o.id); out.push(o); } };
+  ownedBy(pid).forEach(add);                                                   // I own it
+  if(myUnit) live(DB.objectives).filter(o=>f(o,"Scope")!=="JV 5-year" && one(o,"Org Unit")===myUnit).forEach(add); // my team's
+  DB.tasks.filter(t=>lnk(t,"Owner").includes(pid)).forEach(t=>{               // I own a task under it
+    const kr = rec("krs", one(t,"Key Result")); if(kr) add(rec("objectives", one(kr,"Objective")));
+  });
+  return out;
+}
+// Everyone on the same unit as this person — so I can see my teammates' work on our OKRs.
+function myTeammates(pid){
+  const p = rec("people", pid); const u = p && one(p,"Org Unit"); if(!u) return [];
+  return DB.people.filter(x=>one(x,"Org Unit")===u);
+}
 const objProgress = o => f(o,"Progress") ?? 0;
 const ladderKr = o => { const p = one(o,"Parent Key Result"); return p ? rec("krs",p) : null; };
 /* Not everything ladders. Three honest states, and the app says which. */
@@ -970,11 +988,17 @@ V.org = () => {
 /* ============================ MY WORK (leader view) ============================ */
 let leaderId = null;
 V.mine = () => {
-  const L = rec("people", leaderId) || ME;
-  const mine = ownedBy(L.id);
+  const L = ME;
+  const mine = myOkrs(L.id);
+  const team = myTeammates(L.id);
+  const myUnitName = f(rec("units", one(L,"Org Unit")), "Name") || "";
   const late = mine.flatMap(o=>objTasks(o.id)).filter(isLate).length;
   const avg = mine.length ? Math.round(mine.reduce((s,o)=>s+objProgress(o),0)/mine.length*100) : 0;
   const fresh = mine.length ? Math.round(mine.filter(o=>staleDays(o)<=7).length/mine.length*100) : 0;
+
+  // my own tasks across all my OKRs — the true ground level
+  const myTasks = DB.tasks.filter(t=>lnk(t,"Owner").includes(L.id) && f(t,"Status")!=="Done")
+    .sort((a,b)=>(f(a,"Due date")||"9999")<(f(b,"Due date")||"9999")?-1:1);
 
   const needs = [];
   mine.forEach(o=>{
@@ -982,70 +1006,82 @@ V.mine = () => {
     if(f(o,"Confidence")==="Off track") needs.push({p:0,c:"p-off",tag:"Off track",t:f(o,"Title"),o:o.id,go:"objective",
       w:"Declared off track. Needs a decision, not a nudge."});
     if(isStale(o)) needs.push({p:1,c:"p-stale",tag:`${staleDays(o)}d silent`,t:f(o,"Title"),o:o.id,go:"checkin",
-      w:"No check-in logged — you can't tell if it's stuck or just quiet. Check in →"});
-    if(f(o,"Confidence")==="At risk" && !t.filter(x=>f(x,"Status")==="Open").length)
-      needs.push({p:1,c:"p-risk",tag:"At risk, no tasks",t:f(o,"Title"),o:o.id,go:"objective",w:"At risk with nothing planned against it."});
+      w:"No check-in logged — check in →"});
     if(lt) needs.push({p:2,c:"p-off",tag:`${lt} overdue`,t:f(o,"Title"),o:o.id,go:"objective",w:`${lt} task${lt>1?"s":""} past due.`});
   });
-  // open reviews where this person hasn't answered yet
   DB.reviews.filter(r=>f(r,"Status")!=="Closed").forEach(r=>{
     const oid = one(r,"Objective");
-    if(!mine.some(o=>o.id===oid) && !teamFor(oid).some(p=>p.id===L.id)) return;
+    if(!mine.some(o=>o.id===oid)) return;
     const answered = DB.responses.some(x=>lnk(x,"Review").includes(r.id) && lnk(x,"Person").includes(L.id));
     if(!answered) needs.push({p:0,c:"p-risk",tag:f(r,"Type")||"Review",t:nm("objectives",oid),rev:r.id,go:"review",
-      w:`${f(r,"Type")||"A review"} is open and your answer isn't in yet. The team can't see anyone's until everyone's in.`});
+      w:`${f(r,"Type")||"A review"} is open and your answer isn't in yet.`});
   });
   needs.sort((a,b)=>a.p-b.p);
 
-  const feed = DB.checkins.filter(c=>mine.some(o=>lnk(c,"Objective").includes(o.id)))
-    .sort((a,b)=>new Date(f(b,"Date"))-new Date(f(a,"Date"))).slice(0,8);
-
   document.getElementById("view").innerHTML = `
     <div class="head">
-      <div><h1>My work</h1><div class="sub">${esc(f(L,"Name"))} · ${esc(f(L,"Role")||"")} · everything you lead, one page.</div></div>
-      <select class="sm" id="lw">${DB.people.map(p=>`<option value="${p.id}" ${p.id===L.id?"selected":""}>${esc(f(p,"Name"))}</option>`).join("")}</select>
+      <div><h1>My work</h1><div class="sub">${esc(f(L,"Name"))}${myUnitName?` · ${esc(myUnitName)}`:""} · the OKRs you're on, at ground level.</div></div>
     </div>
     <div class="tiles">
-      <div class="tile b-ok"><div class="v">${mine.filter(o=>f(o,"Confidence")==="On track").length}</div><div class="l">On track</div></div>
-      <div class="tile b-risk"><div class="v">${mine.filter(o=>f(o,"Confidence")==="At risk").length}</div><div class="l">At risk</div></div>
-      <div class="tile b-off"><div class="v">${mine.filter(o=>f(o,"Confidence")==="Off track").length}</div><div class="l">Off track</div></div>
+      <div class="tile b-off"><div class="v">${myTasks.length}</div><div class="l">My open tasks</div></div>
+      <div class="tile b-off"><div class="v">${late}</div><div class="l">Overdue</div></div>
       <div class="tile b-ind"><div class="v">${fresh}%</div><div class="l">Checked in this week</div></div>
       <div class="tile"><div class="v">${avg}%</div><div class="l">Average progress</div></div>
-      <div class="tile b-off"><div class="v">${late}</div><div class="l">Overdue tasks</div></div>
     </div>
+
+    ${needs.length ? `<div class="card">
+      <h2>Needs you this week</h2><div class="cap">Ranked by what's actually blocked.</div>
+      ${needs.map(n=>`<div class="row" style="cursor:pointer" data-need="${n.go}" data-no="${n.o||''}" data-nr="${n.rev||''}"><div><strong>${esc(n.t)}</strong><div class="why">${esc(n.w)}</div></div>
+        <span class="pill ${n.c}">${n.tag}</span></div>`).join("")}
+    </div>` : ""}
+
     <div class="card">
-      <h2>Needs you this week</h2>
-      <div class="cap">Ranked by what's actually blocked, not by what's loudest.</div>
-      ${needs.length ? needs.map(n=>`<div class="row" style="cursor:pointer" data-need="${n.go}" data-no="${n.o||''}" data-nr="${n.rev||''}"><div><strong>${esc(n.t)}</strong><div class="why">${esc(n.w)}</div></div>
-        <span class="pill ${n.c}">${n.tag}</span></div>`).join("")
-        : `<div class="empty">Nothing flagged. Everything's checked in and moving.</div>`}
+      <h2>My tasks</h2><div class="cap">Everything assigned to you, soonest first. Tick as you go.</div>
+      ${myTasks.length ? myTasks.map(t=>{
+        const kr = rec("krs", one(t,"Key Result")), o = kr && rec("objectives", one(kr,"Objective"));
+        return `<div class="task ${isLate(t)?"late":""}">
+          <input type="checkbox" data-mtask="${t.id}"/>
+          <span class="t">${esc(f(t,"Title"))}<div class="mono" style="color:var(--ink-3)">${o?esc(f(o,"Title")):""}${kr?` · ${esc(f(kr,"Title"))}`:""}</div></span>
+          <span class="m">${f(t,"Due date")?fmt(f(t,"Due date")):"no date"}</span>
+        </div>`;}).join("")
+        : `<div class="empty">Nothing assigned to you right now.</div>`}
     </div>
-    <div class="two">
-      <div class="card">
-        <h2>Your objectives</h2><div class="cap">And where each one lands up at JV.</div>
-        ${mine.length ? mine.map(o=>{
-          const p = pct(objProgress(o)), c=f(o,"Confidence")||"Not started", k=ladderKr(o);
-          const t=objTasks(o.id);
-          return `<div class="row" style="cursor:pointer" data-o="${o.id}">
-            <div><strong>${esc(f(o,"Title"))}</strong>
-              <div class="mono">${alignLine(o)}</div>
-              <div class="prog" style="width:200px"><span style="width:${p}%;background:${col(c)}"></span></div></div>
-            <div style="text-align:right">
-              <span class="pill ${cls(c)}">${c}</span>
-              <div class="mono" style="margin-top:4px;color:${isStale(o)?"var(--clay)":"var(--ink-2)"}">${staleDays(o)===999?"never":staleDays(o)+"d"} · ${t.filter(x=>f(x,"Status")==="Open").length} open</div>
-            </div></div>`;}).join("")
-          : `<div class="empty">No objectives yet. That's the conversation to have.</div>`}
-      </div>
-      <div class="card">
-        <h2>Recent movement</h2><div class="cap">Every check-in under you.</div>
-        ${feed.length ? feed.map(c=>`<div style="border-left:2px solid var(--rule);padding:4px 0 4px 11px;margin-bottom:11px">
-            <div class="mono">${fmt(f(c,"Date"))} · ${esc(nm("people",one(c,"Person")))}</div>
+
+    <div class="card">
+      <h2>Our team's OKRs</h2><div class="cap">${myUnitName?esc(myUnitName)+"'s":"Your team's"} objectives — open one in the OKRs tab to work inside it.</div>
+      ${mine.length ? mine.map(o=>{
+        const p = pct(objProgress(o)), c=f(o,"Confidence")||"Not started";
+        const openT = objTasks(o.id).filter(x=>f(x,"Status")==="Open").length;
+        const iOwn = lnk(o,"Owner").includes(L.id);
+        return `<div class="row" style="cursor:pointer" data-o="${o.id}">
+          <div><strong>${esc(f(o,"Title"))}</strong> ${iOwn?`<span class="pill p-none" style="font-size:9.5px">you own</span>`:""}
+            <div class="prog" style="width:200px;margin-top:5px"><span style="width:${p}%;background:${col(c)}"></span></div>
+            <a class="mono ladder-link" data-ladder="${o.id}" style="color:var(--ink-3);cursor:pointer;text-decoration:underline">where this lands at JV ↗</a></div>
+          <div style="text-align:right">
+            <span class="pill ${cls(c)}">${c}</span>
+            <div class="mono" style="margin-top:4px;color:${isStale(o)?"var(--clay)":"var(--ink-2)"}">${staleDays(o)===999?"never":staleDays(o)+"d"} · ${openT} open</div>
+          </div></div>`;}).join("")
+        : `<div class="empty">No team OKRs yet. That's the conversation to have.</div>`}
+    </div>
+
+    <div class="card">
+      <h2>What the team's been doing</h2><div class="cap">Recent check-ins and completed tasks across your OKRs.</div>
+      ${(()=>{
+        const feed = DB.checkins.filter(c=>mine.some(o=>lnk(c,"Objective").includes(o.id)))
+          .sort((a,b)=>new Date(f(b,"Date"))-new Date(f(a,"Date"))).slice(0,10);
+        return feed.length ? feed.map(c=>`<div style="border-left:2px solid ${col(f(c,"Confidence"))};padding:4px 0 4px 11px;margin-bottom:11px">
+            <div class="mono">${fmt(f(c,"Date"))} · ${esc(nm("people",one(c,"Person")))} · ${esc(f(c,"Confidence")||"")}</div>
             <div style="font-size:13.5px">${esc(f(c,"What moved")||"")}</div></div>`).join("")
-          : `<div class="empty">Nothing logged yet.</div>`}
-      </div>
+          : `<div class="empty">Nothing logged yet.</div>`;
+      })()}
     </div>`;
-  document.getElementById("lw").onchange = e=>{leaderId=e.target.value; render();};
-  document.querySelectorAll("[data-o]").forEach(r=>r.onclick=()=>openObjective(r.dataset.o));
+
+  document.querySelectorAll("[data-o]").forEach(r=>r.onclick=(e)=>{ if(e.target.closest("[data-ladder]"))return; openObjective(r.dataset.o); });
+  document.querySelectorAll("[data-ladder]").forEach(a=>a.onclick=(e)=>{ e.stopPropagation(); const o=rec("objectives",a.dataset.ladder); const k=ladderKr(o); toast(k?`Ladders to: ${f(k,"Title")}`:alignLine(o).replace(/<[^>]+>/g,"")); });
+  document.querySelectorAll("input[data-mtask]").forEach(c=>c.onchange=async()=>{
+    await patch(T.tasks,[{id:c.dataset.mtask, fields:{Status:"Done","Done date":new Date().toISOString().slice(0,10)}}]);
+    await reload("tasks"); toast("Task done"); V.mine();
+  });
   document.querySelectorAll("[data-need]").forEach(r=>r.onclick=()=>{
     const go=r.dataset.need, oid=r.dataset.no, rid=r.dataset.nr;
     if(go==="checkin"){ ciObj=oid; ciVals={}; selObj=oid; VIEW="checkin"; }
