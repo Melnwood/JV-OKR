@@ -220,6 +220,7 @@
   .task .m{font-family:'Plus Jakarta Sans',sans-serif;font-variant-numeric:tabular-nums;font-size:11px;color:var(--ink-2);white-space:nowrap}
   .tdue{border:none;background:none;font-family:'Plus Jakarta Sans',sans-serif;font-size:11px;color:var(--ink-2);width:118px;cursor:pointer;flex:none}
   .tdue:hover{color:var(--ink)}
+  input[type=range].tprog{flex:none;width:88px;accent-color:var(--moss);padding:0;cursor:pointer}
   .towner{border:none;background:none;font-family:'Plus Jakarta Sans',sans-serif;font-size:11px;color:var(--ink-2);cursor:pointer;max-width:110px;flex:none}
   .towner:hover{color:var(--ink)}
   .newtask{display:flex;align-items:center;gap:12px;background:var(--jv-50);border:1px solid var(--jv-edge);border-left:3px solid var(--jv);border-radius:10px;padding:10px 14px;margin-bottom:8px}
@@ -822,7 +823,12 @@ function drawMap(N, LV){
     };
     g.onmouseleave = ()=>{ svg.querySelectorAll(".node").forEach(n=>n.classList.remove("lit","dim"));
                            svg.querySelectorAll(".link").forEach(l=>l.classList.remove("lit")); };
-    g.onclick = ()=>{ const n=byId(g.dataset.id); if(n.lvl===2) openObjective(n.id); };
+    g.onclick = ()=>{
+      // any box opens the objective it belongs to — walk up to the nearest one
+      let n = byId(g.dataset.id);
+      while(n && n.lvl!==0 && n.lvl!==2) n = n.p ? byId(n.p) : null;
+      if(n && n.id!=="LOOSE") openObjective(n.id);
+    };
   });
   const cv=document.getElementById("cv"); let dn=false,sx,sy,sl,st;
   cv.onmousedown=e=>{ if(e.target.closest(".node,.tog"))return; dn=true; cv.classList.add("drag"); sx=e.pageX;sy=e.pageY;sl=cv.scrollLeft;st=cv.scrollTop; };
@@ -1050,6 +1056,8 @@ V.mine = () => {
       <span class="t">${esc(f(t,"Title"))}
         <div class="mono" style="color:var(--ink-3);cursor:pointer" data-notes="${t.id}">${noteLines(t).length ? noteLines(t).length+" note"+(noteLines(t).length>1?"s":"")+" ▾" : "+ add a note"}</div>
       </span>
+      <input type="range" class="tprog" data-tprog="${t.id}" min="0" max="100" step="10" value="${pct(f(t,"Progress"))}" title="How far along?"/>
+      <span class="m" id="tp-${t.id}" style="width:32px;text-align:right">${pct(f(t,"Progress"))}%</span>
       ${ownerSel(t.id, one(t,"Owner"))}
       <input type="date" class="tdue" data-tdue="${t.id}" value="${f(t,"Due date")||""}" title="Due date"/>
       <span class="m xdel" data-tdel="${t.id}" title="Delete task">✕</span>
@@ -1066,7 +1074,7 @@ V.mine = () => {
     const dones = all.filter(t=>f(t,"Status")==="Done").sort((a,b)=>(f(b,"Done date")||"")<(f(a,"Done date")||"")?-1:1);
     const cur = f(kr,"Current value")??0, tgt = f(kr,"Target value")??0, st = f(kr,"Start value")??0;
     const conf = f(kr,"Confidence")||"Not started", p = pct(f(kr,"Progress"));
-    const tp = all.length ? Math.round(dones.length/all.length*100) : 0;
+    const tp = all.length ? Math.round(all.reduce((s,t)=>s+(f(t,"Status")==="Done"?1:(f(t,"Progress")||0)),0)/all.length*100) : 0;
     ws = `
       <div class="cap" style="margin-bottom:2px">${esc(f(krObj,"Title"))}</div>
       <div style="display:flex;align-items:center;gap:10px"><h2 style="margin:0">${esc(f(kr,"Title"))}</h2><span class="pill ${cls(conf)}">${esc(conf)}</span></div>
@@ -1154,6 +1162,13 @@ V.mine = () => {
     const who=s.value;
     await patch(T.tasks,[{id:s.dataset.towner, fields:{Owner:[who], Seen: who===L.id}}]);
     await reload("tasks"); toast(who===L.id?"Yours now":`Handed to ${nm("people",who).split(" ")[0]} — they'll see it as new`); V.mine(); });
+  el.querySelectorAll("input[data-tprog]").forEach(s=>{
+    s.oninput = ()=>{ const lb=document.getElementById("tp-"+s.dataset.tprog); if(lb) lb.textContent=s.value+"%"; };
+    s.onchange = async()=>{
+      await patch(T.tasks,[{id:s.dataset.tprog, fields:{Progress:+s.value/100}}]);
+      await reload("tasks"); V.mine();
+    };
+  });
   el.querySelectorAll("input[data-tdue]").forEach(d=>d.onchange=async()=>{
     await patch(T.tasks,[{id:d.dataset.tdue, fields:{"Due date":d.value||null}}]);
     await reload("tasks"); toast(d.value?"Due "+fmt(d.value):"Date cleared"); V.mine(); });
