@@ -257,6 +257,26 @@
   .btn.done{background:var(--moss);color:#fff;border:0;font-weight:600}
   .sliderword{font-size:11px;color:var(--ink-2);width:70px;flex:none}
   .krsel{font:inherit;font-weight:650;font-size:15.5px;border:none;border-bottom:2px solid var(--jv-edge);background:none;color:var(--jv-deep);cursor:pointer;max-width:100%;padding:2px 0}
+  .season{margin:26px 0 6px}
+  .season-bar{position:relative;height:8px;border-radius:5px;background:var(--rule-2)}
+  .season-fill{position:absolute;left:0;top:0;bottom:0;border-radius:5px;background:linear-gradient(to right,#C9CFD6,var(--jv))}
+  .season-dot{position:absolute;top:-4px;width:16px;height:16px;border-radius:50%;background:#fff;border:3px solid var(--jv-deep);transform:translateX(-8px)}
+  .season-today{position:absolute;top:-7px;width:2.5px;height:22px;background:var(--ink);transform:translateX(-1px);border-radius:2px}
+  .meets{display:flex;gap:10px;margin-top:16px;flex-wrap:wrap}
+  .meet{flex:1;min-width:180px;background:#fff;border:1px solid var(--rule);border-radius:10px;padding:11px 14px}
+  .meet.past{opacity:.55}
+  .meet-date{font-size:16px;font-weight:700;margin:2px 0 4px}
+  .tckr{display:flex;align-items:center;gap:12px;padding:9px 0;border-bottom:1px dashed var(--rule)}
+  .tcnum{width:90px;font:inherit;font-size:15px;font-weight:600;padding:7px 10px;border:1px solid var(--rule);border-radius:8px;text-align:right}
+  .krwin{border:1px solid var(--rule);border-radius:10px;padding:12px 14px;margin:12px 0;background:#fff}
+  .prog.hist{position:relative;overflow:visible}
+  .hmark{position:absolute;top:-2.5px;width:2.5px;height:14px;background:var(--ink-2);opacity:.5;border-radius:2px}
+  .hdates{position:relative;height:14px;margin-top:3px}
+  .hdates span{position:absolute;transform:translateX(-50%);font-size:9.5px;color:var(--ink-3);font-family:'Plus Jakarta Sans',sans-serif;white-space:nowrap}
+  .hmark.hmeet{width:11px;height:11px;border-radius:50%;background:#fff;border:2.5px solid var(--jv-deep);top:-1.5px;transform:translateX(-5px);padding:0;min-width:0;flex:none}
+  .hlabel{position:absolute;top:-17px;transform:translateX(-50%);font-size:9.5px;font-weight:700;color:var(--jv-deep);font-family:'Plus Jakarta Sans',sans-serif;white-space:nowrap}
+  .prog.hist.hasmeet{margin-top:20px}
+  .since{background:var(--jv-50);border:1px solid var(--jv-edge);border-radius:10px;padding:10px 14px;margin-bottom:12px}
   .task.late .m{color:var(--clay)}
 
   /* checkin */
@@ -517,12 +537,12 @@ const alignLine = o => {
 // Four working lines. Check-in and Reviews fold into the objective + surface in My work.
 // Dashboard, Alignment map and Browse JV merge into one "JV 2030" page with three lenses.
 // Org and Archive live in a quiet settings corner.
-const NAV = [["jv","JV 2030"],["okrs","OKRs"],["mine","My work"],["coaching","Coaching"]];
+const NAV = [["jv","JV 2030"],["okrs","OKRs"],["team","Team"],["mine","My work"],["coaching","Coaching"]];
 const GEAR = [["org","Org"],["archive","Archive"]];
 function drawChrome(){
   const nav = NAV.filter(([k]) => k!=="coaching" || iAmCoach());
   document.getElementById("nav").innerHTML = nav.map(([k,l])=>
-    `<button class="nv" data-v="${k}" aria-current="${VIEW===k||(k==='jv'&&['dashboard','map','browse'].includes(VIEW))||(k==='okrs'&&['objective','checkin','reviews'].includes(VIEW))}">${l}</button>`).join("");
+    `<button class="nv" data-v="${k}" aria-current="${VIEW===k||(k==='jv'&&['dashboard','map','browse'].includes(VIEW))||(k==='okrs'&&['objective','checkin','reviews'].includes(VIEW))||(k==='team'&&VIEW==='teamcheckin')}">${l}</button>`).join("");
   document.querySelectorAll(".nv").forEach(b=>b.onclick=()=>{VIEW=b.dataset.v; drawChrome(); render(); scrollTo(0,0);});
   const gear = iAmLeader()
     ? `<div class="gearwrap">
@@ -1038,6 +1058,10 @@ V.org = () => {
 /* ============================ MY WORK (leader view) ============================ */
 let leaderId = null;
 let mineKr = null, mineNotesOpen = null, mineDoneOpen = false, mineTasksOpen = false, mineNotesFull = new Set();   // My OKR page state
+const fmtNote = line => {
+  const m = line.match(/^(\d{4}-\d{2}-\d{2} \d{2}:\d{2}) · (.+?) — ([\s\S]*)$/);
+  return m ? `<span class="n-when">${esc(fmt(m[1]))} ${esc(m[1].slice(11))}</span> <b>${esc(m[2].split(" ")[0])}</b> — ${esc(m[3])}` : esc(line);
+};
 const PROG_WORD = p => p>=100 ? "done" : p>=70 ? "nearly there" : p>=35 ? "underway" : p>0 ? "just started" : "not started";
 
 V.mine = () => {
@@ -1069,10 +1093,6 @@ V.mine = () => {
     <input type="range" class="tprog" data-tprog="${t.id}" min="0" max="100" step="10" value="${pct(f(t,"Progress"))}" style="--p:${pct(f(t,"Progress"))}%" title="Slide it — just started to nearly there"/>
     <span class="sliderword" id="tw-${t.id}">${PROG_WORD(pct(f(t,"Progress")))}</span>`;
 
-  const fmtNote = line => {
-    const m = line.match(/^(\d{4}-\d{2}-\d{2} \d{2}:\d{2}) · (.+?) — ([\s\S]*)$/);
-    return m ? `<span class="n-when">${esc(fmt(m[1]))} ${esc(m[1].slice(11))}</span> <b>${esc(m[2].split(" ")[0])}</b> — ${esc(m[3])}` : esc(line);
-  };
   const noteBox = t => { if(mineNotesOpen!==t.id) return "";
     const ls = noteLines(t), full = mineNotesFull.has(t.id), show = full ? ls : ls.slice(-1);
     return `<div class="notes">
@@ -1117,7 +1137,21 @@ V.mine = () => {
                   : `${cur} of ${tgt}${esc(unit)} so far — <b>${p}%</b> of the way`;
     return `
       <div class="orient" style="margin:2px 0 4px">${numline}. <span class="pill ${cls(conf)}" style="vertical-align:1px">${esc(conf)}</span></div>
-      <div class="prog big"><span style="width:${p}%;background:${col(conf)}"></span></div>
+      ${(()=>{ const st2=f(kr,"Start value")||0, tv=(f(kr,"Target value")??0);
+        const uo = rec("units", one(rec("objectives", one(kr,"Objective"))||{},"Org Unit"));
+        const midD = uo && f(uo,"Midterm date"), retD = uo && f(uo,"Retro date");
+        const marks=(f(kr,"History")||"").split("\n").filter(x=>/^\d{4}-\d{2}-\d{2}/.test(x))
+          .map(l=>{const i=l.indexOf(" · "); return {d:l.slice(0,10), v:+l.slice(i+3)};})
+          .filter(m=>!isNaN(m.v));
+        // the first value-change on/after each meeting date wears the meeting's ring
+        const flag=(date,name)=>{ if(!date || date>iso(TODAY)) return; const m=marks.find(x=>x.d>=date); if(m && !m.kind) m.kind=name; };
+        flag(midD,"midterm"); flag(retD,"retro");
+        const shown = marks.slice(-5).map(m=>({...m, pos:pct((m.v-st2)/((tv-st2)||1))}));
+        return `<div class="prog big hist ${shown.some(m=>m.kind)?"hasmeet":""}"><span style="width:${p}%;background:${col(conf)}"></span>
+          ${shown.map(m=>m.kind
+            ? `<i class="hmark hmeet" style="left:${m.pos}%" title="${m.v} on ${esc(fmt(m.d))}"></i><b class="hlabel" style="left:${m.pos}%">${m.kind} · ${esc(fmt(m.d))}</b>`
+            : `<i class="hmark" style="left:${m.pos}%" title="${m.v} on ${esc(fmt(m.d))}"></i>`).join("")}</div>
+        ${shown.some(m=>!m.kind)?`<div class="hdates">${shown.filter(m=>!m.kind).map(m=>`<span style="left:${m.pos}%">${esc(fmt(m.d))}</span>`).join("")}</div>`:""}`; })()}
       <div class="krviz-sub">The work under it: ${dones.length} of ${all.length} finished <div class="prog"><span style="width:${tp}%;background:var(--jv)"></span></div></div>
       <div class="addrow" style="margin:14px 0 10px">
         <input type="text" id="mnt" placeholder="Add a task — small and real beats big and vague"/>
@@ -1277,6 +1311,201 @@ V.mine = () => {
   if(dt) dt.onclick=()=>{ mineDoneOpen=!mineDoneOpen; V.mine(); };
 };
 
+/* ============================ TEAM — the rhythm page ============================ */
+let TC = null, seasonOpen = false;   // team check-in in progress · season accordion
+
+const teamUnit = () => rec("units", one(ME,"Org Unit"));
+const teamObjectives = () => { const u = teamUnit(); return u ? live(DB.objectives.filter(o=>f(o,"Scope")!=="JV 5-year" && one(o,"Org Unit")===u.id)) : []; };
+const teamCycle = () => {
+  const cyc = teamObjectives().map(o=>rec("cycles", one(o,"Cycle"))).filter(Boolean);
+  return cyc.find(c=>f(c,"Type")==="Trimester") || cyc[0] || null;
+};
+
+V.team = () => {
+  const el = document.getElementById("view");
+  const u = teamUnit();
+  if(!u){ el.innerHTML = `<div class="head"><div><h1>Team</h1><div class="sub">You're not on a team yet — ask ${nm("people", null)||"Mike or Mel"} to put you on one in Org.</div></div></div>`; return; }
+  const objs = teamObjectives();
+  const cycle = teamCycle();
+  const mates = myTeammates(ME.id);
+  const leaderName = nm("people", one(u,"Leader")) || "";
+  const mid = f(u,"Midterm date"), ret = f(u,"Retro date");
+  const cs = cycle && f(cycle,"Start"), ce = cycle && f(cycle,"End");
+  const canSetDates = iAmLeader();
+
+  // where are we in the season?
+  const posOf = d => { if(!cs||!ce||!d) return null;
+    const a=new Date(cs).getTime(), b=new Date(ce).getTime(), x=new Date(d).getTime();
+    if(b<=a) return null; return Math.max(0, Math.min(100, Math.round((x-a)/(b-a)*100))); };
+  const todayPos = posOf(iso(TODAY)), midPos = posOf(mid), retPos = posOf(ret);
+
+  const meetingCard = (label, val, field, past) => `
+    <div class="meet ${past?"past":""}">
+      <div class="cap">${label}</div>
+      <div class="meet-date">${val ? fmt(val)+" "+new Date(val).getFullYear() : "not set yet"}</div>
+      ${canSetDates ? `<input type="date" class="tdue" data-udate="${field}" value="${val||""}" title="Set the date"/>`
+        : (val ? "" : `<div class="cap">${leaderName?esc(leaderName)+" sets this":"your leader sets this"}</div>`)}
+    </div>`;
+
+  const seasonBar = cs&&ce ? `<div class="season-bar">
+      <span class="season-fill" style="width:${todayPos??0}%"></span>
+      ${midPos!==null?`<span class="season-dot" style="left:${midPos}%"></span><b class="hlabel" style="left:${midPos}%;top:-19px">midterm${mid?" · "+esc(fmt(mid)):""}</b>`:""}
+      ${retPos!==null?`<span class="season-dot" style="left:${retPos}%"></span><b class="hlabel" style="left:${retPos}%;top:-19px">retro${ret?" · "+esc(fmt(ret)):""}</b>`:""}
+      ${todayPos!==null?`<span class="season-today" style="left:${todayPos}%" title="Today"></span>`:""}
+    </div>` : "";
+  const openReviews = DB.reviews.filter(r=>f(r,"Status")!=="Closed" && objs.some(o=>o.id===one(r,"Objective")));
+
+  el.innerHTML = `
+    <div class="head"><div><h1>${esc(f(u,"Name"))}</h1>
+      <div class="sub">${mates.length} of us${leaderName?` · led by ${esc(leaderName)}`:""}${cycle?` · ${esc(f(cycle,"Name"))}`:""} · one team, one rhythm.</div></div></div>
+
+    <div class="wobj ${seasonOpen?"open":""}">
+      <div class="wobj-top" data-seasontog>
+        <span class="chev">▶</span>
+        <div class="wobj-main"><div class="wobj-title">The season</div>
+          ${seasonBar?`<div class="season" style="margin:26px 6px 4px 0">${seasonBar}</div>`:""}</div>
+        ${!mid&&!ret?`<div class="wobj-side"><span class="pill p-none">meeting dates not set</span></div>`:""}
+      </div>
+      <div class="wobj-body">${seasonOpen ? `
+        ${cs&&ce ? `<div class="cap">${fmt(cs)} to ${fmt(ce)} — the darker line is how far we are.</div>`
+          : `<div class="cap">This cycle has no start and end dates yet — once it does, the season line appears here.</div>`}
+        <div class="meets">
+          ${meetingCard("Midterm review", mid, "Midterm date", mid && mid<iso(TODAY))}
+          ${meetingCard("Retrospective", ret, "Retro date", ret && ret<iso(TODAY))}
+        </div>` : ""}
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>This week's meeting</h2>
+      <div class="cap">One sitting, every key result — where is each one, honestly?</div>
+      ${objs.map(o=>`<div class="row"><div><strong>${esc(f(o,"Title"))}</strong>
+          <div class="why">${objKrs(o.id).length} key result${objKrs(o.id).length===1?"":"s"} · last check-in ${staleDays(o)===999?"never":staleDays(o)+"d ago"}</div></div>
+        <span class="pill ${cls(f(o,"Confidence")||"Not started")}">${esc(f(o,"Confidence")||"Not started")}</span></div>`).join("")
+        || `<div class="empty">No objectives on this team yet.</div>`}
+      ${objs.length?`<div style="margin-top:12px"><button class="btn jv" id="teamci">Run this week's check-in →</button></div>`:""}
+    </div>
+
+    ${openReviews.length ? `<div class="card">
+      <h2>Before the next review meeting</h2>
+      ${openReviews.map(r=>{
+        const answered = mates.map(p=>({p, done: DB.responses.some(x=>lnk(x,"Review").includes(r.id) && lnk(x,"Person").includes(p.id))}));
+        return `<div class="row"><div><strong>${esc(f(r,"Type")||"Review")} — ${esc(nm("objectives",one(r,"Objective")))}</strong>
+          <div class="why">${answered.filter(a=>a.done).length} of ${mates.length} answered: ${answered.map(a=>`${a.done?"✓":"·"} ${esc((f(a.p,"Name")||"").split(" ")[0])}`).join("  ")}</div></div>
+          <button class="btn ghost" data-rev="${r.id}">${answered.find(a=>a.p.id===ME.id&&a.done)?"Read":"Answer"} →</button></div>`;}).join("")}
+    </div>` : ""}
+
+    <div class="card">
+      <h2>The record</h2><div class="cap">What this team has said, week by week.</div>
+      ${(()=>{ const feed = DB.checkins.filter(c=>objs.some(o=>lnk(c,"Objective").includes(o.id)))
+          .sort((a,b)=>new Date(f(b,"Date"))-new Date(f(a,"Date"))).slice(0,12);
+        return feed.length ? feed.map(c=>`<div style="border-left:2px solid ${col(f(c,"Confidence"))};padding:4px 0 4px 11px;margin-bottom:11px">
+            <div class="mono">${fmt(f(c,"Date"))} · ${esc(nm("people",one(c,"Person")))} · ${esc(f(c,"Confidence")||"")}</div>
+            <div style="font-size:13.5px">${esc(f(c,"What moved")||"")}</div></div>`).join("")
+          : `<div class="empty">No check-ins yet. The first weekly meeting starts the story.</div>`; })()}
+    </div>`;
+
+  el.querySelectorAll("[data-seasontog]").forEach(h=>h.onclick=()=>{ seasonOpen=!seasonOpen; V.team(); });
+  el.querySelectorAll("[data-udate]").forEach(d=>d.onchange=async()=>{
+    await patch(T.units,[{id:u.id, fields:{[d.dataset.udate]: d.value||null}}]);
+    await reload("units"); toast(d.value?`${d.dataset.udate==="Midterm date"?"Midterm":"Retro"} set — ${fmt(d.value)}`:"Date cleared"); V.team();
+  });
+  const tci = document.getElementById("teamci");
+  if(tci) tci.onclick = ()=>{ TC=null; VIEW="teamcheckin"; drawChrome(); render(); scrollTo(0,0); };
+  el.querySelectorAll("[data-rev]").forEach(b=>b.onclick=()=>{ revId=b.dataset.rev; VIEW="reviews"; drawChrome(); render(); scrollTo(0,0); });
+};
+
+/* ── the weekly meeting: every key result, one pass ── */
+V.teamcheckin = () => {
+  const el = document.getElementById("view");
+  const u = teamUnit(), objs = teamObjectives();
+  if(!u || !objs.length){ VIEW="team"; return V.team(); }
+  if(!TC){
+    TC = {vals:{}, conf:{}, moved:{}, block:{}};
+    objs.forEach(o=>objKrs(o.id).forEach(k=>{ TC.vals[k.id]=f(k,"Current value")??0; TC.conf[k.id]=f(k,"Confidence")||"On track"; }));
+  }
+  const worst = list => list.includes("Off track") ? "Off track" : list.includes("At risk") ? "At risk" : "On track";
+
+  el.innerHTML = `
+    <div class="head"><div><h1>This week's check-in</h1>
+      <div class="sub">${esc(f(u,"Name"))} · ${fmt(iso(TODAY))} · go around the room — every number gets a look, every voice gets a say.</div></div>
+      <div class="filters"><button class="btn ghost" id="tcback">← Team</button></div></div>
+    ${objs.map(o=>{
+      const krs = objKrs(o.id);
+      const lastCi = objCheckins(o.id)[0];
+      const since = lastCi ? f(lastCi,"Date") : iso(new Date(TODAY.getTime()-7*864e5));
+      return `<div class="card">
+        <h2>${esc(f(o,"Title"))}</h2>
+        ${lastCi?`<div class="cap" style="margin:2px 0 4px">Last meeting · ${fmt(f(lastCi,"Date"))} · ${esc(f(lastCi,"Confidence")||"")}</div>`:""}
+        ${krs.map(k=>{
+          const prev = f(k,"Current value")??0, unit = f(k,"Unit")||"";
+          const ts = krTasks(k.id);
+          const open = ts.filter(t=>f(t,"Status")!=="Done");
+          const doneSince = ts.filter(t=>f(t,"Status")==="Done" && (f(t,"Done date")||"")>=since);
+          const notesSince = [];
+          (f(k,"Notes")||"").split("\n").filter(x=>x.slice(0,10)>=since).forEach(l=>notesSince.push(l));
+          ts.forEach(t=>(f(t,"Notes")||"").split("\n").filter(x=>x.slice(0,10)>=since).forEach(l=>notesSince.push(l)));
+          return `<div class="krwin">
+            <div class="tckr" style="border-bottom:none;padding:0 0 2px">
+              <div style="flex:1"><div style="font-size:13.5px;font-weight:650">${esc(f(k,"Title"))}</div>
+                <div class="mono" id="tcd-${k.id}">was ${prev}${esc(unit)} last time</div></div>
+              <input type="number" class="tcnum" data-tckr="${k.id}" data-prev="${prev}" data-unit="${esc(unit)}" value="${TC.vals[k.id]}"/>
+              <span class="mono" style="width:52px">/ ${f(k,"Target value")??0}${esc(unit)}</span>
+            </div>
+            ${open.length||doneSince.length||notesSince.length ? `<div class="since" style="margin:8px 0 10px">
+              ${open.length?`<div class="cap">Being worked on</div>${open.map(t=>`<div style="font-size:12.5px;padding:2px 0">• ${esc(f(t,"Title"))} <span class="mono" style="color:var(--ink-3)">${esc((nm("people",one(t,"Owner"))||"").split(" ")[0])} · ${PROG_WORD(pct(f(t,"Progress")))}${isLate(t)?" · overdue":""}</span></div>`).join("")}`:""}
+              ${doneSince.length?`<div class="cap" style="margin-top:6px">Finished this week</div>${doneSince.map(t=>`<div style="font-size:12.5px;padding:2px 0">✓ ${esc(f(t,"Title"))} <span class="mono" style="color:var(--ink-3)">${esc((nm("people",one(t,"Owner"))||"").split(" ")[0])} · ${fmt(f(t,"Done date"))}</span></div>`).join("")}`:""}
+              ${notesSince.length?`<div class="cap" style="margin-top:6px">Talked about</div>${notesSince.sort().slice(-6).map(l=>`<div class="noteline">${fmtNote(l)}</div>`).join("")}`:""}
+            </div>`:`<div class="cap" style="margin:6px 0 8px">Nothing logged on this one since last meeting.</div>`}
+            <div class="addrow" style="margin:6px 0 4px"><input type="text" data-tcmoved="${k.id}" placeholder="What moved on this one — a sentence is enough" value="${esc(TC.moved[k.id]||"")}"/></div>
+            <div class="addrow" style="margin:0 0 10px"><input type="text" data-tcblock="${k.id}" placeholder="What's in the way, if anything" value="${esc(TC.block[k.id]||"")}"/></div>
+            <div class="confs">${["On track","At risk","Off track"].map(c=>
+              `<button class="conf ${c==="On track"?"on":c==="At risk"?"risk":"off"}" data-tcconf="${k.id}" data-c="${c}" aria-pressed="${TC.conf[k.id]===c}">${c}</button>`).join("")}</div>
+          </div>`;}).join("") || `<div class="cap">No key results here yet.</div>`}
+      </div>`;}).join("")}
+    <div style="display:flex;gap:10px;align-items:center">
+      <button class="btn jv" id="tcsend">Log the team check-in</button>
+      <span class="cap">One record per objective, signed by you for the team.</span>
+    </div>`;
+
+  document.getElementById("tcback").onclick = ()=>{ VIEW="team"; drawChrome(); render(); scrollTo(0,0); };
+  el.querySelectorAll("input[data-tckr]").forEach(i=>i.oninput=()=>{
+    TC.vals[i.dataset.tckr] = i.value;
+    const d = +i.value - +i.dataset.prev, lab = document.getElementById("tcd-"+i.dataset.tckr);
+    lab.textContent = d>0?`+${Math.round(d*10)/10}${i.dataset.unit} since last time`:d<0?`${Math.round(d*10)/10}${i.dataset.unit} since last time`:`was ${i.dataset.prev}${i.dataset.unit} last time`;
+    lab.style.color = d>0?"var(--moss)":d<0?"var(--clay)":"var(--ink-2)";
+  });
+  el.querySelectorAll("[data-tcconf]").forEach(b=>b.onclick=()=>{
+    TC.conf[b.dataset.tcconf]=b.dataset.c;
+    el.querySelectorAll(`[data-tcconf="${b.dataset.tcconf}"]`).forEach(x=>x.setAttribute("aria-pressed", x===b));
+  });
+  el.querySelectorAll("[data-tcmoved]").forEach(i=>i.oninput=()=>TC.moved[i.dataset.tcmoved]=i.value);
+  el.querySelectorAll("[data-tcblock]").forEach(i=>i.oninput=()=>TC.block[i.dataset.tcblock]=i.value);
+  document.getElementById("tcsend").onclick = async () => {
+    const btn=document.getElementById("tcsend"); btn.disabled=true; btn.textContent="Saving…";
+    try{
+      for(const o of objs){
+        const krs = objKrs(o.id);
+        if(krs.length) await patch(T.krs, krs.map(k=>{
+          const v = +TC.vals[k.id]||0, fields = {"Current value": v, Confidence: TC.conf[k.id]};
+          if(v !== (f(k,"Current value")??0)) fields.History = ((f(k,"History")||"")+"\n"+iso(TODAY)+" · "+v).trim();
+          return {id:k.id, fields};
+        }));
+        const oc = worst(krs.map(k=>TC.conf[k.id]));
+        const tag = k => { const t=f(k,"Title")||""; return t.includes(":") ? t.split(":")[0] : t.slice(0,30); };
+        const movedTxt = krs.map(k=>{const m=(TC.moved[k.id]||"").trim(); return m?`${tag(k)}: ${m}`:null;}).filter(Boolean).join("\n");
+        const blockTxt = krs.map(k=>{const m=(TC.block[k.id]||"").trim(); return m?`${tag(k)}: ${m}`:null;}).filter(Boolean).join("\n");
+        await post(T.checkins,[{fields:{Summary:`${f(o,"Title")} — ${fmt(iso(TODAY))}`, Date: iso(TODAY),
+          "What moved": movedTxt, Blockers: blockTxt,
+          Confidence: oc, Objective:[o.id], Person:[ME.id]}}]);
+        await patch(T.objectives,[{id:o.id, fields:{Confidence: oc}}]);
+      }
+      await Promise.all([reload("krs"), reload("checkins"), reload("objectives")]);
+      TC=null; toast("Logged — the week is on the record"); VIEW="team"; drawChrome(); render(); scrollTo(0,0);
+    }catch(e){ btn.disabled=false; btn.textContent="Log the team check-in"; }
+  };
+};
+
 /* ============================ CHECK-IN WORKSPACE ============================ */
 let ciObj = null, ciVals = {}, ciConf = "On track";
 V.checkin = () => {
@@ -1376,7 +1605,11 @@ async function sendCheckin(o, krs){
   const before = {}; krs.forEach(k=>before[k.id] = f(k,"Current value") ?? 0);
   const btn = document.getElementById("ciSend"); btn.disabled = true; btn.textContent = "Saving…";
   try{
-    if(krs.length) await patch(T.krs, krs.map(k=>({id:k.id, fields:{"Current value": ciVals[k.id]}})));
+    if(krs.length) await patch(T.krs, krs.map(k=>{
+      const v = ciVals[k.id], fields = {"Current value": v};
+      if(v !== (f(k,"Current value")??0)) fields.History = ((f(k,"History")||"")+"\n"+iso(TODAY)+" · "+v).trim();
+      return {id:k.id, fields};
+    }));
     await post(T.checkins, [{fields:{
       Summary: `${f(o,"Title")} — ${fmt(TODAY)}`, Date: iso(TODAY),
       "What moved": moved, Blockers: document.getElementById("ciBlock").value.trim(),
