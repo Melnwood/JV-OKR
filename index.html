@@ -725,12 +725,13 @@ function svgDial(kr, big){
   const seams=pts.slice(1,-1).map(v=>vizTick(cx,cy,R,fr(v),W2+7,"#fff",2.2)).join("");
   const mark=(v,lab,colr)=>{ if(v==null||v===tgt&&lab==="commit") return ""; const frv=fr(v);
     if(frv>=.99) return `<text x="${cx+R}" y="${cy+26}" font-size="10" font-weight="700" fill="${colr}" text-anchor="middle">${lab} ${v}</text>`;
-    const [lx,ly]=vizPolar(cx,cy,R+W2/2+(big?18:13),frv);
-    return vizTick(cx,cy,R,frv,W2+14,colr,2.4)+`<text x="${lx}" y="${ly}" font-size="${big?11:9.5}" font-weight="700" fill="${colr}" text-anchor="${frv>.7?"end":frv<.3?"start":"middle"}">${lab} ${v}</text>`; };
+    const [lx,ly]=vizPolar(cx,cy,R+W2/2+(big?16:12),frv);
+    return vizTick(cx,cy,R,frv,W2+14,colr,2.4)+`<text x="${lx}" y="${ly-2}" font-size="${big?11:9.5}" font-weight="700" fill="${colr}" text-anchor="${frv>.6?"start":frv<.4?"end":"middle"}">${lab} ${v}</text>`; };
   const lastH=h[h.length-1];
   const lastJump = lastH ? Math.round((lastH.v-(h.length>1?h[h.length-2].v:st))*10)/10 : 0;
   const [nx,ny]=vizPolar(cx,cy,R,fr(cur));
-  return `<svg width="100%" viewBox="0 0 ${S} ${S/2+52}" style="max-width:${big?560:340}px;display:block;margin:0 auto">
+  const PADX = big?95:70;
+  return `<svg width="100%" viewBox="${-PADX} -6 ${S+2*PADX} ${S/2+58}" style="max-width:${big?640:400}px;display:block;margin:0 auto">
     ${vizArc(cx,cy,R,0,1,W2,"var(--rule-2)")}${segs}${seams}
     ${mark(com,"commit","#98928A")}${mark(tgt,"target","var(--jv-deep)")}
     <circle cx="${nx}" cy="${ny}" r="${big?6:4.5}" fill="var(--jv)"/>
@@ -822,7 +823,7 @@ LENS.dashboard = () => {
             <strong style="font-size:15px;cursor:pointer" data-o="${j.id}">${esc(f(k,"Title"))}</strong>
             ${vizToggle(k.id)}
           </div>
-          <div style="cursor:pointer" data-o="${j.id}" title="Open the JV objective">${krViz(k,true)}</div>
+          <div style="cursor:pointer" data-o="${j.id}">${krViz(k,true)}</div>
           ${kids.length?`<div style="margin-top:8px;padding-top:10px;border-top:1px dashed var(--rule)">
             <div class="mono" style="margin-bottom:4px">${moving?`<b style="color:var(--moss)">↑ ${moving} of ${kids.length} team${kids.length>1?"s":""} moved this week</b>`:`${kids.length} team${kids.length>1?"s":""} on this — quiet week`}</div>
             ${kids.map(chipRow).join("")}
@@ -1109,7 +1110,7 @@ function objCardRO(o){
           <span style="font-weight:600;font-size:13.5px;cursor:pointer" data-o="${o.id}">${esc(f(kr,"Title"))}</span>
           ${vizToggle(kr.id)}
         </div>
-        <div style="cursor:pointer" data-o="${o.id}" title="Open this objective — tasks, notes, the record">${krViz(kr,false)}</div>
+        <div style="cursor:pointer" data-o="${o.id}">${krViz(kr,false)}</div>
         ${ts.length?`<div class="mono" style="margin-top:5px">${done} of ${ts.length} tasks done${ts.filter(isLate).length?` · ${ts.filter(isLate).length} overdue`:""}</div>`:""}
         ${f(kr,"Target changed")?`<div class="mono" style="color:var(--indigo);margin-top:4px">◆ ${esc(f(kr,"Target changed"))}</div>`:""}
       </div>`;}).join("")}</div>` : `<div class="empty" style="margin-top:10px">No key results yet.</div>`}
@@ -1592,9 +1593,20 @@ V.team = () => {
   });
   const gotoOkrs = document.getElementById("gotoOkrs");
   if(gotoOkrs) gotoOkrs.onclick = ()=>{
-    const rr = DB.reviews.filter(r=>f(r,"Type")==="Retrospective" && objs.some(o=>o.id===one(r,"Objective")));
-    sbCarry = DB.responses.filter(x=>rr.some(r=>lnk(x,"Review").includes(r.id)) && (f(x,"R — Carrying forward, leaving behind")||"").trim())
-      .map(x=>`${(nm("people",one(x,"Person"))||"").split(" ")[0]}: ${f(x,"R — Carrying forward, leaving behind")}`).join("\n");
+    // hand the Sounding Board the whole retro, not just the last line
+    const rr = DB.reviews.filter(r=>f(r,"Type")==="Retrospective" && objs.some(o=>o.id===one(r,"Objective")))
+      .sort((a,b)=>(f(b,"Meeting date")||"")<(f(a,"Meeting date")||"")?-1:1);
+    const latest = rr[0];
+    const RETQ = [["R — Carrying forward, leaving behind","carrying forward"],["R — What moved the needle","what moved the needle"],
+      ["R — Key pivot or learning moments","pivot moments"],["R — How we function as a team","how we function as a team"],
+      ["R — Rhythms that helped or limited","rhythms"],["R — Where I saw God at work","where they saw God at work"],
+      ["R — How far did we advance","how far they got"]];
+    const lines = [];
+    if(latest) DB.responses.filter(x=>lnk(x,"Review").includes(latest.id)).forEach(x=>{
+      const who = (nm("people",one(x,"Person"))||"").split(" ")[0];
+      RETQ.forEach(([k,label])=>{ const a=(f(x,k)||"").trim(); if(a) lines.push(`${who}, on ${label}: ${a}`); });
+    });
+    sbCarry = lines.join("\n").slice(0, 4000);
     okrsOpenNew=true; VIEW="okrs"; drawChrome(); render(); scrollTo(0,0); };
 };
 

@@ -169,7 +169,7 @@ Hold two things at once:
 Be warm, direct, pastoral, never corporate. Iron sharpening iron.`;
 
     const carry = (b.carry||"").trim()
-      ? `\n\nTheir team just closed a trimester. In the retrospective, each person wrote what the team is carrying forward — their own words:\n${b.carry.trim()}\nBuild on these words: let the horizon and your questions grow out of what they said they're carrying, and honor what they chose to leave behind.`
+      ? `\n\nTheir team just closed a trimester. These are the notes from their retrospective — each person's own words:\n${b.carry.trim()}\nBuild on these notes: let the horizon and your questions grow out of what they said worked, what moved the needle, and what they're carrying forward — and honor what they chose to leave behind.`
       : "";
     let userMsg;
     if (b.round === 1) {
