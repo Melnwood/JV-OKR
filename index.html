@@ -269,6 +269,24 @@
   .tckr{display:flex;align-items:center;gap:12px;padding:9px 0;border-bottom:1px dashed var(--rule)}
   .tcnum{width:90px;font:inherit;font-size:15px;font-weight:600;padding:7px 10px;border:1px solid var(--rule);border-radius:8px;text-align:right}
   .krwin{border:1px solid var(--rule);border-radius:10px;padding:12px 14px;margin:12px 0;background:#fff}
+  .rwalk{max-width:720px;margin:0 auto}
+  .rwalk-hero{text-align:center;padding:22px 18px 16px}
+  .rwalk-dots{display:flex;gap:7px;justify-content:center;margin-top:14px}
+  .rdot{width:9px;height:9px;border-radius:50%;background:var(--rule);transition:background .25s}
+  .rdot.on{background:var(--jv)}
+  .rq{display:flex;gap:16px;background:#fff;border:1px solid var(--rule);border-radius:14px;padding:20px 22px;margin-bottom:14px;box-shadow:0 1px 2px rgba(30,28,25,.04)}
+  .rq-n{width:34px;height:34px;flex:none;border-radius:50%;background:var(--jv-100);color:var(--jv-deep);font-weight:800;display:flex;align-items:center;justify-content:center;font-size:15px;transition:background .25s,color .25s}
+  .rq.answered .rq-n{background:var(--jv);color:#fff}
+  .rq-q{font-weight:650;font-size:15.5px;line-height:1.45}
+  .rq textarea{width:100%;border:1.5px solid transparent;background:var(--jv-50);padding:12px 14px;border-radius:10px;min-height:74px;font:inherit;font-size:14px;margin-top:10px;resize:vertical}
+  .rq textarea:focus{outline:none;border-color:var(--jv-edge);background:#fff}
+  .rwalk-end{text-align:center;padding:12px 0 34px}
+  .krcrow{display:flex;align-items:center;gap:14px;margin-top:11px}
+  .krcrow-t{flex:1;font-size:13px;font-weight:600;line-height:1.4}
+  .krcrow input.tprog{width:170px}
+  .krcrow-n{width:46px;text-align:right;font-size:13px;color:var(--jv-deep)}
+  .krmove{width:100%;margin-top:6px;font:inherit;font-size:12.5px;padding:8px 12px;border:1.5px solid transparent;background:var(--jv-50);border-radius:8px}
+  .krmove:focus{outline:none;border-color:var(--jv-edge);background:#fff}
   .viztog{display:flex;gap:3px;background:var(--jv-50);border:1px solid var(--jv-edge);border-radius:999px;padding:3px;flex:none}
   .viztog button{font:inherit;font-size:11px;padding:4px 11px;border-radius:999px;border:none;cursor:pointer;background:transparent;color:var(--ink-2)}
   .viztog button.on{background:var(--jv);color:#fff;font-weight:700}
@@ -1446,7 +1464,46 @@ V.team = () => {
       ${retPos!==null?`<span class="season-dot" style="left:${retPos}%"></span><b class="hlabel" style="left:${retPos}%;top:-19px">retro${ret?" · "+esc(fmt(ret)):""}</b>`:""}
       ${todayPos!==null?`<span class="season-today" style="left:${todayPos}%" title="Today"></span>`:""}
     </div>` : "";
-  const openReviews = DB.reviews.filter(r=>f(r,"Status")!=="Closed" && objs.some(o=>o.id===one(r,"Objective")));
+  const meetingBlock = (type, label, date) => {
+    if(!date || !objs.length) return "";
+    const days = Math.round((new Date(date)-TODAY)/864e5);
+    const open = DB.reviews.filter(r=>f(r,"Type")===type && f(r,"Status")!=="Closed" && objs.some(o=>o.id===one(r,"Objective")));
+    if(!open.length && (days>10 || days<0)) return "";
+    const when = days>1?`in ${days} days`:days===1?"tomorrow":days===0?"today":`was ${fmt(date)}`;
+    return `<div class="card">
+      <h2>${label} · ${fmt(date)} <span class="cap" style="display:inline">— ${when}</span></h2>
+      <div class="cap">Every voice in before the meeting — the questions take ten quiet minutes.</div>
+      ${objs.map(o=>{
+        const r = open.find(x=>one(x,"Objective")===o.id);
+        if(!r) return `<div class="row"><div><strong>${esc(f(o,"Title"))}</strong><div class="why">Questions not sent yet.</div></div>
+          <button class="btn dash" data-mkrev="${o.id}" data-mktype="${type}" data-mkdate="${date}">Send the questions to the team →</button></div>`;
+        const answered = mates.map(p=>({p, done: DB.responses.some(x=>lnk(x,"Review").includes(r.id) && lnk(x,"Person").includes(p.id))}));
+        const mineDone = answered.find(a=>a.p.id===ME.id&&a.done);
+        return `<div class="row"><div><strong>${esc(f(o,"Title"))}</strong>
+          <div class="why">${answered.filter(a=>a.done).length} of ${mates.length} answered: ${answered.map(a=>`${a.done?"✓":"·"} ${esc((f(a.p,"Name")||"").split(" ")[0])}`).join("  ")}</div></div>
+          <button class="btn ${mineDone?"ghost":"jv"}" data-rev="${r.id}">${mineDone?"Read the room →":"Answer before the meeting →"}</button></div>`;
+      }).join("")}
+    </div>`;
+  };
+  const daysPast = d => Math.round((TODAY-new Date(d))/864e5);
+  const newTri = (()=>{
+    if(!(ret && ret<iso(TODAY) && daysPast(ret)<=30)) return "";
+    const retroRevs = DB.reviews.filter(r=>f(r,"Type")==="Retrospective" && objs.some(o=>o.id===one(r,"Objective")));
+    const carries = DB.responses
+      .filter(x=>retroRevs.some(r=>lnk(x,"Review").includes(r.id)) && (f(x,"R — Carrying forward, leaving behind")||"").trim())
+      .map(x=>({who:(nm("people",one(x,"Person"))||"").split(" ")[0], txt:f(x,"R — Carrying forward, leaving behind")}));
+    return `<div class="card">
+    <h2>The trimester is closing</h2>
+    <div class="cap">Retro done? Plan the new one in the same sitting — that's the rhythm you and Mike set.</div>
+    ${carries.length?`<div class="since" style="margin-top:10px">
+      <div class="cap">What the team is carrying forward</div>
+      ${carries.map(c=>`<div class="noteline"><b>${esc(c.who)}</b> — ${esc(c.txt)}</div>`).join("")}
+    </div>`:""}
+    <div style="font-size:13.5px;line-height:1.7;margin-top:8px">
+      Write the new objectives with these words on the table — the <b>Sounding Board</b> will think it through with you
+      and press gently toward the behavioral change it should lead to. Then set the new season's midterm and retro dates above.</div>
+    <div style="margin-top:12px"><button class="btn jv" id="gotoOkrs">Write the new objective with the Sounding Board →</button></div>
+  </div>`; })();
 
   el.innerHTML = `
     <div class="head"><div><h1>${esc(f(u,"Name"))}</h1>
@@ -1479,14 +1536,9 @@ V.team = () => {
       ${objs.length?`<div style="margin-top:12px"><button class="btn jv" id="teamci">Run this week's check-in →</button></div>`:""}
     </div>
 
-    ${openReviews.length ? `<div class="card">
-      <h2>Before the next review meeting</h2>
-      ${openReviews.map(r=>{
-        const answered = mates.map(p=>({p, done: DB.responses.some(x=>lnk(x,"Review").includes(r.id) && lnk(x,"Person").includes(p.id))}));
-        return `<div class="row"><div><strong>${esc(f(r,"Type")||"Review")} — ${esc(nm("objectives",one(r,"Objective")))}</strong>
-          <div class="why">${answered.filter(a=>a.done).length} of ${mates.length} answered: ${answered.map(a=>`${a.done?"✓":"·"} ${esc((f(a.p,"Name")||"").split(" ")[0])}`).join("  ")}</div></div>
-          <button class="btn ghost" data-rev="${r.id}">${answered.find(a=>a.p.id===ME.id&&a.done)?"Read":"Answer"} →</button></div>`;}).join("")}
-    </div>` : ""}
+    ${meetingBlock("Midterm","Midterm review",mid)}
+    ${meetingBlock("Retrospective","Retrospective",ret)}
+    ${newTri}
 
     <div class="card">
       <h2>The record</h2><div class="cap">What this team has said, week by week.</div>
@@ -1506,6 +1558,18 @@ V.team = () => {
   const tci = document.getElementById("teamci");
   if(tci) tci.onclick = ()=>{ TC=null; VIEW="teamcheckin"; drawChrome(); render(); scrollTo(0,0); };
   el.querySelectorAll("[data-rev]").forEach(b=>b.onclick=()=>{ revId=b.dataset.rev; VIEW="reviews"; drawChrome(); render(); scrollTo(0,0); });
+  el.querySelectorAll("[data-mkrev]").forEach(b=>b.onclick=async()=>{
+    const o = rec("objectives", b.dataset.mkrev);
+    await post(T.reviews,[{fields:{Name:`${f(u,"Name")} ${b.dataset.mktype==="Midterm"?"midterm":"retro"} — ${fmt(b.dataset.mkdate)}`,
+      Type:b.dataset.mktype, Status:"Open", "Meeting date":b.dataset.mkdate, Objective:[o.id], Cycle: lnk(o,"Cycle")}}]);
+    await reload("reviews"); toast("Questions are out — the team can answer now"); V.team();
+  });
+  const gotoOkrs = document.getElementById("gotoOkrs");
+  if(gotoOkrs) gotoOkrs.onclick = ()=>{
+    const rr = DB.reviews.filter(r=>f(r,"Type")==="Retrospective" && objs.some(o=>o.id===one(r,"Objective")));
+    sbCarry = DB.responses.filter(x=>rr.some(r=>lnk(x,"Review").includes(r.id)) && (f(x,"R — Carrying forward, leaving behind")||"").trim())
+      .map(x=>`${(nm("people",one(x,"Person"))||"").split(" ")[0]}: ${f(x,"R — Carrying forward, leaving behind")}`).join("\n");
+    okrsOpenNew=true; VIEW="okrs"; drawChrome(); render(); scrollTo(0,0); };
 };
 
 /* ── the weekly meeting: every key result, one pass ── */
@@ -1758,21 +1822,21 @@ function ripple(o, krs, before){
 
 /* ============================ REVIEWS ============================ */
 const MID = [
-  {k:"Confidence 1-10", q:"Are we going to hit this objective by the end of the cycle?", h:"Your gut, not the dashboard.", t:"scale"},
-  {k:"M — KR that worries you most", q:"Which key result worries you most, and why?", t:"text"},
-  {k:"M — What I personally moved", q:"What have you personally moved since the cycle started?", h:"Name the thing you did. It counts.", t:"text"},
-  {k:"M — Most likely to stop us", q:"What's the one thing most likely to stop us?", t:"text"},
-  {k:"M — What we should stop doing", q:"What should we stop doing?", h:"Halfway is the last honest chance to drop something.", t:"text"},
-  {k:"M — Still the right objective?", q:"Is this still the right objective?", t:"choice", o:["Yes, keep going","Adjust the key results","No — this was the wrong bet"]}
+  {k:"M — KRs on track, at risk, off track", q:"Which key results are on track, at risk, or off track?", h:"Name each one honestly.", t:"text"},
+  {k:"M — Best behavior or rhythm", q:"What behavior or rhythm has yielded the best results so far?", t:"text"},
+  {k:"M — Blockers and where to pivot", q:"What obstacles or dependencies are blocking us — and where do we need to pivot or reprioritize?", t:"text"},
+  {k:"M — Ambition still right", q:"Are our ambition levels still right — stretch, target, commit?", t:"text"},
+  {k:"M — Confidence per key result", q:"How confident are you that we'll reach each key result — and what would move that number?", h:"Slide each one, then say what would lift it. Your gut, not the dashboard.", t:"krscale"},
+  {k:"M — What we need to finish strong", q:"What support, resources, or adjustments do we need to finish strong?", t:"text"}
 ];
 const RET = [
-  {k:"R — Did we do what we said?", q:"Did we do what we said we'd do?", t:"choice", o:["Yes","Mostly","No"]},
-  {k:"R — What actually happened", q:"What actually happened — in your own words?", t:"text"},
-  {k:"R — What worked", q:"What worked that we should do again?", t:"text"},
-  {k:"R — What didn't work", q:"What didn't work?", h:"Be specific. \"Communication\" isn't an answer.", t:"text"},
-  {k:"R — Where I saw God at work", q:"Where did you see God at work in this, whether we hit the number or not?", h:"The numbers don't capture everything. This does.", t:"text"},
-  {k:"R — What we carry forward", q:"What do we carry into the next cycle?", t:"text"},
-  {k:"R — One thing I'd change about how we worked", q:"One thing you'd change about how we worked together?", t:"text"}
+  {k:"R — How far did we advance", q:"How far did we advance toward our OKRs — and was that the result we expected?", t:"text"},
+  {k:"R — What moved the needle", q:"What behaviors or mindsets most moved the needle for the people we serve — and what held us back?", t:"text"},
+  {k:"R — Key pivot or learning moments", q:"What were the key pivot or learning moments, and what did they reveal about our assumptions?", t:"text"},
+  {k:"R — How we function as a team", q:"What did this trimester teach us about how we function together as a team?", t:"text"},
+  {k:"R — Rhythms that helped or limited", q:"What resources, rhythms, or conditions most supported or limited our progress?", t:"text"},
+  {k:"R — Carrying forward, leaving behind", q:"What are we carrying forward — and what are we leaving behind?", t:"text"},
+  {k:"R — Where I saw God at work", q:"Where did you see God at work in this, whether we hit the number or not?", h:"The numbers don't capture everything. This does.", t:"text"}
 ];
 let revId = null, revDraft = {};
 let rvNewObj = null;
@@ -1819,29 +1883,79 @@ V.reviews = () => {
       <div class="roster">${team.map(p=>`<span class="p ${inList.includes(p.id)?"in":""}">${esc(f(p,"Name"))}${inList.includes(p.id)?" ✓":""}</span>`).join("")}</div>
     </div>
 
-    ${mineDone ? facilitator(R,set,resp) : set.map((q,i)=>`
-      <div class="card" style="max-width:700px">
-        <div style="font-weight:600;margin-bottom:5px">${esc(q.q)}</div>
-        ${q.h?`<div class="cap">${esc(q.h)}</div>`:""}
-        ${q.t==="text" ? `<textarea rows="3" data-q="${i}"></textarea>`
-        : q.t==="scale" ? `<div class="scale">${[1,2,3,4,5,6,7,8,9,10].map(n=>`<button class="sc" data-q="${i}" data-v="${n}" aria-pressed="${revDraft[q.k]===n}">${n}</button>`).join("")}</div>`
-        : `<div class="confs">${q.o.map(o=>`<button class="conf" data-q="${i}" data-v="${esc(o)}" aria-pressed="${revDraft[q.k]===o}" style="${revDraft[q.k]===o?"background:var(--ink);color:#fff;border-color:var(--ink)":""}">${esc(o)}</button>`).join("")}</div>`}
-      </div>`).join("") + `<button class="btn wide" id="rsub" style="max-width:700px">Submit my answers</button>`}`;
+    ${mineDone ? facilitator(R,set,resp) : `<div class="rwalk">
+      <div class="rwalk-hero">
+        <div class="eyebrow">${f(R,"Meeting date")?`at the table · ${esc(fmt(f(R,"Meeting date")))}`:"before the meeting"}</div>
+        <h1 style="margin:6px 0 4px">${esc(nm("units", one(rec("objectives",objId)||{},"Org Unit")) || areaName(rec("objectives",objId)||{}) || "Team")} ${f(R,"Type")==="Retrospective"?"retrospective":"midterm review"}</h1>
+        <div class="sub" style="max-width:480px;margin:0 auto">Ten quiet minutes — ${set.length} questions, your own words. Honest beats polished, and the team only reads them once yours are in.</div>
+        <div class="rwalk-dots">${set.map((q,i)=>`<span class="rdot ${revDraft[q.k]?"on":""}"></span>`).join("")}</div>
+      </div>
+      ${set.map((q,i)=>`
+      <div class="rq ${revDraft[q.k]?"answered":""}">
+        <div class="rq-n">${i+1}</div>
+        <div style="flex:1">
+          <div class="rq-q">${esc(q.q)}</div>
+          ${q.h?`<div class="cap">${esc(q.h)}</div>`:""}
+          ${q.t==="text" ? `<textarea rows="3" data-q="${i}" placeholder="Your words, not a report…">${esc(revDraft[q.k]||"")}</textarea>`
+          : q.t==="krscale" ? `<div style="margin-top:12px">${objKrs(objId).map(kr=>{
+              const v = (revDraft.__krconf||{})[kr.id];
+              return `<div style="margin-bottom:14px"><div class="krcrow">
+                <span class="krcrow-t">${esc(f(kr,"Title"))}</span>
+                <input type="range" class="tprog krc" data-kr="${kr.id}" min="1" max="10" step="1" value="${v||5}" style="--p:${((v||5)-1)/9*100}%"/>
+                <b class="krcrow-n" id="kc-${kr.id}">${v?v+"/10":"—"}</b>
+              </div>
+              <input type="text" class="krmove" data-kr="${kr.id}" placeholder="What would move this number?" value="${esc((revDraft.__krmove||{})[kr.id]||"")}"/></div>`;}).join("") || `<div class="cap">No key results yet on this objective.</div>`}</div>`
+          : q.t==="scale" ? `<div class="scale" style="margin-top:10px">${[1,2,3,4,5,6,7,8,9,10].map(n=>`<button class="sc" data-q="${i}" data-v="${n}" aria-pressed="${revDraft[q.k]===n}">${n}</button>`).join("")}</div>`
+          : `<div class="confs" style="margin-top:10px">${q.o.map(o=>`<button class="conf" data-q="${i}" data-v="${esc(o)}" aria-pressed="${revDraft[q.k]===o}">${esc(o)}</button>`).join("")}</div>`}
+        </div>
+      </div>`).join("")}
+      <div class="rwalk-end">
+        <button class="btn jv" id="rsub" style="font-size:15px;padding:13px 28px">Bring my answers to the table →</button>
+        <div class="cap" style="margin-top:9px">Signed ${esc(f(ME,"Name"))} — never anonymous, never graded.</div>
+      </div>
+    </div>`}`;
 
   document.getElementById("rv").onchange = e=>{revId=e.target.value; revDraft={}; render();};
   document.getElementById("rnew").onclick = ()=>document.getElementById("rnewbox").classList.toggle("hidden");
   wireNewReview();
   if(!mineDone){
-    document.querySelectorAll("textarea[data-q]").forEach(t=>t.oninput=()=>revDraft[set[+t.dataset.q].k]=t.value);
+    const updWalk = () => set.forEach((q,i)=>{
+      const has = q.t==="krscale"
+        ? (objKrs(objId).length>0 && objKrs(objId).every(k=>(revDraft.__krconf||{})[k.id]))
+        : !!(revDraft[q.k] && String(revDraft[q.k]).trim());
+      document.querySelectorAll(".rdot")[i]?.classList.toggle("on", has);
+      document.querySelectorAll(".rq")[i]?.classList.toggle("answered", has);
+    });
+    document.querySelectorAll("textarea[data-q]").forEach(t=>t.oninput=()=>{ revDraft[set[+t.dataset.q].k]=t.value; updWalk(); });
+    document.querySelectorAll("input.krmove").forEach(t=>t.oninput=()=>{
+      revDraft.__krmove = revDraft.__krmove||{}; revDraft.__krmove[t.dataset.kr]=t.value;
+    });
+    document.querySelectorAll("input.krc").forEach(s=>s.oninput=()=>{
+      revDraft.__krconf = revDraft.__krconf||{}; revDraft.__krconf[s.dataset.kr]=+s.value;
+      s.style.setProperty("--p", ((+s.value-1)/9*100)+"%");
+      const lb=document.getElementById("kc-"+s.dataset.kr); if(lb) lb.textContent=s.value+"/10";
+      updWalk();
+    });
+    updWalk();
     document.querySelectorAll(".sc,[data-q].conf").forEach(b=>b.onclick=()=>{
       const q = set[+b.dataset.q];
       revDraft[q.k] = q.t==="scale" ? +b.dataset.v : b.dataset.v;
       render();
     });
     document.getElementById("rsub").onclick = async()=>{
-      const fields = {...revDraft, Name:`${f(R,"Name")} — ${f(ME,"Name")}`, Submitted: iso(TODAY), Review:[R.id], Person:[ME.id]};
+      const draft = {...revDraft};
+      if(draft.__krconf){ const kc = draft.__krconf, km = draft.__krmove||{}; delete draft.__krconf; delete draft.__krmove;
+        const ks = objKrs(objId).filter(k=>kc[k.id]);
+        if(ks.length){
+          const tag = k => { const t=f(k,"Title")||""; return t.includes(":") ? t.split(":")[0] : t.slice(0,30); };
+          draft["M — Confidence per key result"] = ks.map(k=>`${tag(k)}: ${kc[k.id]}/10${(km[k.id]||"").trim()?` — would move it: ${km[k.id].trim()}`:""}`).join("\n");
+          const movers = ks.map(k=>(km[k.id]||"").trim()?`${tag(k)}: ${km[k.id].trim()}`:null).filter(Boolean).join("\n");
+          if(movers) draft["M — What would move that number"] = movers;
+          draft["Confidence 1-10"] = Math.min(...ks.map(k=>kc[k.id]));   // the weakest KR sets the tone
+        } }
+      const fields = {...draft, Name:`${f(R,"Name")} — ${f(ME,"Name")}`, Submitted: iso(TODAY), Review:[R.id], Person:[ME.id]};
       await post(T.responses, [{fields}]);
-      await reload("responses"); revDraft={}; toast("Submitted"); render();
+      await reload("responses"); revDraft={}; toast("Your voice is in — see you at the table"); render();
     };
   }
 };
@@ -1880,7 +1994,7 @@ function facilitator(R, set, resp){
   const block = q => `<div class="card"><h3>${esc(q.q)}</h3>
     ${resp.map(r=>{ const a=f(r,q.k); return a ? `<div class="ans"><div class="who">${esc(nm("people",one(r,"Person")))}</div><p>${esc(a)}</p></div>`:"";}).join("") || `<div class="empty">No answers.</div>`}</div>`;
   return `
-    ${scores.length?`<div class="card"><h3>Are we going to hit this?</h3>
+    ${scores.length?`<div class="card"><h3>Confidence — each person's weakest key result</h3>
       <div class="spread">${bars}</div>
       <div class="mono" style="display:flex;justify-content:space-between"><span>No chance</span><span>Certain</span></div>
       <div style="margin-top:8px"><strong>Average ${avg}/10 — spread of ${spread} points.</strong></div>
@@ -2065,6 +2179,7 @@ V.objective = () => {
     VIEW="reviews"; drawChrome(); render(); scrollTo(0,0);
   };
   document.getElementById("onew").onclick = ()=>document.getElementById("onewbox").classList.toggle("hidden");
+  if(okrsOpenNew){ okrsOpenNew=false; document.getElementById("onewbox").classList.remove("hidden"); }
   document.getElementById("oedit").onclick = ()=>document.getElementById("oeditbox").classList.toggle("hidden");
   document.getElementById("krnew").onclick = ()=>document.getElementById("krbox").classList.toggle("hidden");
   document.getElementById("dnew").onclick = ()=>document.getElementById("dbox").classList.toggle("hidden");
@@ -2274,7 +2389,7 @@ function wireSoundingBoard(){
     out.innerHTML = `<div class="sb-load"><span class="dot"></span><span class="dot"></span><span class="dot"></span> Reading it the way a ministry mind would…</div>`;
     go.disabled = true;
     try{
-      const r = await sbCall({round:1, objective, keyResults:[]});
+      const r = await sbCall({round:1, objective, keyResults:[], carry: sbCarry||undefined});
       sbQuestions = r.questions||[];
       renderSbRound1(objective, r);
     }catch(e){ out.innerHTML = `<div class="sb-err">${esc(e.message)}</div>`; }
@@ -2298,7 +2413,7 @@ function renderSbRound1(objective, r){
     const btn = document.getElementById("sbGo2"); btn.disabled=true;
     document.getElementById("sbOut").insertAdjacentHTML("beforeend", `<div class="sb-load" id="sbL"><span class="dot"></span><span class="dot"></span><span class="dot"></span> Reading what you wrote…</div>`);
     try{
-      const r2 = await sbCall({round:2, objective, keyResults:[], answers});
+      const r2 = await sbCall({round:2, objective, keyResults:[], answers, carry: sbCarry||undefined});
       document.getElementById("sbL")?.remove();
       renderSbRound2(r2);
     }catch(e){ document.getElementById("sbL")?.remove(); document.getElementById("sbOut").insertAdjacentHTML("beforeend", `<div class="sb-err">${esc(e.message)}</div>`); }
@@ -2324,6 +2439,8 @@ function renderSbRound2(r){
 
 /* ============================ OKRs — expand-in-place workspace ============================ */
 let openObj = null;   // which objective is unfolded in the list
+let okrsOpenNew = false;   // arriving from the Team page's new-trimester step → open the form
+let sbCarry = "";          // the retro's carry-forward words, handed to the Sounding Board
 
 // one key result with its tasks nested — reused in the list and the deep view
 function krBlock(kr){
@@ -2429,6 +2546,7 @@ V.okrs = () => {
   el.querySelectorAll("[data-full]").forEach(b=>b.onclick=(e)=>{ e.stopPropagation(); selObj=b.dataset.full; VIEW="objective"; drawChrome(); render(); scrollTo(0,0); });
   // new objective
   document.getElementById("onew").onclick = ()=>document.getElementById("onewbox").classList.toggle("hidden");
+  if(okrsOpenNew){ okrsOpenNew=false; document.getElementById("onewbox").classList.remove("hidden"); }
   wireObjForm();
 };
 
