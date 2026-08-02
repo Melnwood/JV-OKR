@@ -218,6 +218,8 @@
   .task .t{flex:1;font-size:13.5px}
   .task.done .t{text-decoration:line-through;color:var(--ink-2)}
   .task .m{font-family:'Plus Jakarta Sans',sans-serif;font-variant-numeric:tabular-nums;font-size:11px;color:var(--ink-2);white-space:nowrap}
+  .tdue{border:none;background:none;font-family:'Plus Jakarta Sans',sans-serif;font-size:11px;color:var(--ink-2);width:118px;cursor:pointer;flex:none}
+  .tdue:hover{color:var(--ink)}
   .task.late .m{color:var(--clay)}
 
   /* checkin */
@@ -993,22 +995,29 @@ V.org = () => {
 
 /* ============================ MY WORK (leader view) ============================ */
 let leaderId = null;
+let openMine = null;   // which of my OKRs is unfolded
 V.mine = () => {
   const L = ME;
   const mine = myOkrs(L.id);
-  const team = myTeammates(L.id);
   const myUnitName = f(rec("units", one(L,"Org Unit")), "Name") || "";
-  const late = mine.flatMap(o=>objTasks(o.id)).filter(isLate).length;
-  const avg = mine.length ? Math.round(mine.reduce((s,o)=>s+objProgress(o),0)/mine.length*100) : 0;
-  const fresh = mine.length ? Math.round(mine.filter(o=>staleDays(o)<=7).length/mine.length*100) : 0;
 
-  // my own tasks across all my OKRs — the true ground level
+  // every key result I could hang a task on, grouped by objective
+  const krChoices = mine.map(o=>({o, krs:objKrs(o.id)})).filter(x=>x.krs.length);
+
   const myTasks = DB.tasks.filter(t=>lnk(t,"Owner").includes(L.id) && f(t,"Status")!=="Done")
     .sort((a,b)=>(f(a,"Due date")||"9999")<(f(b,"Due date")||"9999")?-1:1);
+  const today = iso(TODAY), week = iso(new Date(TODAY.getTime()+7*864e5));
+  const groups = [
+    ["Overdue",   myTasks.filter(t=>f(t,"Due date") && f(t,"Due date")<today)],
+    ["Today",     myTasks.filter(t=>f(t,"Due date")===today)],
+    ["This week", myTasks.filter(t=>{const d=f(t,"Due date"); return d && d>today && d<=week;})],
+    ["Later",     myTasks.filter(t=>{const d=f(t,"Due date"); return d && d>week;})],
+    ["No date",   myTasks.filter(t=>!f(t,"Due date"))]
+  ].filter(g=>g[1].length);
 
   const needs = [];
   mine.forEach(o=>{
-    const t = objTasks(o.id), lt = t.filter(isLate).length;
+    const lt = objTasks(o.id).filter(isLate).length;
     if(f(o,"Confidence")==="Off track") needs.push({p:0,c:"p-off",tag:"Off track",t:f(o,"Title"),o:o.id,go:"objective",
       w:"Declared off track. Needs a decision, not a nudge."});
     if(isStale(o)) needs.push({p:1,c:"p-stale",tag:`${staleDays(o)}d silent`,t:f(o,"Title"),o:o.id,go:"checkin",
@@ -1023,72 +1032,145 @@ V.mine = () => {
       w:`${f(r,"Type")||"A review"} is open and your answer isn't in yet.`});
   });
   needs.sort((a,b)=>a.p-b.p);
+  const top3 = needs.slice(0,3);
+
+  const trow = t => {
+    const kr = rec("krs", one(t,"Key Result")), o = kr && rec("objectives", one(kr,"Objective"));
+    return `<div class="task ${isLate(t)?"late":""}">
+      <input type="checkbox" data-mtask="${t.id}"/>
+      <span class="t">${esc(f(t,"Title"))}<div class="mono" style="color:var(--ink-3)">${o?esc(f(o,"Title")):""}${kr?` · ${esc(f(kr,"Title"))}`:""}</div></span>
+      <input type="date" class="tdue" data-tdue="${t.id}" value="${f(t,"Due date")||""}" title="Due date"/>
+      <span class="m xdel" data-tdel="${t.id}" title="Delete task">✕</span>
+    </div>`;
+  };
+
+  const late = myTasks.filter(isLate).length;
+  const avg = mine.length ? Math.round(mine.reduce((s,o)=>s+objProgress(o),0)/mine.length*100) : 0;
 
   document.getElementById("view").innerHTML = `
     <div class="head">
-      <div><h1>My work</h1><div class="sub">${esc(f(L,"Name"))}${myUnitName?` · ${esc(myUnitName)}`:""} · the OKRs you're on, at ground level.</div></div>
-    </div>
-    <div class="tiles">
-      <div class="tile b-off"><div class="v">${myTasks.length}</div><div class="l">My open tasks</div></div>
-      <div class="tile b-off"><div class="v">${late}</div><div class="l">Overdue</div></div>
-      <div class="tile b-ind"><div class="v">${fresh}%</div><div class="l">Checked in this week</div></div>
-      <div class="tile"><div class="v">${avg}%</div><div class="l">Average progress</div></div>
+      <div><h1>My work</h1><div class="sub">${esc(f(L,"Name"))}${myUnitName?` · ${esc(myUnitName)}`:""} · your tasks and OKRs, workable right here.</div></div>
     </div>
 
-    ${needs.length ? `<div class="card">
-      <h2>Needs you this week</h2><div class="cap">Ranked by what's actually blocked.</div>
-      ${needs.map(n=>`<div class="row" style="cursor:pointer" data-need="${n.go}" data-no="${n.o||''}" data-nr="${n.rev||''}"><div><strong>${esc(n.t)}</strong><div class="why">${esc(n.w)}</div></div>
+    ${top3.length ? `<div class="card">
+      <h2>Needs you this week</h2>
+      ${top3.map(n=>`<div class="row" style="cursor:pointer" data-need="${n.go}" data-no="${n.o||''}" data-nr="${n.rev||''}"><div><strong>${esc(n.t)}</strong><div class="why">${esc(n.w)}</div></div>
         <span class="pill ${n.c}">${n.tag}</span></div>`).join("")}
     </div>` : ""}
 
     <div class="card">
-      <h2>My tasks</h2><div class="cap">Everything assigned to you, soonest first. Tick as you go.</div>
-      ${myTasks.length ? myTasks.map(t=>{
-        const kr = rec("krs", one(t,"Key Result")), o = kr && rec("objectives", one(kr,"Objective"));
-        return `<div class="task ${isLate(t)?"late":""}">
-          <input type="checkbox" data-mtask="${t.id}"/>
-          <span class="t">${esc(f(t,"Title"))}<div class="mono" style="color:var(--ink-3)">${o?esc(f(o,"Title")):""}${kr?` · ${esc(f(kr,"Title"))}`:""}</div></span>
-          <span class="m">${f(t,"Due date")?fmt(f(t,"Due date")):"no date"}</span>
-        </div>`;}).join("")
-        : `<div class="empty">Nothing assigned to you right now.</div>`}
+      <h2>My tasks</h2>
+      <div class="addrow" style="margin:4px 0 12px">
+        <input type="text" id="mnt" placeholder="Add a task — what needs doing?"/>
+        ${krChoices.length ? `<select class="sm" id="mnk">
+          ${krChoices.map(x=>`<optgroup label="${esc(f(x.o,"Title"))}">${x.krs.map(k=>`<option value="${k.id}">${esc(f(k,"Title"))}</option>`).join("")}</optgroup>`).join("")}
+        </select>
+        <input type="date" class="tdue" id="mnd" title="Due date"/>
+        <button class="btn dash" id="madd">Add</button>` : `<span class="cap">No key results yet to hang a task on — open your OKRs first.</span>`}
+      </div>
+      ${groups.length ? groups.map(([label,list])=>`
+        <div class="unit-label" style="margin-top:14px">${label}</div>
+        ${list.map(trow).join("")}`).join("")
+        : `<div class="empty">Nothing on your plate. Add one above — it lands under a key result, where it counts.</div>`}
     </div>
 
     <div class="card">
-      <h2>Our team's OKRs</h2><div class="cap">${myUnitName?esc(myUnitName)+"'s":"Your team's"} objectives — open one in the OKRs tab to work inside it.</div>
+      <h2>My OKRs</h2><div class="cap">Yours and your team's. Open one and work inside it — no leaving the page.</div>
       ${mine.length ? mine.map(o=>{
-        const p = pct(objProgress(o)), c=f(o,"Confidence")||"Not started";
-        const openT = objTasks(o.id).filter(x=>f(x,"Status")==="Open").length;
+        const krs = objKrs(o.id), c = f(o,"Confidence")||"Not started", prog = pct(objProgress(o));
+        const open = openMine===o.id;
         const iOwn = lnk(o,"Owner").includes(L.id);
-        return `<div class="row" style="cursor:pointer" data-o="${o.id}">
-          <div><strong>${esc(f(o,"Title"))}</strong> ${iOwn?`<span class="pill p-none" style="font-size:9.5px">you own</span>`:""}
-            <div class="prog" style="width:200px;margin-top:5px"><span style="width:${p}%;background:${col(c)}"></span></div>
-            <a class="mono ladder-link" data-ladder="${o.id}" style="color:var(--ink-3);cursor:pointer;text-decoration:underline">where this lands at JV ↗</a></div>
-          <div style="text-align:right">
-            <span class="pill ${cls(c)}">${c}</span>
-            <div class="mono" style="margin-top:4px;color:${isStale(o)?"var(--clay)":"var(--ink-2)"}">${staleDays(o)===999?"never":staleDays(o)+"d"} · ${openT} open</div>
-          </div></div>`;}).join("")
-        : `<div class="empty">No team OKRs yet. That's the conversation to have.</div>`}
+        return `<div class="wobj ${open?"open":""}" data-obj="${o.id}">
+          <div class="wobj-top" data-toggle="${o.id}">
+            <span class="chev">▶</span>
+            <div class="wobj-main">
+              <div class="wobj-title">${esc(f(o,"Title"))} ${iOwn?`<span class="pill p-none" style="font-size:9.5px">you own</span>`:""}</div>
+              <div class="wobj-ladder">${alignLine(o)}</div>
+            </div>
+            <div class="wobj-side">
+              <span class="pill ${cls(c)}">${esc(c)}</span>
+              <span class="wobj-pct">${prog}%</span>
+            </div>
+          </div>
+          <div class="wobj-body">
+            ${krs.length ? krs.map(kr=>krBlock(kr)).join("") : `<div class="cap" style="padding:8px 0">No key results yet — open the full workspace to add them.</div>`}
+            <div class="wobj-foot">
+              <button class="btn jv" data-checkin="${o.id}">Check in</button>
+              <button class="btn ghost" data-full="${o.id}">Full workspace →</button>
+              <span class="cap" style="margin-left:auto">${esc(nm("people",one(o,"Owner")))} · ${staleDays(o)===999?"never checked in":staleDays(o)+"d since check-in"}</span>
+            </div>
+          </div>
+        </div>`;
+      }).join("") : `<div class="empty">No team OKRs yet. That's the conversation to have.</div>`}
     </div>
 
     <div class="card">
-      <h2>What the team's been doing</h2><div class="cap">Recent check-ins and completed tasks across your OKRs.</div>
+      <h2>What the team's been doing</h2>
+      <div class="cap">${myTasks.length} open task${myTasks.length===1?"":"s"} · ${late} overdue · ${avg}% average progress across ${mine.length} OKR${mine.length===1?"":"s"}</div>
       ${(()=>{
         const feed = DB.checkins.filter(c=>mine.some(o=>lnk(c,"Objective").includes(o.id)))
           .sort((a,b)=>new Date(f(b,"Date"))-new Date(f(a,"Date"))).slice(0,10);
-        return feed.length ? feed.map(c=>`<div style="border-left:2px solid ${col(f(c,"Confidence"))};padding:4px 0 4px 11px;margin-bottom:11px">
+        return feed.length ? feed.map(c=>`<div style="border-left:2px solid ${col(f(c,"Confidence"))};padding:4px 0 4px 11px;margin:11px 0 0">
             <div class="mono">${fmt(f(c,"Date"))} · ${esc(nm("people",one(c,"Person")))} · ${esc(f(c,"Confidence")||"")}</div>
             <div style="font-size:13.5px">${esc(f(c,"What moved")||"")}</div></div>`).join("")
-          : `<div class="empty">Nothing logged yet.</div>`;
+          : `<div class="empty" style="margin-top:8px">Nothing logged yet.</div>`;
       })()}
     </div>`;
 
-  document.querySelectorAll("[data-o]").forEach(r=>r.onclick=(e)=>{ if(e.target.closest("[data-ladder]"))return; openObjective(r.dataset.o); });
-  document.querySelectorAll("[data-ladder]").forEach(a=>a.onclick=(e)=>{ e.stopPropagation(); const o=rec("objectives",a.dataset.ladder); const k=ladderKr(o); toast(k?`Ladders to: ${f(k,"Title")}`:alignLine(o).replace(/<[^>]+>/g,"")); });
-  document.querySelectorAll("input[data-mtask]").forEach(c=>c.onchange=async()=>{
-    await patch(T.tasks,[{id:c.dataset.mtask, fields:{Status:"Done","Done date":new Date().toISOString().slice(0,10)}}]);
+  const el = document.getElementById("view");
+  // add a task — always lands on a key result
+  const addTask = async () => {
+    const inp = document.getElementById("mnt"), title = inp.value.trim();
+    if(!title) return;
+    const kid = document.getElementById("mnk").value;
+    await post(T.tasks,[{fields:{Title:title, Status:"Open", "Key Result":[kid], Owner:[L.id],
+      "Due date": document.getElementById("mnd").value || null}}]);
+    await reload("tasks"); toast("Task added"); V.mine();
+  };
+  const madd = document.getElementById("madd");
+  if(madd){ madd.onclick = addTask;
+    document.getElementById("mnt").addEventListener("keydown", e=>{ if(e.key==="Enter") addTask(); }); }
+  // tick, re-date, delete
+  el.querySelectorAll("input[data-mtask]").forEach(c=>c.onchange=async()=>{
+    await patch(T.tasks,[{id:c.dataset.mtask, fields:{Status:"Done","Done date":iso(TODAY)}}]);
     await reload("tasks"); toast("Task done"); V.mine();
   });
-  document.querySelectorAll("[data-need]").forEach(r=>r.onclick=()=>{
+  el.querySelectorAll("input[data-tdue]").forEach(d=>d.onchange=async()=>{
+    await patch(T.tasks,[{id:d.dataset.tdue, fields:{"Due date":d.value||null}}]);
+    await reload("tasks"); toast(d.value?"Due "+fmt(d.value):"Date cleared"); V.mine();
+  });
+  el.querySelectorAll("[data-tdel]").forEach(x=>x.onclick=async()=>{
+    if(!confirm(`Delete "${nm("tasks",x.dataset.tdel)}"?`)) return;
+    try{ await del(T.tasks,[x.dataset.tdel]); await reload("tasks"); toast("Task deleted"); V.mine(); }
+    catch(e){ toast(e.message,true); }
+  });
+  // expand-in-place OKRs — same machinery as the OKRs tab, re-rendering here
+  el.querySelectorAll("[data-toggle]").forEach(r=>r.onclick=()=>{
+    const id=r.dataset.toggle; openMine = (openMine===id)?null:id; V.mine();
+  });
+  el.querySelectorAll("input[data-otask]").forEach(c=>c.onchange=async(e)=>{
+    e.stopPropagation();
+    const done=c.checked;
+    await patch(T.tasks,[{id:c.dataset.otask, fields:{Status:done?"Done":"Open","Done date":done?iso(TODAY):null}}]);
+    await reload("tasks"); V.mine();
+  });
+  el.querySelectorAll("[data-otdel]").forEach(x=>x.onclick=async(e)=>{
+    e.stopPropagation();
+    if(!confirm(`Delete "${nm("tasks",x.dataset.otdel)}"?`)) return;
+    try{ await del(T.tasks,[x.dataset.otdel]); await reload("tasks"); toast("Task deleted"); V.mine(); }
+    catch(err){ toast(err.message,true); }
+  });
+  el.querySelectorAll("[data-oadd]").forEach(b=>b.onclick=async(e)=>{
+    e.stopPropagation();
+    const kid=b.dataset.oadd, inp=document.getElementById("ont-"+kid), title=inp.value.trim();
+    if(!title) return;
+    await post(T.tasks,[{fields:{Title:title,Status:"Open","Key Result":[kid],Owner:[L.id]}}]);
+    await reload("tasks"); toast("Task added"); V.mine();
+  });
+  el.querySelectorAll(".wobj-body input, .wobj-body .addrow").forEach(n=>n.addEventListener("click",e=>e.stopPropagation()));
+  el.querySelectorAll("[data-checkin]").forEach(b=>b.onclick=(e)=>{ e.stopPropagation(); ciObj=b.dataset.checkin; ciVals={}; VIEW="checkin"; drawChrome(); render(); scrollTo(0,0); });
+  el.querySelectorAll("[data-full]").forEach(b=>b.onclick=(e)=>{ e.stopPropagation(); selObj=b.dataset.full; VIEW="objective"; drawChrome(); render(); scrollTo(0,0); });
+  el.querySelectorAll("[data-need]").forEach(r=>r.onclick=()=>{
     const go=r.dataset.need, oid=r.dataset.no, rid=r.dataset.nr;
     if(go==="checkin"){ ciObj=oid; ciVals={}; selObj=oid; VIEW="checkin"; }
     else if(go==="review"){ revId=rid||null; VIEW="reviews"; }
