@@ -220,6 +220,29 @@
   .task .m{font-family:'Plus Jakarta Sans',sans-serif;font-variant-numeric:tabular-nums;font-size:11px;color:var(--ink-2);white-space:nowrap}
   .tdue{border:none;background:none;font-family:'Plus Jakarta Sans',sans-serif;font-size:11px;color:var(--ink-2);width:118px;cursor:pointer;flex:none}
   .tdue:hover{color:var(--ink)}
+  .towner{border:none;background:none;font-family:'Plus Jakarta Sans',sans-serif;font-size:11px;color:var(--ink-2);cursor:pointer;max-width:110px;flex:none}
+  .towner:hover{color:var(--ink)}
+  .newtask{display:flex;align-items:center;gap:12px;background:var(--jv-50);border:1px solid var(--jv-edge);border-left:3px solid var(--jv);border-radius:10px;padding:10px 14px;margin-bottom:8px}
+  .newtask .nt-main{flex:1}
+  .krpick{display:flex;flex-wrap:wrap;gap:8px}
+  .krcard{font:inherit;text-align:left;background:#fff;border:1px solid var(--rule);border-radius:10px;padding:10px 12px;width:228px;cursor:pointer}
+  .krcard:hover{border-color:var(--ink-3)}
+  .krcard.on{border-color:var(--jv);box-shadow:0 0 0 1px var(--jv)}
+  .krcard-t{display:block;font-size:13px;font-weight:600;margin-bottom:7px}
+  .krcard-m{display:block;font-size:11px;color:var(--ink-3);margin-top:6px}
+  .krviz{margin:10px 0 18px}
+  .krviz-top{display:flex;align-items:baseline;gap:8px;margin-bottom:7px}
+  .krviz-big{font-size:27px;font-weight:700;line-height:1}
+  .krviz-of{color:var(--ink-3);font-size:12.5px;flex:1}
+  .krviz-pct{font-size:15px;font-weight:700}
+  .prog.big{height:9px}
+  .krviz-sub{display:flex;align-items:center;gap:10px;margin-top:9px;font-size:11.5px;color:var(--ink-2)}
+  .krviz-sub .prog{width:140px}
+  .notes{margin:2px 0 8px 27px;padding:9px 13px;background:var(--jv-50);border:1px dashed var(--jv-edge);border-radius:8px}
+  .noteline{font-size:12px;padding:3.5px 0;border-bottom:1px dotted var(--rule-2)}
+  .noteline:last-of-type{border-bottom:none}
+  .donehead{cursor:pointer;font-size:12px;color:var(--ink-3);margin-top:16px;user-select:none}
+  .donehead:hover{color:var(--ink)}
   .task.late .m{color:var(--clay)}
 
   /* checkin */
@@ -995,188 +1018,167 @@ V.org = () => {
 
 /* ============================ MY WORK (leader view) ============================ */
 let leaderId = null;
-let openMine = null;   // which of my OKRs is unfolded
+let mineKr = null, mineNotesOpen = null, mineDoneOpen = false;   // My OKR page state
 V.mine = () => {
   const L = ME;
+  const el = document.getElementById("view");
   const mine = myOkrs(L.id);
   const myUnitName = f(rec("units", one(L,"Org Unit")), "Name") || "";
+  const people = DB.people.filter(p=>f(p,"Active")!==false).sort((a,b)=>(f(a,"Name")||"").localeCompare(f(b,"Name")||""));
+  const stamp = d => d ? `${fmt(d)} ${new Date(d).getFullYear()}` : "";
 
-  // every key result I could hang a task on, grouped by objective
-  const krChoices = mine.map(o=>({o, krs:objKrs(o.id)})).filter(x=>x.krs.length);
+  // tasks someone else put on my plate, until I say "got it"
+  const newForMe = DB.tasks.filter(t=>lnk(t,"Owner").includes(L.id) && !f(t,"Seen")
+    && f(t,"Status")!=="Done" && one(t,"Created by") && one(t,"Created by")!==L.id);
 
-  const myTasks = DB.tasks.filter(t=>lnk(t,"Owner").includes(L.id) && f(t,"Status")!=="Done")
-    .sort((a,b)=>(f(a,"Due date")||"9999")<(f(b,"Due date")||"9999")?-1:1);
-  const today = iso(TODAY), week = iso(new Date(TODAY.getTime()+7*864e5));
-  const groups = [
-    ["Overdue",   myTasks.filter(t=>f(t,"Due date") && f(t,"Due date")<today)],
-    ["Today",     myTasks.filter(t=>f(t,"Due date")===today)],
-    ["This week", myTasks.filter(t=>{const d=f(t,"Due date"); return d && d>today && d<=week;})],
-    ["Later",     myTasks.filter(t=>{const d=f(t,"Due date"); return d && d>week;})],
-    ["No date",   myTasks.filter(t=>!f(t,"Due date"))]
-  ].filter(g=>g[1].length);
+  // which key result am I working in?
+  const myKrs = mine.flatMap(o=>objKrs(o.id));
+  if(!mineKr || !myKrs.some(k=>k.id===mineKr)){
+    const withMyOpen = myKrs.find(k=>krTasks(k.id).some(t=>lnk(t,"Owner").includes(L.id) && f(t,"Status")!=="Done"));
+    mineKr = (withMyOpen || myKrs[0] || {}).id || null;
+  }
+  const kr = mineKr ? rec("krs", mineKr) : null;
+  const krObj = kr ? rec("objectives", one(kr,"Objective")) : null;
 
-  const needs = [];
-  mine.forEach(o=>{
-    const lt = objTasks(o.id).filter(isLate).length;
-    if(f(o,"Confidence")==="Off track") needs.push({p:0,c:"p-off",tag:"Off track",t:f(o,"Title"),o:o.id,go:"objective",
-      w:"Declared off track. Needs a decision, not a nudge."});
-    if(isStale(o)) needs.push({p:1,c:"p-stale",tag:`${staleDays(o)}d silent`,t:f(o,"Title"),o:o.id,go:"checkin",
-      w:"No check-in logged — check in →"});
-    if(lt) needs.push({p:2,c:"p-off",tag:`${lt} overdue`,t:f(o,"Title"),o:o.id,go:"objective",w:`${lt} task${lt>1?"s":""} past due.`});
-  });
-  DB.reviews.filter(r=>f(r,"Status")!=="Closed").forEach(r=>{
-    const oid = one(r,"Objective");
-    if(!mine.some(o=>o.id===oid)) return;
-    const answered = DB.responses.some(x=>lnk(x,"Review").includes(r.id) && lnk(x,"Person").includes(L.id));
-    if(!answered) needs.push({p:0,c:"p-risk",tag:f(r,"Type")||"Review",t:nm("objectives",oid),rev:r.id,go:"review",
-      w:`${f(r,"Type")||"A review"} is open and your answer isn't in yet.`});
-  });
-  needs.sort((a,b)=>a.p-b.p);
-  const top3 = needs.slice(0,3);
+  const noteLines = t => (f(t,"Notes")||"").split("\n").filter(x=>x.trim());
+  const ownerSel = (id, sel) => `<select class="towner" data-towner="${id}" title="Who's responsible">
+    ${people.map(p=>`<option value="${p.id}" ${p.id===sel?"selected":""}>${esc((f(p,"Name")||"").split(" ")[0])}</option>`).join("")}</select>`;
 
-  const trow = t => {
-    const kr = rec("krs", one(t,"Key Result")), o = kr && rec("objectives", one(kr,"Objective"));
-    return `<div class="task ${isLate(t)?"late":""}">
+  const openRow = t => `
+    <div class="task ${isLate(t)?"late":""}">
       <input type="checkbox" data-mtask="${t.id}"/>
-      <span class="t">${esc(f(t,"Title"))}<div class="mono" style="color:var(--ink-3)">${o?esc(f(o,"Title")):""}${kr?` · ${esc(f(kr,"Title"))}`:""}</div></span>
+      <span class="t">${esc(f(t,"Title"))}
+        <div class="mono" style="color:var(--ink-3);cursor:pointer" data-notes="${t.id}">${noteLines(t).length ? noteLines(t).length+" note"+(noteLines(t).length>1?"s":"")+" ▾" : "+ add a note"}</div>
+      </span>
+      ${ownerSel(t.id, one(t,"Owner"))}
       <input type="date" class="tdue" data-tdue="${t.id}" value="${f(t,"Due date")||""}" title="Due date"/>
       <span class="m xdel" data-tdel="${t.id}" title="Delete task">✕</span>
-    </div>`;
-  };
-
-  const late = myTasks.filter(isLate).length;
-  const avg = mine.length ? Math.round(mine.reduce((s,o)=>s+objProgress(o),0)/mine.length*100) : 0;
-
-  document.getElementById("view").innerHTML = `
-    <div class="head">
-      <div><h1>My work</h1><div class="sub">${esc(f(L,"Name"))}${myUnitName?` · ${esc(myUnitName)}`:""} · your tasks and OKRs, workable right here.</div></div>
     </div>
+    ${mineNotesOpen===t.id ? `<div class="notes">
+      ${noteLines(t).map(n=>`<div class="noteline">${esc(n)}</div>`).join("") || `<div class="cap">No notes yet — what's worth remembering?</div>`}
+      <div class="addrow"><input type="text" id="nnt-${t.id}" placeholder="Add a note — it's stamped with your name"/><button class="btn dash" data-noteadd="${t.id}">Add</button></div>
+    </div>` : ""}`;
 
-    ${top3.length ? `<div class="card">
-      <h2>Needs you this week</h2>
-      ${top3.map(n=>`<div class="row" style="cursor:pointer" data-need="${n.go}" data-no="${n.o||''}" data-nr="${n.rev||''}"><div><strong>${esc(n.t)}</strong><div class="why">${esc(n.w)}</div></div>
-        <span class="pill ${n.c}">${n.tag}</span></div>`).join("")}
-    </div>` : ""}
-
-    <div class="card">
-      <h2>My tasks</h2>
-      <div class="addrow" style="margin:4px 0 12px">
-        <input type="text" id="mnt" placeholder="Add a task — what needs doing?"/>
-        ${krChoices.length ? `<select class="sm" id="mnk">
-          ${krChoices.map(x=>`<optgroup label="${esc(f(x.o,"Title"))}">${x.krs.map(k=>`<option value="${k.id}">${esc(f(k,"Title"))}</option>`).join("")}</optgroup>`).join("")}
-        </select>
-        <input type="date" class="tdue" id="mnd" title="Due date"/>
-        <button class="btn dash" id="madd">Add</button>` : `<span class="cap">No key results yet to hang a task on — open your OKRs first.</span>`}
+  let ws = `<div class="empty">You're not on any key results yet. When your team's OKRs have key results, they'll appear above.</div>`;
+  if(kr){
+    const all = krTasks(kr.id);
+    const open = all.filter(t=>f(t,"Status")!=="Done").sort((a,b)=>(f(a,"Due date")||"9999")<(f(b,"Due date")||"9999")?-1:1);
+    const dones = all.filter(t=>f(t,"Status")==="Done").sort((a,b)=>(f(b,"Done date")||"")<(f(a,"Done date")||"")?-1:1);
+    const cur = f(kr,"Current value")??0, tgt = f(kr,"Target value")??0, st = f(kr,"Start value")??0;
+    const conf = f(kr,"Confidence")||"Not started", p = pct(f(kr,"Progress"));
+    const tp = all.length ? Math.round(dones.length/all.length*100) : 0;
+    ws = `
+      <div class="cap" style="margin-bottom:2px">${esc(f(krObj,"Title"))}</div>
+      <div style="display:flex;align-items:center;gap:10px"><h2 style="margin:0">${esc(f(kr,"Title"))}</h2><span class="pill ${cls(conf)}">${esc(conf)}</span></div>
+      <div class="krviz">
+        <div class="krviz-top"><span class="krviz-big">${cur}</span><span class="krviz-of">of ${tgt}${esc(f(kr,"Unit")||"")} · started at ${st}</span><span class="krviz-pct">${p}%</span></div>
+        <div class="prog big"><span style="width:${p}%;background:${col(conf)}"></span></div>
+        <div class="krviz-sub">Tasks ${dones.length} of ${all.length} done <div class="prog"><span style="width:${tp}%;background:var(--moss)"></span></div>
+          <span style="margin-left:auto">${open.filter(isLate).length ? open.filter(isLate).length+" overdue" : ""}</span></div>
       </div>
-      ${groups.length ? groups.map(([label,list])=>`
-        <div class="unit-label" style="margin-top:14px">${label}</div>
-        ${list.map(trow).join("")}`).join("")
-        : `<div class="empty">Nothing on your plate. Add one above — it lands under a key result, where it counts.</div>`}
+      <div class="addrow" style="margin:0 0 12px">
+        <input type="text" id="mnt" placeholder="Add a task — what needs doing?"/>
+        <select class="sm" id="mnw" title="Who's responsible">${people.map(pp=>`<option value="${pp.id}" ${pp.id===L.id?"selected":""}>${esc(f(pp,"Name"))}</option>`).join("")}</select>
+        <input type="date" class="tdue" id="mnd" title="Due date"/>
+        <button class="btn dash" id="madd">Add</button>
+      </div>
+      ${open.map(openRow).join("") || `<div class="empty">Nothing open here. Add the next task above.</div>`}
+      ${dones.length ? `
+        <div class="donehead" data-donetog>${mineDoneOpen?"▾":"▸"} Done (${dones.length}) — the record of what moved</div>
+        ${mineDoneOpen ? dones.map(t=>`<div class="task done">
+          <input type="checkbox" checked data-mundo="${t.id}" title="Reopen"/>
+          <span class="t">${esc(f(t,"Title"))}</span>
+          <span class="m">${esc((nm("people",one(t,"Owner"))||"").split(" ")[0])} · done ${fmt(f(t,"Done date"))||""}</span>
+        </div>`).join("") : ""}` : ""}`;
+  }
+
+  el.innerHTML = `
+    <div class="head">
+      <div><h1>My OKR</h1><div class="sub">${esc(f(L,"Name"))}${myUnitName?` · ${esc(myUnitName)}`:""} · pick a key result, work inside it.</div></div>
     </div>
 
+    ${newForMe.length ? `<div style="margin-bottom:16px">${newForMe.map(t=>{
+      const k2 = rec("krs", one(t,"Key Result"));
+      return `<div class="newtask"><span style="color:var(--jv-deep)">✦</span>
+        <div class="nt-main"><b>${esc(f(t,"Title"))}</b>
+          <div class="cap">appointed by ${esc(nm("people",one(t,"Created by")))} · ${stamp(t.createdTime)}${k2?` · under ${esc(f(k2,"Title"))}`:""}${f(t,"Due date")?` · due ${fmt(f(t,"Due date"))}`:""}</div></div>
+        ${k2?`<button class="btn ghost" data-goto="${k2.id}" data-gseen="${t.id}">Open</button>`:""}
+        <button class="btn dash" data-seen="${t.id}">Got it</button></div>`;}).join("")}</div>` : ""}
+
     <div class="card">
-      <h2>My OKRs</h2><div class="cap">Yours and your team's. Open one and work inside it — no leaving the page.</div>
-      ${mine.length ? mine.map(o=>{
-        const krs = objKrs(o.id), c = f(o,"Confidence")||"Not started", prog = pct(objProgress(o));
-        const open = openMine===o.id;
+      <h2>Your key results</h2><div class="cap">Every key result on the objectives you're part of. Click one to work in it.</div>
+      ${mine.map(o=>{
+        const krs = objKrs(o.id); if(!krs.length) return "";
         const iOwn = lnk(o,"Owner").includes(L.id);
-        return `<div class="wobj ${open?"open":""}" data-obj="${o.id}">
-          <div class="wobj-top" data-toggle="${o.id}">
-            <span class="chev">▶</span>
-            <div class="wobj-main">
-              <div class="wobj-title">${esc(f(o,"Title"))} ${iOwn?`<span class="pill p-none" style="font-size:9.5px">you own</span>`:""}</div>
-              <div class="wobj-ladder">${alignLine(o)}</div>
-            </div>
-            <div class="wobj-side">
-              <span class="pill ${cls(c)}">${esc(c)}</span>
-              <span class="wobj-pct">${prog}%</span>
-            </div>
-          </div>
-          <div class="wobj-body">
-            ${krs.length ? krs.map(kr=>krBlock(kr)).join("") : `<div class="cap" style="padding:8px 0">No key results yet — open the full workspace to add them.</div>`}
-            <div class="wobj-foot">
-              <button class="btn jv" data-checkin="${o.id}">Check in</button>
-              <button class="btn ghost" data-full="${o.id}">Full workspace →</button>
-              <span class="cap" style="margin-left:auto">${esc(nm("people",one(o,"Owner")))} · ${staleDays(o)===999?"never checked in":staleDays(o)+"d since check-in"}</span>
-            </div>
-          </div>
-        </div>`;
-      }).join("") : `<div class="empty">No team OKRs yet. That's the conversation to have.</div>`}
+        return `<div class="unit-label" style="margin-top:12px">${esc(f(o,"Title"))}${iOwn?" · yours":""}</div>
+          <div class="krpick">${krs.map(k=>{
+            const kc = f(k,"Confidence")||"Not started", kp = pct(f(k,"Progress"));
+            const openN = krTasks(k.id).filter(t=>f(t,"Status")!=="Done").length;
+            return `<button class="krcard ${mineKr===k.id?"on":""}" data-pick="${k.id}">
+              <span class="krcard-t">${esc(f(k,"Title"))}</span>
+              <div class="prog"><span style="width:${kp}%;background:${col(kc)}"></span></div>
+              <span class="krcard-m">${kp}% · ${openN} open task${openN===1?"":"s"}</span>
+            </button>`;}).join("")}</div>`;
+      }).join("") || `<div class="empty">No team OKRs yet. That's the conversation to have.</div>`}
     </div>
 
-    <div class="card">
-      <h2>What the team's been doing</h2>
-      <div class="cap">${myTasks.length} open task${myTasks.length===1?"":"s"} · ${late} overdue · ${avg}% average progress across ${mine.length} OKR${mine.length===1?"":"s"}</div>
-      ${(()=>{
-        const feed = DB.checkins.filter(c=>mine.some(o=>lnk(c,"Objective").includes(o.id)))
-          .sort((a,b)=>new Date(f(b,"Date"))-new Date(f(a,"Date"))).slice(0,10);
-        return feed.length ? feed.map(c=>`<div style="border-left:2px solid ${col(f(c,"Confidence"))};padding:4px 0 4px 11px;margin:11px 0 0">
-            <div class="mono">${fmt(f(c,"Date"))} · ${esc(nm("people",one(c,"Person")))} · ${esc(f(c,"Confidence")||"")}</div>
-            <div style="font-size:13.5px">${esc(f(c,"What moved")||"")}</div></div>`).join("")
-          : `<div class="empty" style="margin-top:8px">Nothing logged yet.</div>`;
-      })()}
-    </div>`;
+    <div class="card">${ws}</div>`;
 
-  const el = document.getElementById("view");
-  // add a task — always lands on a key result
+  // ── wiring ──────────────────────────────────────────────────
+  el.querySelectorAll("[data-pick]").forEach(b=>b.onclick=()=>{ mineKr=b.dataset.pick; mineNotesOpen=null; V.mine(); });
+  el.querySelectorAll("[data-seen]").forEach(b=>b.onclick=async()=>{
+    await patch(T.tasks,[{id:b.dataset.seen, fields:{Seen:true}}]); await reload("tasks"); V.mine(); });
+  el.querySelectorAll("[data-goto]").forEach(b=>b.onclick=async()=>{
+    mineKr=b.dataset.goto;
+    await patch(T.tasks,[{id:b.dataset.gseen, fields:{Seen:true}}]); await reload("tasks"); V.mine(); });
+
   const addTask = async () => {
-    const inp = document.getElementById("mnt"), title = inp.value.trim();
+    const inp=document.getElementById("mnt"), title=inp.value.trim();
     if(!title) return;
-    const kid = document.getElementById("mnk").value;
-    await post(T.tasks,[{fields:{Title:title, Status:"Open", "Key Result":[kid], Owner:[L.id],
-      "Due date": document.getElementById("mnd").value || null}}]);
-    await reload("tasks"); toast("Task added"); V.mine();
+    const who=document.getElementById("mnw").value;
+    await post(T.tasks,[{fields:{Title:title, Status:"Open", "Key Result":[mineKr], Owner:[who],
+      "Due date":document.getElementById("mnd").value||null, Seen: who===L.id}}]);
+    await reload("tasks"); toast(who===L.id?"Task added":`Task added — ${nm("people",who).split(" ")[0]} will see it on their page`); V.mine();
   };
-  const madd = document.getElementById("madd");
-  if(madd){ madd.onclick = addTask;
-    document.getElementById("mnt").addEventListener("keydown", e=>{ if(e.key==="Enter") addTask(); }); }
-  // tick, re-date, delete
+  const madd=document.getElementById("madd");
+  if(madd){ madd.onclick=addTask;
+    document.getElementById("mnt").addEventListener("keydown",e=>{ if(e.key==="Enter") addTask(); }); }
+
   el.querySelectorAll("input[data-mtask]").forEach(c=>c.onchange=async()=>{
     await patch(T.tasks,[{id:c.dataset.mtask, fields:{Status:"Done","Done date":iso(TODAY)}}]);
-    await reload("tasks"); toast("Task done"); V.mine();
-  });
+    await reload("tasks"); toast("Task done — moved to the record"); V.mine(); });
+  el.querySelectorAll("input[data-mundo]").forEach(c=>c.onchange=async()=>{
+    await patch(T.tasks,[{id:c.dataset.mundo, fields:{Status:"Open","Done date":null}}]);
+    await reload("tasks"); toast("Task reopened"); V.mine(); });
+  el.querySelectorAll("[data-towner]").forEach(s=>s.onchange=async()=>{
+    const who=s.value;
+    await patch(T.tasks,[{id:s.dataset.towner, fields:{Owner:[who], Seen: who===L.id}}]);
+    await reload("tasks"); toast(who===L.id?"Yours now":`Handed to ${nm("people",who).split(" ")[0]} — they'll see it as new`); V.mine(); });
   el.querySelectorAll("input[data-tdue]").forEach(d=>d.onchange=async()=>{
     await patch(T.tasks,[{id:d.dataset.tdue, fields:{"Due date":d.value||null}}]);
-    await reload("tasks"); toast(d.value?"Due "+fmt(d.value):"Date cleared"); V.mine();
-  });
+    await reload("tasks"); toast(d.value?"Due "+fmt(d.value):"Date cleared"); V.mine(); });
   el.querySelectorAll("[data-tdel]").forEach(x=>x.onclick=async()=>{
     if(!confirm(`Delete "${nm("tasks",x.dataset.tdel)}"?`)) return;
     try{ await del(T.tasks,[x.dataset.tdel]); await reload("tasks"); toast("Task deleted"); V.mine(); }
     catch(e){ toast(e.message,true); }
   });
-  // expand-in-place OKRs — same machinery as the OKRs tab, re-rendering here
-  el.querySelectorAll("[data-toggle]").forEach(r=>r.onclick=()=>{
-    const id=r.dataset.toggle; openMine = (openMine===id)?null:id; V.mine();
+  el.querySelectorAll("[data-notes]").forEach(n=>n.onclick=()=>{
+    mineNotesOpen = mineNotesOpen===n.dataset.notes ? null : n.dataset.notes; V.mine(); });
+  el.querySelectorAll("[data-noteadd]").forEach(b=>{
+    const tid=b.dataset.noteadd, inp=document.getElementById("nnt-"+tid);
+    const addNote = async () => {
+      const txt=inp.value.trim(); if(!txt) return;
+      const t=rec("tasks",tid), now=new Date();
+      const line=`${iso(now)} ${String(now.getHours()).padStart(2,"0")}:${String(now.getMinutes()).padStart(2,"0")} · ${f(L,"Name")} — ${txt}`;
+      const prev=f(t,"Notes")||"";
+      await patch(T.tasks,[{id:tid, fields:{Notes: prev?prev+"\n"+line:line}}]);
+      await reload("tasks"); toast("Note added"); V.mine();
+    };
+    b.onclick=addNote;
+    if(inp) inp.addEventListener("keydown",e=>{ if(e.key==="Enter") addNote(); });
   });
-  el.querySelectorAll("input[data-otask]").forEach(c=>c.onchange=async(e)=>{
-    e.stopPropagation();
-    const done=c.checked;
-    await patch(T.tasks,[{id:c.dataset.otask, fields:{Status:done?"Done":"Open","Done date":done?iso(TODAY):null}}]);
-    await reload("tasks"); V.mine();
-  });
-  el.querySelectorAll("[data-otdel]").forEach(x=>x.onclick=async(e)=>{
-    e.stopPropagation();
-    if(!confirm(`Delete "${nm("tasks",x.dataset.otdel)}"?`)) return;
-    try{ await del(T.tasks,[x.dataset.otdel]); await reload("tasks"); toast("Task deleted"); V.mine(); }
-    catch(err){ toast(err.message,true); }
-  });
-  el.querySelectorAll("[data-oadd]").forEach(b=>b.onclick=async(e)=>{
-    e.stopPropagation();
-    const kid=b.dataset.oadd, inp=document.getElementById("ont-"+kid), title=inp.value.trim();
-    if(!title) return;
-    await post(T.tasks,[{fields:{Title:title,Status:"Open","Key Result":[kid],Owner:[L.id]}}]);
-    await reload("tasks"); toast("Task added"); V.mine();
-  });
-  el.querySelectorAll(".wobj-body input, .wobj-body .addrow").forEach(n=>n.addEventListener("click",e=>e.stopPropagation()));
-  el.querySelectorAll("[data-checkin]").forEach(b=>b.onclick=(e)=>{ e.stopPropagation(); ciObj=b.dataset.checkin; ciVals={}; VIEW="checkin"; drawChrome(); render(); scrollTo(0,0); });
-  el.querySelectorAll("[data-full]").forEach(b=>b.onclick=(e)=>{ e.stopPropagation(); selObj=b.dataset.full; VIEW="objective"; drawChrome(); render(); scrollTo(0,0); });
-  el.querySelectorAll("[data-need]").forEach(r=>r.onclick=()=>{
-    const go=r.dataset.need, oid=r.dataset.no, rid=r.dataset.nr;
-    if(go==="checkin"){ ciObj=oid; ciVals={}; selObj=oid; VIEW="checkin"; }
-    else if(go==="review"){ revId=rid||null; VIEW="reviews"; }
-    else { selObj=oid; VIEW="objective"; }
-    drawChrome(); render(); scrollTo(0,0);
-  });
+  const dt=el.querySelector("[data-donetog]");
+  if(dt) dt.onclick=()=>{ mineDoneOpen=!mineDoneOpen; V.mine(); };
 };
 
 /* ============================ CHECK-IN WORKSPACE ============================ */
