@@ -153,6 +153,43 @@ exports.handler = async (event) => {
   try { me = await whoami(event); }
   catch (e) { return bad(e.code || 401, e.message); }
 
+  // The Sounding Board — Claude reads an OKR and helps push it toward behavioral
+  // change, with grace for building-season work. Runs server-side so the API key
+  // is never exposed; only signed-in JV people reach it (auth ran above).
+  if (q.action === "sounding") {
+    const AK = process.env.ANTHROPIC_API_KEY;
+    if (!AK) return bad(500, "ANTHROPIC_API_KEY not set — add it in Netlify env vars (scope: Functions).");
+    const b = event.body ? JSON.parse(event.body) : {};
+    const SYS = `You are the Sounding Board inside Josiah Venture's OKR tool. JV is a Christian youth-ministry organization across Central and Eastern Europe. You help ministry leaders shape objectives that ultimately serve BEHAVIORAL CHANGE in the people they serve. You are NOT their coach — Mike is. You're a thinking partner: you ask, they write, you build on THEIR words. Never lecture, never overwrite their voice.
+
+Hold two things at once:
+1. Ministry people feel the change they long for but default to activity (run the camp, hold the training). The end is always behavioral change: who does what differently, and how you'd see it.
+2. BUT much of ministry is legitimately building systems/scaffolding — a follow-up process, a training pipeline, a rhythm. New teams especially start here, and that is RIGHT and GOOD. Never scold task or system-building work. Give grace: name the "building season" honestly, and bless it AS LONG AS the team can name the behavioral change it leads toward — even aspirationally. The destination lives in a "leads toward" horizon; the building lives in the tasks and key results.
+
+Be warm, direct, pastoral, never corporate. Iron sharpening iron.`;
+
+    let userMsg;
+    if (b.round === 1) {
+      userMsg = `A leader wrote this objective:\nObjective: "${b.objective}"\nKey results:\n${(b.keyResults||[]).length ? b.keyResults.map(k=>"- "+k).join("\n") : "(none yet)"}\n\nRespond ONLY with valid JSON, no markdown:\n{"verdict":"building|mixed|behavioral","read":"1-2 warm sentences naming honestly where this sits — a building season (real work, no penalty), an event with no clear end, or already naming change","horizon":"one sentence naming the behavioral change this most likely LEADS TOWARD, phrased as a possibility to confirm or reshape","questions":["3-4 open, non-leading questions that move it toward behavioral change without demanding they've arrived — aspirational answers welcome, specific to what they wrote"]}`;
+    } else {
+      userMsg = `The leader's objective: "${b.objective}"\nKey results: ${(b.keyResults||[]).join("; ")||"(none)"}\n\nYou asked them questions. Here is what THEY wrote back — their own developing thinking. Treat it as gold, build on their exact words:\n\n${(b.answers||[]).map(x=>`Q: ${x.q}\nThey wrote: ${x.a||"(left blank)"}`).join("\n\n")}\n\nRespond ONLY with valid JSON, no markdown:\n{"blessing":"2-3 warm sentences responding to what THEY wrote — affirm where they named real change in their words, gently press once if they're still only describing the system","horizon":"a refined one-sentence behavioral-change horizon, shaped by what they wrote, in their voice","objective":"their objective, sharpened — kept as building/system work if that's what it is, but with its purpose clear","rewrittenKRs":["2-3 key results; OK for some to be build milestones IF at least one measures a change in people the system is meant to produce, drawn from their reflections"]}`;
+    }
+
+    try {
+      const r = await fetch("https://api.anthropic.com/v1/messages", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "x-api-key": AK, "anthropic-version": "2023-06-01" },
+        body: JSON.stringify({ model: "claude-sonnet-4-6", max_tokens: 1024, system: SYS, messages: [{ role: "user", content: userMsg }] })
+      });
+      const j = await r.json();
+      if (!r.ok) return bad(r.status, j?.error?.message || "Sounding Board unavailable");
+      let txt = (j.content || []).filter(c => c.type === "text").map(c => c.text).join("").trim().replace(/```json|```/g, "").trim();
+      return ok({ result: JSON.parse(txt) });
+    } catch (e) {
+      return bad(500, "Sounding Board error: " + e.message);
+    }
+  }
+
   if (q.action === "me") return ok({ me });
 
   // A person may set their own Area — and nothing else — on their own row.
