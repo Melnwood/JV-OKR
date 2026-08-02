@@ -237,7 +237,12 @@ Be warm, direct, pastoral, never corporate. Iron sharpening iron.`;
       return ok({ records: filterForUser(me, table, await readAll(table)) });
     }
 
-    if (!canWrite(me, table, event.httpMethod)) {
+    // anyone may leave a note on a key result — notes only, nothing else
+    const notesOnly = event.httpMethod === "PATCH" && table === "Key Results" &&
+      (body.records || []).length &&
+      body.records.every(r => Object.keys(r.fields || {}).every(k => k === "Notes"));
+
+    if (!notesOnly && !canWrite(me, table, event.httpMethod)) {
       if (NO_DELETE.includes(table) && event.httpMethod === "DELETE")
         return bad(403, `${table} are the record — they can't be deleted, only added to.`);
       return bad(403, `Your role (${me.role}) can't change ${table}.`);
