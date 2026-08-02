@@ -154,6 +154,66 @@
   /* tasks */
   .task{display:flex;align-items:flex-start;gap:9px;padding:8px 0;border-bottom:1px dashed var(--rule)}
   .ktasks{margin:8px 0 4px 4px;padding-left:12px;border-left:2px solid var(--rule-2)}
+  /* Sounding Board */
+  .sb{border:1px solid var(--jv-edge);border-radius:12px;background:var(--jv-50);margin-bottom:16px;overflow:hidden}
+  .sb-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 15px}
+  .sb-mark{color:var(--jv-deep);font-weight:700}
+  .sb-head b{font-size:14px}
+  .sb-tag{font-size:12px;color:var(--ink-3);margin-left:6px}
+  .sb-toggle{font:inherit;font-size:12.5px;font-weight:600;color:var(--jv-deep);background:#fff;border:1px solid var(--jv-edge);border-radius:8px;padding:6px 12px;cursor:pointer}
+  .sb-body{padding:0 15px 15px}
+  .sb-body textarea{width:100%;font-family:inherit;font-size:14px;line-height:1.5;border:1px solid var(--rule);border-radius:9px;padding:10px 12px;background:#fff;resize:vertical}
+  .sb-verdict{display:inline-block;font-size:12px;font-weight:700;padding:4px 10px;border-radius:7px;margin:8px 0 6px}
+  .v-build{background:#EDF2F7;color:#4A6A8A}.v-mixed{background:var(--amber-bg);color:var(--amber)}.v-good{background:var(--moss-bg);color:var(--moss)}
+  .sb-read{font-size:14.5px;line-height:1.55}
+  .sb-horizon{background:#EDF2F7;border:1px solid #D8E2EC;border-left:3px solid #4A6A8A;border-radius:9px;padding:10px 13px;margin-top:10px;font-size:14px;line-height:1.5}
+  .sb-horizon .lab{font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:#4A6A8A;margin-right:7px}
+  .sb-q{background:#fff;border-left:3px solid var(--jv);border-radius:8px;padding:11px 13px;margin-top:10px;font-size:14px;font-weight:500}
+  .sb-ans{width:100%;margin-top:7px}
+  .sb-load{display:flex;align-items:center;gap:8px;color:var(--ink-2);font-size:13.5px;padding:14px 2px}
+  .sb-load .dot{width:6px;height:6px;border-radius:50%;background:var(--jv);animation:sbp 1.2s infinite}
+  .sb-load .dot:nth-child(2){animation-delay:.2s}.sb-load .dot:nth-child(3){animation-delay:.4s}
+  @keyframes sbp{0%,100%{opacity:.25}50%{opacity:1}}
+  .sb-err{color:var(--clay);font-size:13.5px;padding:10px 2px}
+  .sb-bless{background:#fff;border:1px solid var(--rule);border-radius:10px;padding:12px 14px;margin-top:12px;font-size:14.5px;line-height:1.55}
+  .sb-bless .lab{display:block;font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--jv-deep);margin-bottom:5px}
+  .sb-rw{background:var(--moss-bg);border:1px solid #D6E6DD;border-radius:10px;padding:12px 14px;margin-top:12px}
+  .sb-rw .lab{display:block;font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--moss);margin-bottom:5px}
+  .sb-rw .txt{font-size:14.5px;line-height:1.5}
+  /* Expand-in-place workspace */
+  .unit-group{margin-bottom:22px}
+  .unit-label{font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-3);margin:0 2px 9px}
+  .wobj{background:var(--card);border:1px solid var(--rule);border-radius:12px;margin-bottom:10px;overflow:hidden;box-shadow:var(--lift);transition:box-shadow .15s,border-color .15s}
+  .wobj.open{box-shadow:var(--lift-2);border-color:#DEDEDA}
+  .wobj-top{display:flex;align-items:center;gap:14px;padding:15px 17px;cursor:pointer}
+  .wobj-top:hover{background:#FCFCFB}
+  .wobj.open .wobj-top{border-bottom:1px solid var(--rule-2)}
+  .chev{flex:none;color:var(--ink-3);font-size:11px;transition:transform .18s}
+  .wobj.open .chev{transform:rotate(90deg);color:var(--ink-2)}
+  .wobj-main{flex:1;min-width:0}
+  .wobj-title{font-size:15px;font-weight:600;letter-spacing:-.01em}
+  .wobj-ladder{font-size:12.5px;color:var(--ink-3);margin-top:4px}
+  .wobj-side{flex:none;display:flex;align-items:center;gap:13px}
+  .wobj-pct{font-size:15px;font-weight:700;width:44px;text-align:right;letter-spacing:-.02em}
+  .wobj-body{display:none;padding:4px 17px 17px}
+  .wobj.open .wobj-body{display:block}
+  .wkr{border:1px solid var(--rule-2);border-radius:10px;margin-top:12px;padding:12px 14px;background:#FDFDFC}
+  .wkr-top{display:flex;justify-content:space-between;gap:10px;align-items:baseline}
+  .wkr-title{font-size:13.5px;font-weight:600}
+  .wkr-num{font-size:12.5px;color:var(--ink-2);white-space:nowrap}
+  .wkr-num b{color:var(--ink);font-weight:700}
+  .wkr .prog{margin-top:9px}
+  .wtasks{margin-top:10px}
+  .wtasks .task{display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid var(--rule-2)}
+  .wtasks .task:last-of-type{border-bottom:0}
+  .wtasks .task .t{flex:1;font-size:13.5px}
+  .wtasks .task.done .t{color:var(--ink-3);text-decoration:line-through}
+  .wtasks .task .m{font-size:11.5px;color:var(--ink-3)}
+  .wtasks .task .xdel{cursor:pointer;padding:0 3px}
+  .wtasks .task.late .m{color:var(--clay)}
+  .addrow{display:flex;gap:7px;margin-top:9px}
+  .addrow input{flex:1;font:inherit;font-size:13px;padding:7px 10px;border:1px solid var(--rule);border-radius:8px;background:#fff}
+  .wobj-foot{display:flex;align-items:center;gap:8px;margin-top:15px;flex-wrap:wrap}
   .task input[type=checkbox]{width:17px;height:17px;margin-top:3px;accent-color:var(--moss);flex:none}
   .task .t{flex:1;font-size:13.5px}
   .task.done .t{text-decoration:line-through;color:var(--ink-2)}
@@ -294,7 +354,7 @@ const upload = (recordId, fieldId, file) => new Promise((res,rej)=>{
 
 /* ============================ STATE ============================ */
 const DB = {};
-let ME = null, VIEW = "objective", TOAST_T;
+let ME = null, VIEW = "jv", TOAST_T;
 const TODAY = new Date(); TODAY.setHours(0,0,0,0);
 const STALE = 21;
 
@@ -394,12 +454,12 @@ const alignLine = o => {
 // Four working lines. Check-in and Reviews fold into the objective + surface in My work.
 // Dashboard, Alignment map and Browse JV merge into one "JV 2030" page with three lenses.
 // Org and Archive live in a quiet settings corner.
-const NAV = [["objective","Objectives"],["mine","My work"],["jv","JV 2030"],["coaching","Coaching"]];
+const NAV = [["jv","JV 2030"],["okrs","OKRs"],["mine","My work"],["coaching","Coaching"]];
 const GEAR = [["org","Org"],["archive","Archive"]];
 function drawChrome(){
   const nav = NAV.filter(([k]) => k!=="coaching" || iAmCoach());
   document.getElementById("nav").innerHTML = nav.map(([k,l])=>
-    `<button class="nv" data-v="${k}" aria-current="${VIEW===k||(k==='jv'&&['dashboard','map','browse'].includes(VIEW))}">${l}</button>`).join("");
+    `<button class="nv" data-v="${k}" aria-current="${VIEW===k||(k==='jv'&&['dashboard','map','browse'].includes(VIEW))||(k==='okrs'&&['objective','checkin','reviews'].includes(VIEW))}">${l}</button>`).join("");
   document.querySelectorAll(".nv").forEach(b=>b.onclick=()=>{VIEW=b.dataset.v; drawChrome(); render(); scrollTo(0,0);});
   const gear = iAmLeader()
     ? `<div class="gearwrap">
@@ -422,7 +482,7 @@ function drawChrome(){
   document.getElementById("signout").onclick = signOut;
 }
 const V = {};
-function render(){ document.getElementById("view").className=""; (V[VIEW]||V.objective)(); }
+function render(){ document.getElementById("view").className=""; (V[VIEW]||V.jv)(); }
 
 /* ============================ THE GUIDE ============================ */
 // Opens from the "?" in the top bar. Auto-opens once per person (remembered locally).
@@ -1292,7 +1352,7 @@ V.objective = () => {
   if(!selObj || !rec("objectives",selObj)) selObj = objs[0]?.id;
   const o = rec("objectives", selObj);
   const el = document.getElementById("view");
-  if(!o){ el.innerHTML = `<h1>Objectives</h1><div class="card">${objForm()}</div>`; wireObjForm(); return; }
+  if(!o){ el.innerHTML = `<h1>OKRs</h1><div class="card">${objForm()}</div>`; wireObjForm(); return; }
   const krs = objKrs(o.id), decs = DB.decisions.filter(d=>lnk(d,"Objective").includes(o.id))
     .sort((a,b)=>new Date(f(b,"Date"))-new Date(f(a,"Date")));
   const k = ladderKr(o);
@@ -1300,9 +1360,10 @@ V.objective = () => {
   el.innerHTML = `
     <div class="head">
       <div>
+        <button class="btn ghost" id="obacklist" style="margin-bottom:8px">← All OKRs</button>
         <div class="eyebrow">${esc(areaName(o)||"")} · ${esc(nm("people",one(o,"Owner")))} · ${esc(nm("cycles",one(o,"Cycle")))} · ${alignLine(o)}</div>
         <h1>${esc(f(o,"Title"))}</h1>
-        <div class="sub">The objective, and every decision that shaped it.</div>
+        <div class="sub">The full workspace — key results, decisions, and every check-in.</div>
       </div>
       <div class="filters">
         <select class="sm" id="so">${(ARCHIVED(o)?[o,...objs]:objs).map(x=>`<option value="${x.id}" ${x.id===selObj?"selected":""}>${ARCHIVED(x)?"[archived] ":""}${esc(areaName(x)||"")} — ${esc(f(x,"Title"))}</option>`).join("")}</select>
@@ -1447,6 +1508,7 @@ V.objective = () => {
       </div>
     </div>`;
 
+  document.getElementById("obacklist").onclick = ()=>{ openObj=selObj; VIEW="okrs"; drawChrome(); render(); scrollTo(0,0); };
   document.getElementById("so").onchange = e=>{selObj=e.target.value; render();};
   document.getElementById("ocheckin").onclick = ()=>{ ciObj=o.id; ciVals={}; VIEW="checkin"; drawChrome(); render(); scrollTo(0,0); };
   document.getElementById("oreview").onclick = ()=>{
@@ -1582,7 +1644,22 @@ V.objective = () => {
 };
 function objForm(){
   const parents = jvKrs();
-  return `<div class="grid2">
+  return `
+    <div class="sb" id="sbPanel">
+      <div class="sb-head">
+        <div><span class="sb-mark">✦</span> <b>Sounding Board</b>
+          <span class="sb-tag">think it through before you commit</span></div>
+        <button class="sb-toggle" id="sbToggle" type="button">Use it</button>
+      </div>
+      <div class="sb-body hidden" id="sbBody">
+        <div class="cap" style="margin-bottom:10px">Write your objective as it stands — even rough. It'll ask the questions that push it toward the change you actually want to see in people. Mike's your coach; this is just a thinking partner.</div>
+        <div class="field"><label>The objective, as you'd say it now</label>
+          <textarea id="sbObj" rows="2" placeholder="Run a summer camp a lot of students come to"></textarea></div>
+        <button class="btn" id="sbGo" type="button">Ask the Sounding Board →</button>
+        <div id="sbOut"></div>
+      </div>
+    </div>
+    <div class="grid2">
     <div class="field"><label>Title</label><input id="oT" placeholder="Launch 4 new church-planting teams"/></div>
     <div class="field"><label>How does this relate to JV 2030?</label>
       <select id="oAl">
@@ -1608,6 +1685,7 @@ function wireObjForm(){
     document.getElementById("oPBox").classList.toggle("hidden", al.value!==ALIGN.LADDER);
     document.getElementById("oJBox").classList.toggle("hidden", al.value!==ALIGN.SUPPORT);
   };
+  wireSoundingBoard();
   b.onclick = async()=>{
     const t = document.getElementById("oT").value.trim(); if(!t) return toast("Give it a title", true);
     const uid = document.getElementById("oU").value;
@@ -1625,7 +1703,188 @@ function wireObjForm(){
   };
 }
 
-/* ============================ COACHING CONSOLE ============================ */
+/* ---- The Sounding Board: think out loud, it builds on what you write ---- */
+let sbQuestions = [];
+async function sbCall(payload){
+  const r = await fetch(`${API}?action=sounding`, {method:"POST", headers:authHeaders({"Content-Type":"application/json"}), body:JSON.stringify(payload)});
+  const j = await r.json();
+  if(!r.ok) throw new Error(j.error||"Sounding Board unavailable");
+  return j.result;
+}
+function wireSoundingBoard(){
+  const toggle = document.getElementById("sbToggle"); if(!toggle) return;
+  toggle.onclick = ()=>{
+    const body = document.getElementById("sbBody");
+    body.classList.toggle("hidden");
+    toggle.textContent = body.classList.contains("hidden") ? "Use it" : "Hide";
+  };
+  const go = document.getElementById("sbGo");
+  go.onclick = async()=>{
+    const objective = document.getElementById("sbObj").value.trim();
+    if(!objective) return toast("Write the objective first", true);
+    const out = document.getElementById("sbOut");
+    out.innerHTML = `<div class="sb-load"><span class="dot"></span><span class="dot"></span><span class="dot"></span> Reading it the way a ministry mind would…</div>`;
+    go.disabled = true;
+    try{
+      const r = await sbCall({round:1, objective, keyResults:[]});
+      sbQuestions = r.questions||[];
+      renderSbRound1(objective, r);
+    }catch(e){ out.innerHTML = `<div class="sb-err">${esc(e.message)}</div>`; }
+    go.disabled = false;
+  };
+}
+function renderSbRound1(objective, r){
+  const vcls = {building:"v-build",mixed:"v-mixed",behavioral:"v-good"}[r.verdict]||"v-mixed";
+  const vlab = {building:"A building season — real work",mixed:"Worth pointing further",behavioral:"This already names change"}[r.verdict]||"Let's look";
+  let h = `<div class="sb-verdict ${vcls}">${vlab}</div><div class="sb-read">${esc(r.read)}</div>`;
+  if(r.horizon) h += `<div class="sb-horizon"><span class="lab">↗ Leads toward</span> ${esc(r.horizon)}</div>`;
+  h += `<div class="cap" style="margin:12px 0 4px">Write what comes — even aspirationally. It reads what you write.</div>`;
+  (r.questions||[]).forEach((q,i)=>{
+    h += `<div class="sb-q">${esc(q)}</div><textarea class="sb-ans" id="sbA${i}" rows="2" placeholder="Your thinking…"></textarea>`;
+  });
+  h += `<button class="btn" id="sbGo2" type="button">It reads what I wrote →</button>`;
+  document.getElementById("sbOut").innerHTML = h;
+  document.getElementById("sbGo2").onclick = async()=>{
+    const answers = sbQuestions.map((q,i)=>({q, a:(document.getElementById("sbA"+i)?.value||"").trim()}));
+    if(!answers.some(x=>x.a)) return toast("Write a little under at least one question", true);
+    const btn = document.getElementById("sbGo2"); btn.disabled=true;
+    document.getElementById("sbOut").insertAdjacentHTML("beforeend", `<div class="sb-load" id="sbL"><span class="dot"></span><span class="dot"></span><span class="dot"></span> Reading what you wrote…</div>`);
+    try{
+      const r2 = await sbCall({round:2, objective, keyResults:[], answers});
+      document.getElementById("sbL")?.remove();
+      renderSbRound2(r2);
+    }catch(e){ document.getElementById("sbL")?.remove(); document.getElementById("sbOut").insertAdjacentHTML("beforeend", `<div class="sb-err">${esc(e.message)}</div>`); }
+  };
+}
+function renderSbRound2(r){
+  let h = `<div class="sb-bless"><span class="lab">✦ Building on what you wrote</span>${esc(r.blessing)}</div>`;
+  if(r.horizon) h += `<div class="sb-horizon"><span class="lab">↗ Leads toward</span> ${esc(r.horizon)}</div>`;
+  if(r.objective){
+    h += `<div class="sb-rw"><span class="lab">Your objective, sharpened</span><div class="txt" id="sbRW">${esc(r.objective)}</div>`;
+    if((r.rewrittenKRs||[]).length) h += `<span class="lab" style="margin-top:10px;display:block">Key results to consider</span>${r.rewrittenKRs.map(k=>`<div class="txt" style="margin-top:4px">• ${esc(k)}</div>`).join("")}`;
+    h += `<button class="btn accent" id="sbUse" type="button" style="margin-top:12px">Use this as my title</button></div>`;
+  }
+  h += `<div class="cap" style="margin-top:10px">This came from your words. Yours to keep shaping — or push back and write more.</div>`;
+  document.getElementById("sbOut").insertAdjacentHTML("beforeend", h);
+  const use = document.getElementById("sbUse");
+  if(use) use.onclick = ()=>{
+    document.getElementById("oT").value = r.objective;
+    document.getElementById("sbObj").scrollIntoView({behavior:"smooth",block:"center"});
+    toast("Dropped into the title — edit it freely");
+  };
+}
+
+/* ============================ OKRs — expand-in-place workspace ============================ */
+let openObj = null;   // which objective is unfolded in the list
+
+// one key result with its tasks nested — reused in the list and the deep view
+function krBlock(kr){
+  const p = pct(f(kr,"Progress")), c = f(kr,"Confidence")||"Not started", ch = f(kr,"Target changed");
+  const ts = krTasks(kr.id);
+  return `<div class="wkr">
+    <div class="wkr-top">
+      <span class="wkr-title">${esc(f(kr,"Title"))}</span>
+      <span class="wkr-num">${f(kr,"Current value")??0} / ${ch?`<span class="strike">${f(kr,"Original target")}</span> `:""}<b>${f(kr,"Target value")??0}</b>${esc(f(kr,"Unit")||"")}</span>
+    </div>
+    <div class="prog"><span style="width:${p}%;background:${col(c)}"></span></div>
+    <div class="wtasks">
+      ${ts.map(t=>`<div class="task ${f(t,"Status")==="Done"?"done":""} ${isLate(t)?"late":""}">
+          <input type="checkbox" data-otask="${t.id}" ${f(t,"Status")==="Done"?"checked":""}/>
+          <span class="t">${esc(f(t,"Title"))}</span>
+          <span class="m">${esc((nm("people",one(t,"Owner"))||"").split(" ")[0])}${f(t,"Status")==="Done"?" · done":f(t,"Due date")?" · "+fmt(f(t,"Due date")):""}</span>
+          <span class="m xdel" data-otdel="${t.id}" title="Delete task">✕</span>
+        </div>`).join("") || `<div class="cap" style="padding:3px 0">No tasks yet.</div>`}
+      <div class="addrow">
+        <input type="text" id="ont-${kr.id}" placeholder="Add a task — who, and by when"/>
+        <button class="btn dash" data-oadd="${kr.id}">Add</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+V.okrs = () => {
+  const objs = live(DB.objectives.filter(o=>f(o,"Scope")!=="JV 5-year"));
+  const el = document.getElementById("view");
+  if(!objs.length){
+    el.innerHTML = `<div class="head"><div><h1>OKRs</h1><div class="sub">No objectives yet. Create the first one.</div></div></div>
+      <div class="card">${objForm()}</div>`;
+    wireObjForm(); return;
+  }
+  // group by unit for a little structure
+  const byUnit = {};
+  objs.forEach(o=>{ const u=areaName(o)||"—"; (byUnit[u]=byUnit[u]||[]).push(o); });
+
+  el.innerHTML = `
+    <div class="head">
+      <div><h1>OKRs</h1><div class="sub">Everything the org is working toward. Open one to work inside it — key results, tasks, check-in, all here.</div></div>
+      <div class="filters"><button class="btn" id="onew">+ New objective</button></div>
+    </div>
+    <div id="onewbox" class="card hidden"><h3>New objective</h3>${objForm()}</div>
+    ${Object.entries(byUnit).map(([unit,list])=>`
+      <div class="unit-group">
+        <div class="unit-label">${esc(unit)}</div>
+        ${list.map(o=>{
+          const krs = objKrs(o.id), c = f(o,"Confidence")||"Not started", prog = pct(f(o,"Progress"));
+          const open = openObj===o.id;
+          return `<div class="wobj ${open?"open":""}" data-obj="${o.id}">
+            <div class="wobj-top" data-toggle="${o.id}">
+              <span class="chev">▶</span>
+              <div class="wobj-main">
+                <div class="wobj-title">${esc(f(o,"Title"))}</div>
+                <div class="wobj-ladder">${alignLine(o)}</div>
+              </div>
+              <div class="wobj-side">
+                <span class="pill ${cls(c)}">${esc(c)}</span>
+                <span class="wobj-pct">${prog}%</span>
+              </div>
+            </div>
+            <div class="wobj-body">
+              ${krs.length ? krs.map(kr=>krBlock(kr)).join("") : `<div class="cap" style="padding:8px 0">No key results yet — open the full workspace to add them.</div>`}
+              <div class="wobj-foot">
+                <button class="btn jv" data-checkin="${o.id}">Check in</button>
+                <button class="btn ghost" data-full="${o.id}">Full workspace →</button>
+                <span class="cap" style="margin-left:auto">${esc(nm("people",one(o,"Owner")))} · ${esc(nm("cycles",one(o,"Cycle")))}</span>
+              </div>
+            </div>
+          </div>`;
+        }).join("")}
+      </div>`).join("")}`;
+
+  // toggle expand
+  el.querySelectorAll("[data-toggle]").forEach(r=>r.onclick=()=>{
+    const id=r.dataset.toggle; openObj = (openObj===id)?null:id; V.okrs();
+  });
+  // task tick / delete / add — same handlers as the deep view
+  el.querySelectorAll("input[data-otask]").forEach(c=>c.onchange=async(e)=>{
+    e.stopPropagation();
+    const done=c.checked;
+    await patch(T.tasks,[{id:c.dataset.otask, fields:{Status:done?"Done":"Open","Done date":done?new Date().toISOString().slice(0,10):null}}]);
+    await reload("tasks"); V.okrs();
+  });
+  el.querySelectorAll("[data-otdel]").forEach(x=>x.onclick=async(e)=>{
+    e.stopPropagation();
+    if(!confirm(`Delete "${nm("tasks",x.dataset.otdel)}"?`)) return;
+    try{ await del(T.tasks,[x.dataset.otdel]); await reload("tasks"); toast("Task deleted"); V.okrs(); }
+    catch(err){ toast(err.message,true); }
+  });
+  el.querySelectorAll("[data-oadd]").forEach(b=>b.onclick=async(e)=>{
+    e.stopPropagation();
+    const kid=b.dataset.oadd, inp=document.getElementById("ont-"+kid), title=inp.value.trim();
+    if(!title) return;
+    await post(T.tasks,[{fields:{Title:title,Status:"Open","Key Result":[kid],Owner:[ME.id]}}]);
+    await reload("tasks"); toast("Task added"); V.okrs();
+  });
+  // keep the add-task input clicks from collapsing the row
+  el.querySelectorAll(".wobj-body input, .wobj-body .addrow").forEach(n=>n.addEventListener("click",e=>e.stopPropagation()));
+  // check in / full workspace
+  el.querySelectorAll("[data-checkin]").forEach(b=>b.onclick=(e)=>{ e.stopPropagation(); ciObj=b.dataset.checkin; ciVals={}; VIEW="checkin"; drawChrome(); render(); scrollTo(0,0); });
+  el.querySelectorAll("[data-full]").forEach(b=>b.onclick=(e)=>{ e.stopPropagation(); selObj=b.dataset.full; VIEW="objective"; drawChrome(); render(); scrollTo(0,0); });
+  // new objective
+  document.getElementById("onew").onclick = ()=>document.getElementById("onewbox").classList.toggle("hidden");
+  wireObjForm();
+};
+
+/* ============================ OKR — full single workspace (deep view) ============================ */
 let cSel = null, cTab = "notes", cShared = false, cFiles = [];
 const cadence = p => f(p,"Coaching cadence (days)") || 21;
 const cScore = p => {
