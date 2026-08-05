@@ -110,6 +110,12 @@ UI; the Airtable table stays "Objectives."
    user); fold it into the app.
 7. **A warmer product name** than "JV OKR" (undecided).
 
+## After every feature ships
+Append a Mike-readable entry to the Google Doc **"JV OKR — What's New (how to
+try it)"** (Drive file id `1DD9MrYXqGjrZSAdbR-NKEFUEBurhZ7kerf74gS0yP8U`, in
+Mel's Drive): WHAT it is, TRY IT (concrete steps in the app), WATCH FOR (what
+feedback we want). Newest entries at the top. Mike tests from this doc.
+
 ## Working style the owner prefers
 Concise. Iterate fast. **Do not over-engineer.** Make reversible decisions
 rather than asking — only stop for facts you can't obtain or where a wrong guess
