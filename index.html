@@ -695,8 +695,7 @@ const krMove = (k, days=7) => {
   if(!h.some(m=>m.d>=cutoff)) return 0;
   const before = [...h].reverse().find(m=>m.d<cutoff);
   const base = before ? before.v : (f(k,"Start value")||0);
-  const now = f(k,"Current value")??0, st = f(k,"Start value")||0, tv = f(k,"Target value")??0;
-  return (tv-st) ? (now-base)/(tv-st) : 0;
+  return krFrac(k, f(k,"Current value")??0) - krFrac(k, base);
 };
 const objMove = (o, days=7) => {
   const ks = objKrs(o.id); if(!ks.length) return 0;
@@ -714,12 +713,23 @@ const vizArc=(cx,cy,r,f0,f1,w,color,op)=>{const [x0,y0]=vizPolar(cx,cy,r,f0),[x1
 const vizTick=(cx,cy,r,fr,len,color,w)=>{const [x0,y0]=vizPolar(cx,cy,r-len/2,fr),[x1,y1]=vizPolar(cx,cy,r+len/2,fr);
   return `<line x1="${x0}" y1="${y0}" x2="${x1}" y2="${y1}" stroke="${color}" stroke-width="${w||2}"/>`;};
 
+/* which way a key result wins */
+const krDir = k => { const d=f(k,"Direction")||""; return d.indexOf("Decrease")===0?"down":d.indexOf("Hold")===0?"hold":"up"; };
+const krFrac = (k,v) => { const st=f(k,"Start value")||0, tgt=f(k,"Target value")??0, dir=krDir(k);
+  if(dir==="down") return (st-tgt)?(st-v)/(st-tgt):0;
+  if(dir==="hold") return tgt?v/tgt:0;
+  return (tgt-st)?(v-st)/(tgt-st):0; };
+const krPhrase = k => { const tgt=f(k,"Target value")??0, u=esc(f(k,"Unit")||""), dir=krDir(k), cur=f(k,"Current value")??0;
+  return dir==="down"?`aiming below ${tgt}${u}`:dir==="hold"?`holding above ${tgt}${u}${cur>=tgt?" ✓":""}`:`of ${tgt}${u}`; };
+const goodDelta = (k,d) => krDir(k)==="down" ? d<0 : d>0;
+
 function svgDial(kr, big){
   const S = big?430:300, cx=S/2, cy=S/2-6, R=S/2-(big?52:42), W2=big?26:18;
   const st=f(kr,"Start value")||0, tgt=f(kr,"Target value")??0, cur=f(kr,"Current value")??0, unit=f(kr,"Unit")||"";
   const com=f(kr,"Commit"), str=f(kr,"Stretch");
   const max=Math.max(str||0, tgt, cur) || 1;
-  const fr=v=>(v-st)/((max-st)||1);
+  const dir=krDir(kr), clamp01=x=>Math.max(0,Math.min(1,x));
+  const fr = dir==="up" ? (v=>(v-st)/((max-st)||1)) : (v=>clamp01(krFrac(kr,v)));
   const h=histOf(kr); const pts=[st, ...h.map(m=>m.v)]; if(pts[pts.length-1]!==cur) pts.push(cur);
   let segs=""; for(let i=1;i<pts.length;i++) segs+=vizArc(cx,cy,R,fr(pts[i-1]),fr(pts[i]),W2,"var(--jv)",.35+i*(.65/(pts.length-1||1)));
   const seams=pts.slice(1,-1).map(v=>vizTick(cx,cy,R,fr(v),W2+7,"#fff",2.2)).join("");
@@ -733,13 +743,13 @@ function svgDial(kr, big){
   const PADX = big?95:70;
   return `<svg width="100%" viewBox="${-PADX} -6 ${S+2*PADX} ${S/2+58}" style="max-width:${big?640:400}px;display:block;margin:0 auto">
     ${vizArc(cx,cy,R,0,1,W2,"var(--rule-2)")}${segs}${seams}
-    ${mark(com,"commit","#98928A")}${mark(tgt,"target","var(--jv-deep)")}
+    ${dir==="up"?mark(com,"commit","#98928A"):""}${mark(tgt,"target","var(--jv-deep)")}
     <circle cx="${nx}" cy="${ny}" r="${big?6:4.5}" fill="var(--jv)"/>
     <text x="${cx}" y="${cy-(big?16:10)}" font-size="${big?42:26}" font-weight="800" fill="var(--ink)" text-anchor="middle">${cur}</text>
-    <text x="${cx}" y="${cy+(big?10:9)}" font-size="${big?13.5:11}" fill="var(--ink-3)" text-anchor="middle">of ${tgt}${esc(unit)}</text>
-    <text x="${cx}" y="${cy+(big?31:26)}" font-size="${big?12:10.5}" font-weight="700" fill="${lastH?"var(--moss)":"var(--ink-3)"}" text-anchor="middle">${lastH?`last moved ${esc(fmt(lastH.d))} · ${lastJump>=0?"+":""}${lastJump}`:"no movement yet"}</text>
-    <text x="${cx-R}" y="${cy+26}" font-size="10" fill="var(--ink-3)" text-anchor="middle">${st}</text>
-    ${max!==tgt?`<text x="${cx+R}" y="${cy+26}" font-size="10" fill="var(--ink-3)" text-anchor="middle">${max}</text>`:""}
+    <text x="${cx}" y="${cy+(big?10:9)}" font-size="${big?13.5:11}" fill="var(--ink-3)" text-anchor="middle">${krPhrase(kr)}</text>
+    <text x="${cx}" y="${cy+(big?31:26)}" font-size="${big?12:10.5}" font-weight="700" fill="${lastH?(lastJump===0||goodDelta(kr,lastJump)?"var(--moss)":"var(--clay)"):"var(--ink-3)"}" text-anchor="middle">${lastH?`last moved ${esc(fmt(lastH.d))} · ${lastJump>=0?"+":""}${lastJump}`:"no movement yet"}</text>
+    <text x="${cx-R}" y="${cy+26}" font-size="10" fill="var(--ink-3)" text-anchor="middle">${dir==="hold"?0:st}</text>
+    ${dir==="up"&&max!==tgt?`<text x="${cx+R}" y="${cy+26}" font-size="10" fill="var(--ink-3)" text-anchor="middle">${max}</text>`:""}
   </svg>`;
 }
 
@@ -755,7 +765,9 @@ function svgLine(kr){
   if(!ce || ce<=cs) ce = iso(new Date(new Date(cs).getTime()+120*864e5));
   const t0=new Date(cs).getTime(), t1=new Date(ce).getTime();
   const dx=d=>PADL+((new Date(d).getTime()-t0)/(t1-t0))*(W-PADL-PADR);
-  const yv=v=>Hh-32-((v-st)/((max-st)||1))*(Hh-78);
+  const dir=krDir(kr), base = dir==="hold"?0:st;
+  const fscale = v=>Math.max(0,Math.min(1.06, dir==="up" ? ((v-st)/((max-st)||1)) : krFrac(kr,v)));
+  const yv=v=>Hh-32-fscale(v)*(Hh-78);
   const todayX=Math.min(W-PADR,Math.max(PADL,dx(iso(TODAY))));
   let months=""; let mcur=new Date(t0); mcur.setDate(1); mcur.setMonth(mcur.getMonth()+1);
   while(mcur.getTime()<t1){ const x=dx(iso(mcur));
@@ -765,27 +777,27 @@ function svgLine(kr){
   let ridge=`M${dx(pts[0].d)},${yv(pts[0].v)}`;
   for(let i=1;i<pts.length;i++) ridge+=` L${dx(pts[i].d)},${yv(pts[i-1].v)} L${dx(pts[i].d)},${yv(pts[i].v)}`;
   ridge+=` L${todayX},${yv(cur)}`;
-  const area=ridge+` L${todayX},${yv(st)} L${dx(pts[0].d)},${yv(st)} Z`;
+  const area=ridge+` L${todayX},${yv(base)} L${dx(pts[0].d)},${yv(base)} Z`;
   const gid="lg"+kr.id;
   return `<svg width="100%" viewBox="0 0 ${W} ${Hh}" style="display:block">
     <defs><linearGradient id="${gid}" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="var(--jv)" stop-opacity=".8"/><stop offset="100%" stop-color="var(--jv)" stop-opacity=".08"/></linearGradient></defs>
     ${months}
     <line x1="${PADL}" y1="${yv(tgt)}" x2="${W-PADR}" y2="${yv(tgt)}" stroke="var(--jv-deep)" stroke-dasharray="5 5" opacity=".5"/>
     <text x="${W-PADR+4}" y="${yv(tgt)+4}" font-size="10.5" font-weight="700" fill="var(--jv-deep)">${tgt}</text>
-    ${com!=null&&com!==tgt?`<line x1="${PADL}" y1="${yv(com)}" x2="${W-PADR}" y2="${yv(com)}" stroke="var(--ink-3)" stroke-dasharray="4 4" opacity=".5"/><text x="${W-PADR+4}" y="${yv(com)+4}" font-size="10" fill="var(--ink-3)">${com}</text>`:""}
+    ${dir==="up"&&com!=null&&com!==tgt?`<line x1="${PADL}" y1="${yv(com)}" x2="${W-PADR}" y2="${yv(com)}" stroke="var(--ink-3)" stroke-dasharray="4 4" opacity=".5"/><text x="${W-PADR+4}" y="${yv(com)+4}" font-size="10" fill="var(--ink-3)">${com}</text>`:""}
     <path d="${area}" fill="url(#${gid})"/><path d="${ridge}" fill="none" stroke="var(--jv)" stroke-width="3" stroke-linejoin="round"/>
-    ${pts.slice(1).map((p,i)=>`<circle cx="${dx(p.d)}" cy="${yv(p.v)}" r="4.5" fill="#fff" stroke="var(--jv)" stroke-width="3"/><text x="${dx(p.d)}" y="${yv(p.v)-11}" font-size="11.5" font-weight="700" fill="var(--moss)" text-anchor="middle">${p.v-pts[i].v>=0?"+":""}${Math.round((p.v-pts[i].v)*10)/10}</text>`).join("")}
+    ${pts.slice(1).map((p,i)=>`<circle cx="${dx(p.d)}" cy="${yv(p.v)}" r="4.5" fill="#fff" stroke="var(--jv)" stroke-width="3"/><text x="${dx(p.d)}" y="${yv(p.v)-11}" font-size="11.5" font-weight="700" fill="${p.v===pts[i].v||goodDelta(kr,p.v-pts[i].v)?"var(--moss)":"var(--clay)"}" text-anchor="middle">${p.v-pts[i].v>=0?"+":""}${Math.round((p.v-pts[i].v)*10)/10}</text>`).join("")}
     <line x1="${todayX}" y1="${Hh-32}" x2="${todayX}" y2="10" stroke="var(--ink)" stroke-width="1.8"/>
     <text x="${todayX}" y="8" font-size="10.5" font-weight="700" fill="var(--ink)" text-anchor="middle">today</text>
     <text x="${Math.min(todayX+10,W-100)}" y="${yv(cur)-8}" font-size="22" font-weight="800" fill="var(--ink)">${cur}${esc(f(kr,"Unit")||"")}</text>
-    <line x1="${PADL}" y1="${yv(st)}" x2="${W-PADR}" y2="${yv(st)}" stroke="var(--rule)" stroke-width="1.5"/>
+    <line x1="${PADL}" y1="${yv(base)}" x2="${W-PADR}" y2="${yv(base)}" stroke="var(--rule)" stroke-width="1.5"/>
   </svg>`;
 }
 const vizToggle = id => `<div class="viztog">${["dial","line"].map(m=>`<button data-viz="${id}" data-m="${m}" class="${(VIZ[id]||"dial")===m?"on":""}">${m==="dial"?"◠ dial":"⟋ line"}</button>`).join("")}</div>`;
 const krViz = (kr,big) => (VIZ[kr.id]||"dial")==="dial" ? svgDial(kr,big) : svgLine(kr);
 const wireViz = () => document.querySelectorAll("[data-viz]").forEach(b=>b.onclick=(e)=>{e.stopPropagation(); setViz(b.dataset.viz,b.dataset.m); render();});
 const moveLabel = o => { const ks=objKrs(o.id); if(!ks.length) return "";
-  if(ks.length===1){ const k=ks[0], h=histOf(k), cutoff=iso(new Date(TODAY.getTime()-7*864e5));
+  if(ks.length===1 && krDir(ks[0])==="up"){ const k=ks[0], h=histOf(k), cutoff=iso(new Date(TODAY.getTime()-7*864e5));
     if(!h.some(m=>m.d>=cutoff)) return `<span class="mono" style="color:var(--ink-3)">quiet</span>`;
     const before=[...h].reverse().find(m=>m.d<cutoff); const base=before?before.v:(f(k,"Start value")||0);
     const d=Math.round(((f(k,"Current value")??0)-base)*10)/10;
@@ -820,7 +832,8 @@ LENS.dashboard = () => {
         const moving = kids.filter(o=>objMove(o)>0).length;
         return `<div class="card" style="margin-bottom:14px">
           <div style="display:flex;justify-content:space-between;gap:12px;align-items:center;margin-bottom:4px">
-            <strong style="font-size:15px;cursor:pointer" data-o="${j.id}">${esc(f(k,"Title"))}</strong>
+            <div style="flex:1;min-width:0"><strong style="font-size:15px;cursor:pointer" data-o="${j.id}">${esc(f(k,"Title"))}</strong>
+              ${f(k,"How we'll know")?`<div class="cap">${esc(f(k,"How we'll know"))}</div>`:""}</div>
             ${vizToggle(k.id)}
           </div>
           <div style="cursor:pointer" data-o="${j.id}">${krViz(k,true)}</div>
@@ -1107,7 +1120,8 @@ function objCardRO(o){
       const ts = krTasks(kr.id), done = ts.filter(t=>f(t,"Status")==="Done").length;
       return `<div style="padding:10px 0;border-top:1px dashed var(--rule)">
         <div style="display:flex;justify-content:space-between;gap:10px;align-items:center;margin-bottom:4px">
-          <span style="font-weight:600;font-size:13.5px;cursor:pointer" data-o="${o.id}">${esc(f(kr,"Title"))}</span>
+          <div style="flex:1;min-width:0"><span style="font-weight:600;font-size:13.5px;cursor:pointer" data-o="${o.id}">${esc(f(kr,"Title"))}</span>
+            ${f(kr,"How we'll know")?`<div class="cap">${esc(f(kr,"How we'll know"))}</div>`:""}</div>
           ${vizToggle(kr.id)}
         </div>
         <div style="cursor:pointer" data-o="${o.id}">${krViz(kr,false)}</div>
@@ -1250,9 +1264,13 @@ V.mine = () => {
     const cur = f(kr,"Current value")??0, tgt = f(kr,"Target value")??0, unit = f(kr,"Unit")||"";
     const conf = f(kr,"Confidence")||"Not started", p = pct(f(kr,"Progress"));
     const tp = all.length ? Math.round(all.reduce((s,t)=>s+(f(t,"Status")==="Done"?1:(f(t,"Progress")||0)),0)/all.length*100) : 0;
-    const numline = unit==="%" && tgt===100 ? `<b>${cur}%</b> of the way there`
+    const dirw = krDir(kr);
+    const numline = dirw==="down" ? `<b>${cur}${esc(unit)}</b> now — aiming below ${tgt}${esc(unit)} · <b>${p}%</b> of the way`
+                  : dirw==="hold" ? `<b>${cur}${esc(unit)}</b> — holding above ${tgt}${esc(unit)}${cur>=tgt?" ✓":""}`
+                  : unit==="%" && tgt===100 ? `<b>${cur}%</b> of the way there`
                   : `${cur} of ${tgt}${esc(unit)} so far — <b>${p}%</b> of the way`;
     return `
+      ${f(kr,"How we'll know")?`<div class="cap">${esc(f(kr,"How we'll know"))}</div>`:""}
       <div class="orient" style="margin:2px 0 4px">${numline}. <span class="pill ${cls(conf)}" style="vertical-align:1px">${esc(conf)}</span></div>
       ${(()=>{ const st2=f(kr,"Start value")||0, tv=(f(kr,"Target value")??0);
         const uo = rec("units", one(rec("objectives", one(kr,"Objective"))||{},"Org Unit"));
@@ -1330,6 +1348,7 @@ V.mine = () => {
               <span class="chev">▶</span>
               <div class="wobj-main">
                 <div class="wobj-title">${esc(f(k,"Title"))}</div>
+                ${f(k,"How we'll know")?`<div class="cap">${esc(f(k,"How we'll know"))}</div>`:""}
                 <div class="prog" style="max-width:220px;margin-top:6px"><span style="width:${kp}%;background:${col(kc)}"></span></div>
               </div>
               <div class="wobj-side">
@@ -1643,6 +1662,7 @@ V.teamcheckin = () => {
           return `<div class="krwin">
             <div class="tckr" style="border-bottom:none;padding:0 0 2px">
               <div style="flex:1"><div style="font-size:13.5px;font-weight:650">${esc(f(k,"Title"))}</div>
+                ${f(k,"How we'll know")?`<div class="cap">${esc(f(k,"How we'll know"))}</div>`:""}
                 <div class="mono" id="tcd-${k.id}">was ${prev}${esc(unit)} last time</div></div>
               <input type="number" class="tcnum" data-tckr="${k.id}" data-prev="${prev}" data-unit="${esc(unit)}" value="${TC.vals[k.id]}"/>
               <span class="mono" style="width:52px">/ ${f(k,"Target value")??0}${esc(unit)}</span>
@@ -1668,7 +1688,7 @@ V.teamcheckin = () => {
     TC.vals[i.dataset.tckr] = i.value;
     const d = +i.value - +i.dataset.prev, lab = document.getElementById("tcd-"+i.dataset.tckr);
     lab.textContent = d>0?`+${Math.round(d*10)/10}${i.dataset.unit} since last time`:d<0?`${Math.round(d*10)/10}${i.dataset.unit} since last time`:`was ${i.dataset.prev}${i.dataset.unit} last time`;
-    lab.style.color = d>0?"var(--moss)":d<0?"var(--clay)":"var(--ink-2)";
+    lab.style.color = d===0?"var(--ink-2)":goodDelta(rec("krs",i.dataset.tckr),d)?"var(--moss)":"var(--clay)";
   });
   el.querySelectorAll("[data-tcconf]").forEach(b=>b.onclick=()=>{
     TC.conf[b.dataset.tcconf]=b.dataset.c;
@@ -1770,7 +1790,7 @@ V.checkin = () => {
     document.getElementById("n-"+k.id).textContent = (Math.round(v*10)/10);
     const d = v-prev, el = document.getElementById("d-"+k.id);
     el.textContent = d>0?`+${Math.round(d*10)/10}${u} since last check-in`:d<0?`${Math.round(d*10)/10}${u} since last check-in`:`was ${prev}${u} last check-in`;
-    el.style.color = d>0?"var(--moss)":d<0?"var(--clay)":"var(--ink-2)";
+    el.style.color = d===0?"var(--ink-2)":goodDelta(k,d)?"var(--moss)":"var(--clay)";
   });
   document.querySelectorAll(".conf").forEach(b=>b.onclick=()=>{ciConf=b.dataset.c;
     document.querySelectorAll(".conf").forEach(x=>x.setAttribute("aria-pressed", x===b));});
@@ -2138,6 +2158,9 @@ V.objective = () => {
               <div class="hidden" id="kre-${kr.id}" style="margin-top:8px;border-left:2px solid var(--rule);padding-left:10px">
                 <div class="grid2">
                   <div class="field"><label>Title</label><input id="et-${kr.id}" value="${esc(f(kr,"Title")||"")}"/></div>
+                  <div class="field"><label>How we'll know</label><input id="eh-${kr.id}" value="${esc(f(kr,"How we'll know")||"")}"/></div>
+                  <div class="field"><label>Direction</label><select id="ed-${kr.id}">
+                    ${["Increase to target","Decrease to target","Hold above target"].map(dopt=>`<option ${(f(kr,"Direction")||"Increase to target")===dopt?"selected":""}>${dopt}</option>`).join("")}</select></div>
                   <div class="field"><label>Unit</label><input id="eu-${kr.id}" value="${esc(f(kr,"Unit")||"")}"/></div>
                   <div class="field"><label>Current</label><input type="number" id="ec-${kr.id}" value="${f(kr,"Current value")??0}"/></div>
                   <div class="field"><label>Target</label><input type="number" id="eg-${kr.id}" value="${f(kr,"Target value")??0}"/></div>
@@ -2150,6 +2173,11 @@ V.objective = () => {
           <div id="krbox" class="hidden" style="margin-top:10px">
             <div class="grid2">
               <div class="field"><label>Title</label><input id="krT" placeholder="2 sending churches committed"/></div>
+              <div class="field"><label>How we'll know <span class="mono">(a human sentence)</span></label><input id="krH" placeholder="More churches are using our help"/></div>
+              <div class="field"><label>Which way does this number win?</label><select id="krD">
+                <option value="Increase to target">It climbs to the target</option>
+                <option value="Decrease to target">It drops to the target — lower is better</option>
+                <option value="Hold above target">It holds at or above the target</option></select></div>
               <div class="field"><label>Unit</label><input id="krU" placeholder="churches / % / teams"/></div>
               <div class="field"><label>Start value</label><input type="number" id="krS" value="0"/></div>
               <div class="field"><label>Target</label><input type="number" id="krG" value="100"/></div>
@@ -2292,6 +2320,8 @@ V.objective = () => {
     const id = b.dataset.krsave;
     await patch(T.krs, [{id, fields:{
       Title: document.getElementById("et-"+id).value.trim(),
+      "How we'll know": document.getElementById("eh-"+id).value.trim(),
+      Direction: document.getElementById("ed-"+id).value,
       Unit: document.getElementById("eu-"+id).value.trim(),
       "Current value": +document.getElementById("ec-"+id).value,
       "Target value": +document.getElementById("eg-"+id).value}}]);
@@ -2318,6 +2348,8 @@ V.objective = () => {
     const g = +document.getElementById("krG").value;
     const c = document.getElementById("krC").value, x = document.getElementById("krX").value;
     await post(T.krs, [{fields:{Title:t, Unit:document.getElementById("krU").value, Type:"Number",
+      "How we'll know": document.getElementById("krH").value.trim(),
+      Direction: document.getElementById("krD").value,
       "Start value":+document.getElementById("krS").value, "Current value":+document.getElementById("krS").value,
       "Target value":g, "Original target":g,
       ...(c!==""?{Commit:+c}:{}), ...(x!==""?{Stretch:+x}:{}),
