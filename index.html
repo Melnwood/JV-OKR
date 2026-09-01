@@ -563,7 +563,7 @@ const alignLine = o => {
 // Four working lines. Check-in and Reviews fold into the objective + surface in My work.
 // Dashboard, Alignment map and Browse JV merge into one "JV 2030" page with three lenses.
 // Org and Archive live in a quiet settings corner.
-const NAV = [["jv","JV 2030"],["okrs","OKRs"],["team","Team"],["mine","My work"],["coaching","Coaching"]];
+const NAV = [["jv","JV 2030"],["okrs","OKRs"],["team","Team"],["meetings","Meetings"],["mine","My work"],["coaching","Coaching"]];
 const GEAR = [["org","Org"],["archive","Archive"]];
 function drawChrome(){
   const nav = NAV.filter(([k]) => k!=="coaching" || iAmCoach());
@@ -1629,6 +1629,84 @@ V.team = () => {
     okrsOpenNew=true; VIEW="okrs"; drawChrome(); render(); scrollTo(0,0); };
 };
 
+/* ============================ MEETINGS — pick a team, pick a room ============================ */
+let mtUnit = null;
+
+function carryFromRetro(objs){
+  const rr = DB.reviews.filter(r=>f(r,"Type")==="Retrospective" && objs.some(o=>o.id===one(r,"Objective")))
+    .sort((a,b)=>(f(b,"Meeting date")||"")<(f(a,"Meeting date")||"")?-1:1);
+  const latest = rr[0]; if(!latest) return "";
+  const RETQ = [["R — Carrying forward, leaving behind","carrying forward"],["R — What moved the needle","what moved the needle"],
+    ["R — Key pivot or learning moments","pivot moments"],["R — How we function as a team","how we function as a team"],
+    ["R — Rhythms that helped or limited","rhythms"],["R — Where I saw God at work","where they saw God at work"],
+    ["R — How far did we advance","how far they got"]];
+  const lines = [];
+  DB.responses.filter(x=>lnk(x,"Review").includes(latest.id)).forEach(x=>{
+    const who = (nm("people",one(x,"Person"))||"").split(" ")[0];
+    RETQ.forEach(([k,label])=>{ const a=(f(x,k)||"").trim(); if(a) lines.push(`${who}, on ${label}: ${a}`); });
+  });
+  return lines.join("\n").slice(0, 4000);
+}
+
+V.meetings = () => {
+  const el = document.getElementById("view");
+  const unitsWithObjs = DB.units.filter(x=>f(x,"Active")!==false && live(DB.objectives).some(o=>f(o,"Scope")!=="JV 5-year" && one(o,"Org Unit")===x.id))
+    .sort((a,b)=>(f(a,"Name")||"").localeCompare(f(b,"Name")||""));
+  if(!mtUnit || !unitsWithObjs.some(x=>x.id===mtUnit))
+    mtUnit = (one(ME,"Org Unit") && unitsWithObjs.some(x=>x.id===one(ME,"Org Unit"))) ? one(ME,"Org Unit") : (unitsWithObjs[0]||{}).id||null;
+  const u = mtUnit ? rec("units", mtUnit) : null;
+  const objs = u ? live(DB.objectives.filter(o=>f(o,"Scope")!=="JV 5-year" && one(o,"Org Unit")===u.id)) : [];
+  const mates = u ? DB.people.filter(p=>one(p,"Org Unit")===u.id && f(p,"Active")!==false) : [];
+  const mid=u&&f(u,"Midterm date"), ret=u&&f(u,"Retro date"), ntd=u&&f(u,"New trimester date");
+  const openOf = t => DB.reviews.filter(r=>f(r,"Type")===t && f(r,"Status")!=="Closed" && objs.some(o=>o.id===one(r,"Objective")));
+
+  const mcard = (type,label,date,desc) => {
+    const r = openOf(type)[0];
+    const answered = r ? DB.responses.filter(x=>lnk(x,"Review").includes(r.id)).length : 0;
+    return `<div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap">
+        <div style="flex:1;min-width:220px"><h2 style="margin:0">${label}</h2>
+          <div class="cap" style="margin-top:3px">${date?`${esc(fmt(date))}${date<iso(TODAY)?"":date===iso(TODAY)?" · today":""}`:"no date set — you can still start it"} · ${desc}</div>
+          ${r?`<div class="mono" style="margin-top:5px">${answered} of ${mates.length} answered so far</div>`:""}</div>
+        <button class="btn jv" data-mtgo="${type}">${r?"Continue →":"Start →"}</button>
+      </div></div>`;
+  };
+
+  el.innerHTML = `
+    <div class="head"><div><h1>Meetings</h1>
+      <div class="sub">The three rooms of a trimester. Pick the team, pick the meeting — everything's ready when you sit down.</div></div>
+      <div class="filters"><select class="sm" id="mtu">${unitsWithObjs.map(x=>`<option value="${x.id}" ${x.id===mtUnit?"selected":""}>${esc(f(x,"Name"))}</option>`).join("")}</select></div></div>
+    ${objs.length ? `
+      ${mcard("Retrospective","Retrospective",ret,"the trimester's honest ending — six questions, and where we saw God at work")}
+      ${mcard("Midterm","Midterm review",mid,"halfway — are we going to make it, and what would move the number?")}
+      <div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap">
+          <div style="flex:1;min-width:220px"><h2 style="margin:0">New trimester</h2>
+            <div class="cap" style="margin-top:3px">${ntd?esc(fmt(ntd)):"usually the same sitting as the retro"} · the team's carry-forward words on the table, the Sounding Board helps write what's next</div></div>
+          <button class="btn jv" data-mtgo="newtri">Plan the new trimester →</button>
+        </div></div>`
+      : `<div class="card empty">This team has no objectives yet — write one in the OKRs tab first.</div>`}`;
+
+  document.getElementById("mtu").onchange = e=>{ mtUnit=e.target.value; V.meetings(); };
+  el.querySelectorAll("[data-mtgo]").forEach(b=>b.onclick=async()=>{
+    const t = b.dataset.mtgo;
+    if(t==="newtri"){
+      sbCarry = carryFromRetro(objs);
+      okrsOpenNew = true; VIEW="okrs"; drawChrome(); render(); scrollTo(0,0); return;
+    }
+    let open = openOf(t);
+    if(!open.length){
+      const date = (t==="Midterm"?mid:ret) || iso(TODAY);
+      for(const o of objs)
+        await post(T.reviews,[{fields:{Name:`${f(u,"Name")} ${t==="Midterm"?"midterm":"retro"} — ${fmt(date)}`,
+          Type:t, Status:"Open", "Meeting date":date, Objective:[o.id], Cycle:lnk(o,"Cycle")}}]);
+      await reload("reviews"); open = openOf(t);
+      toast("The questions are ready — every voice in");
+    }
+    revId = open[0].id; revDraft={}; VIEW="reviews"; drawChrome(); render(); scrollTo(0,0);
+  });
+};
+
 /* ── the weekly meeting: every key result, one pass ── */
 V.teamcheckin = () => {
   const el = document.getElementById("view");
@@ -1940,6 +2018,22 @@ V.reviews = () => {
         : `You'll see everyone else's answers <strong>after</strong> you submit yours, so nobody just agrees with whoever spoke first.`}
       <div class="roster">${team.map(p=>`<span class="p ${inList.includes(p.id)?"in":""}">${esc(f(p,"Name"))}${inList.includes(p.id)?" ✓":""}</span>`).join("")}</div>
     </div>
+
+    ${(()=>{ const o=rec("objectives",objId); if(!o) return "";
+      const ks = objKrs(objId);
+      return `<div class="card" style="max-width:720px;margin:0 auto 14px">
+        <div class="cap">What we're reviewing</div>
+        <div style="font-weight:650;font-size:14.5px;margin:3px 0 4px">${esc(f(o,"Title"))}</div>
+        ${ks.map(k=>{ const kc=f(k,"Confidence")||"Not started", kp=pct(f(k,"Progress"));
+          return `<div style="padding:8px 0;border-top:1px dashed var(--rule)">
+          <div style="display:flex;justify-content:space-between;gap:12px;align-items:baseline">
+            <span style="font-size:13px;font-weight:600;flex:1">${esc(f(k,"Title"))}</span>
+            <span class="mono" style="white-space:nowrap">${f(k,"Current value")??0}${krDir(k)==="down"?" → below ":" of "}${f(k,"Target value")??0}${esc(f(k,"Unit")||"")} · ${kp}%</span>
+            <span class="pill ${cls(kc)}">${esc(kc)}</span></div>
+          ${f(k,"How we'll know")?`<div class="cap">${esc(f(k,"How we'll know"))}</div>`:""}
+          <div class="prog" style="margin-top:5px"><span style="width:${kp}%;background:${col(kc)}"></span></div>
+        </div>`;}).join("") || `<div class="cap">No key results on this objective.</div>`}
+      </div>`; })()}
 
     ${mineDone ? facilitator(R,set,resp) : `<div class="rwalk">
       <div class="rwalk-hero">
