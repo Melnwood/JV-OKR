@@ -567,7 +567,7 @@ const alignLine = o => {
 // Four working lines. Check-in and Reviews fold into the objective + surface in My work.
 // Dashboard, Alignment map and Browse JV merge into one "JV 2030" page with three lenses.
 // Org and Archive live in a quiet settings corner.
-const NAV = [["jv","JV 2030"],["okrs","OKRs"],["team","Team"],["meetings","Meetings"],["mine","My work"],["coaching","Coaching"]];
+const NAV = [["jv","JV 2030"],["okrs","OKRs"],["team","Team"],["meetings","Meetings"],["workshop","Workshop"],["mine","My work"],["coaching","Coaching"]];
 const GEAR = [["org","Org"],["archive","Archive"]];
 function drawChrome(){
   const nav = NAV.filter(([k]) => k!=="coaching" || iAmCoach());
@@ -1633,6 +1633,27 @@ V.team = () => {
     okrsOpenNew=true; VIEW="okrs"; drawChrome(); render(); scrollTo(0,0); };
 };
 
+/* ============================ WORKSHOP — a clean bench for shaping OKRs ============================ */
+V.workshop = () => {
+  const el = document.getElementById("view");
+  el.innerHTML = `
+    <div class="head"><div><h1>Workshop</h1>
+      <div class="sub">A clean bench. Try an objective and key results out loud — the Sounding Board thinks with you. Nothing lands anywhere until you make it real.</div></div></div>
+    <div class="card" style="max-width:760px">
+      <button id="sbToggle" class="hidden" type="button"></button>
+      <div id="sbBody">
+        <div class="field"><label>The objective, as you'd say it now</label>
+          <textarea id="sbObj" rows="3" placeholder="Even rough — half a sentence is enough to start"></textarea></div>
+        <div class="field" style="margin-top:10px"><label>Key results you're playing with <span class="mono">(one per line — optional)</span></label>
+          <textarea id="sbKRs" rows="3" placeholder="10 new churches move up a level&#10;Average response time under 30 days"></textarea></div>
+        <button class="btn jv" id="sbGo" type="button" style="margin-top:10px">Think it through with the Sounding Board →</button>
+        <div id="sbOut"></div>
+      </div>
+    </div>
+    <div class="cap" style="max-width:760px;margin-top:4px">When it's shaped: OKRs → + New objective makes it real, or Meetings → New trimester if you're closing a season.</div>`;
+  wireSoundingBoard();
+};
+
 /* ============================ MEETINGS — pick a team, pick a room ============================ */
 let mtUnit = null;
 
@@ -2591,7 +2612,7 @@ function wireSoundingBoard(){
     out.innerHTML = `<div class="sb-load"><span class="dot"></span><span class="dot"></span><span class="dot"></span> Reading it the way a ministry mind would…</div>`;
     go.disabled = true;
     try{
-      const r = await sbCall({round:1, objective, keyResults:[], carry: sbCarry||undefined});
+      const r = await sbCall({round:1, objective, keyResults:(document.getElementById("sbKRs")?.value||"").split("\n").map(x=>x.trim()).filter(Boolean), carry: sbCarry||undefined});
       sbQuestions = r.questions||[];
       renderSbRound1(objective, r);
     }catch(e){ out.innerHTML = `<div class="sb-err">${esc(e.message)}</div>`; }
@@ -2615,7 +2636,7 @@ function renderSbRound1(objective, r){
     const btn = document.getElementById("sbGo2"); btn.disabled=true;
     document.getElementById("sbOut").insertAdjacentHTML("beforeend", `<div class="sb-load" id="sbL"><span class="dot"></span><span class="dot"></span><span class="dot"></span> Reading what you wrote…</div>`);
     try{
-      const r2 = await sbCall({round:2, objective, keyResults:[], answers, carry: sbCarry||undefined});
+      const r2 = await sbCall({round:2, objective, keyResults:(document.getElementById("sbKRs")?.value||"").split("\n").map(x=>x.trim()).filter(Boolean), answers, carry: sbCarry||undefined});
       document.getElementById("sbL")?.remove();
       renderSbRound2(r2);
     }catch(e){ document.getElementById("sbL")?.remove(); document.getElementById("sbOut").insertAdjacentHTML("beforeend", `<div class="sb-err">${esc(e.message)}</div>`); }
@@ -2633,9 +2654,9 @@ function renderSbRound2(r){
   document.getElementById("sbOut").insertAdjacentHTML("beforeend", h);
   const use = document.getElementById("sbUse");
   if(use) use.onclick = ()=>{
-    document.getElementById("oT").value = r.objective;
+    (document.getElementById("oT")||document.getElementById("sbObj")).value = r.objective;
     document.getElementById("sbObj").scrollIntoView({behavior:"smooth",block:"center"});
-    toast("Dropped into the title — edit it freely");
+    toast("Dropped into the objective box — edit it freely");
   };
 }
 

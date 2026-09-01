@@ -34,7 +34,7 @@ Object.assign(global.__DB,{people:[p],cycles:[c],units:[u],objectives:[jv,o,o2],
 global.__A({id:"p",name:"Mel",role:"Executive"});global.__M(p);
 
 let ok=true;
-for(const n of ["jv","okrs","objective","mine","team","teamcheckin","meetings","org","archive","coaching","checkin","reviews"]){
+for(const n of ["jv","okrs","objective","mine","team","teamcheckin","meetings","workshop","org","archive","coaching","checkin","reviews"]){
   try{ global.__V[n](); process.stdout.write(n+" ✓ "); }
   catch(e){ ok=false; console.log("\n"+n+" ✗ "+e.message); }
 }
