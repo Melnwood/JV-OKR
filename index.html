@@ -569,12 +569,12 @@ const alignLine = o => {
 // Four working lines. Check-in and Reviews fold into the objective + surface in My work.
 // Dashboard, Alignment map and Browse JV merge into one "JV 2030" page with three lenses.
 // Org and Archive live in a quiet settings corner.
-const NAV = [["jv","JV 2030"],["okrs","OKRs"],["team","Team"],["meetings","Meetings"],["workshop","Workshop"],["mine","My work"],["coaching","Coaching"]];
+const NAV = [["jv","JV 2030"],["team","Team"],["mine","My work"],["coaching","Coaching"]];
 const GEAR = [["org","Org"],["archive","Archive"]];
 function drawChrome(){
   const nav = NAV.filter(([k]) => k!=="coaching" || iAmCoach());
   document.getElementById("nav").innerHTML = nav.map(([k,l])=>
-    `<button class="nv" data-v="${k}" aria-current="${VIEW===k||(k==='jv'&&['dashboard','map','browse'].includes(VIEW))||(k==='okrs'&&['objective','checkin','reviews'].includes(VIEW))||(k==='team'&&VIEW==='teamcheckin')}">${l}</button>`).join("");
+    `<button class="nv" data-v="${k}" aria-current="${VIEW===k||(k==='jv'&&['dashboard','map','browse'].includes(VIEW))||(k==='team'&&['teamcheckin','meetings','reviews','checkin','objective','okrs'].includes(VIEW))}">${l}</button>`).join("");
   document.querySelectorAll(".nv").forEach(b=>b.onclick=()=>{VIEW=b.dataset.v; drawChrome(); render(); scrollTo(0,0);});
   const gear = iAmLeader()
     ? `<div class="gearwrap">
@@ -584,10 +584,11 @@ function drawChrome(){
          </div>
        </div>` : "";
   document.getElementById("whobox").innerHTML =
-    `${gear}<button class="nv" id="helpbtn" title="How this works" style="font-size:15px;padding:6px 10px">?</button>
+    `${gear}<button class="nv" id="wsbtn" title="Workshop — shape an OKR out loud with the Sounding Board" aria-current="${VIEW==='workshop'}" style="font-size:15px;padding:6px 10px">✦</button><button class="nv" id="helpbtn" title="How this works" style="font-size:15px;padding:6px 10px">?</button>
      <span>${esc(AUTH.name)} · ${esc(AUTH.role)}</span>
      <button class="btn ghost" id="signout" style="padding:5px 9px;font-size:12px">Sign out</button>`;
   document.getElementById("helpbtn").onclick = openGuide;
+  document.getElementById("wsbtn").onclick = ()=>{ VIEW="workshop"; drawChrome(); render(); scrollTo(0,0); };
   const gb = document.getElementById("gearbtn");
   if(gb){
     gb.onclick = e=>{ e.stopPropagation(); document.getElementById("geardrop").classList.toggle("hidden"); };
@@ -618,13 +619,11 @@ function openGuide(){
     </div>
 
     <div class="gsec">
-      <div class="eyebrow">THE FOUR PLACES YOU'LL LIVE</div>
-      ${step("1","Objectives — where the work actually happens",
-        `<p>This is the main surface, and where the app opens. Pick any objective and you see its key results, the tasks under them, the decision log, and every past check-in. Two buttons matter most here:</p>
-         <ul><li><b>Check in</b> — the orange button. Slide each key result to where it is now, tick off tasks, say what moved and whether you're still confident. Two minutes. This is the heartbeat of the whole thing.</li>
-         <li><b>Review</b> — start or open a midterm or retrospective for that objective.</li></ul>`)}
-      ${step("2","My work — what needs you today",
-        `<p>Your to-do list, built automatically: objectives that have gone quiet, overdue tasks, and open reviews where your answer isn't in yet. Each line is clickable — it takes you straight to the thing that needs doing.</p>`)}
+      <div class="eyebrow">THE PLACES YOU'LL LIVE</div>
+      ${step("1","My work — what needs you today",
+        `<p>Your corner. Your open tasks up top; each key result you're on opens into its full workspace — slide progress in plain words, hand a task to a teammate (it greets them on their page until they say "I've got it"), and leave notes that are signed and kept, on tasks or on the key result itself.</p>`)}
+      ${step("2","Team — one team, one rhythm",
+        `<p>Your team's room. The season line carries your three meetings — <b>midterm</b>, <b>retrospective</b>, <b>new trimester</b> — and the buttons to start each one: send the questions, everyone answers before you sit down, and the retro flows straight into writing the next objective with the Sounding Board. <b>Run this week's check-in</b> walks every key result in one sitting — the numbers, what moved, what's in the way. The record underneath is the team's story, week by week.</p>`)}
       ${step("3","JV 2030 — the big picture, three ways",
         `<p>One page, three lenses you switch between:</p>
          <ul><li><b>By key result</b> — the cascade: what ladders to what.</li>
@@ -1456,7 +1455,8 @@ V.mine = () => {
 /* ============================ TEAM — the rhythm page ============================ */
 let TC = null, seasonOpen = false, teamMeetTab;   // team check-in · season accordion · open meeting tab
 
-const teamUnit = () => rec("units", one(ME,"Org Unit"));
+let teamUnitOverride = null;   // coaches step into any team's room; null = my own
+const teamUnit = () => rec("units", teamUnitOverride || one(ME,"Org Unit"));
 const teamObjectives = () => { const u = teamUnit(); return u ? live(DB.objectives.filter(o=>f(o,"Scope")!=="JV 5-year" && one(o,"Org Unit")===u.id)) : []; };
 const teamCycle = () => {
   const cyc = teamObjectives().map(o=>rec("cycles", one(o,"Cycle"))).filter(Boolean);
@@ -1550,7 +1550,11 @@ V.team = () => {
 
   el.innerHTML = `
     <div class="head"><div><h1>${esc(f(u,"Name"))}</h1>
-      <div class="sub">${mates.length} of us${leaderName?` · led by ${esc(leaderName)}`:""}${cycle?` · ${esc(f(cycle,"Name"))}`:""} · one team, one rhythm.</div></div></div>
+      <div class="sub">${mates.length} of us${leaderName?` · led by ${esc(leaderName)}`:""}${cycle?` · ${esc(f(cycle,"Name"))}`:""} · one team, one rhythm.</div></div>
+      <div class="filters">
+        ${iAmCoach() ? `<select class="sm" id="tmpick" title="Step into any team's room">${unitsSorted(DB.units).filter(x=>f(x,"Active")!==false).map(x=>`<option value="${x.id}" ${x.id===u.id?"selected":""}>${esc(f(x,"Name"))}</option>`).join("")}</select>` : ""}
+        ${iAmLeader() ? `<button class="btn" id="tmnew">+ New objective</button>` : ""}
+      </div></div>
 
     <div class="meetbtns">
       <button class="mtb ${teamMeetTab==="Midterm"?"on":""}" data-meettab="Midterm">Midterm review${mid?`<span>${fmt(mid)}</span>`:`<span>no date yet</span>`}</button>
@@ -1600,6 +1604,10 @@ V.team = () => {
           : `<div class="empty">No check-ins yet. The first weekly meeting starts the story.</div>`; })()}
     </div>`;
 
+  const tmpick = document.getElementById("tmpick");
+  if(tmpick) tmpick.onchange = ()=>{ teamUnitOverride = tmpick.value===one(ME,"Org Unit") ? null : tmpick.value; teamMeetTab=undefined; TC=null; V.team(); };
+  const tmnew = document.getElementById("tmnew");
+  if(tmnew) tmnew.onclick = ()=>{ okrsOpenNew=true; VIEW="okrs"; drawChrome(); render(); scrollTo(0,0); };
   el.querySelectorAll("[data-seasontog]").forEach(h=>h.onclick=()=>{ seasonOpen=!seasonOpen; V.team(); });
   el.querySelectorAll("[data-meettab]").forEach(b=>b.onclick=()=>{
     teamMeetTab = teamMeetTab===b.dataset.meettab ? null : b.dataset.meettab; V.team(); });
@@ -2393,7 +2401,7 @@ V.objective = () => {
 
   document.getElementById("obacklist").onclick = ()=>{ openObj=selObj; VIEW="okrs"; drawChrome(); render(); scrollTo(0,0); };
   document.getElementById("so").onchange = e=>{selObj=e.target.value; render();};
-  document.getElementById("ocheckin").onclick = ()=>{ ciObj=o.id; ciVals={}; VIEW="checkin"; drawChrome(); render(); scrollTo(0,0); };
+  document.getElementById("ocheckin").onclick = ()=>{ teamUnitOverride = one(o,"Org Unit")||teamUnitOverride; TC=null; VIEW="teamcheckin"; drawChrome(); render(); scrollTo(0,0); };
   document.getElementById("oreview").onclick = ()=>{
     const rev = DB.reviews.find(r=>lnk(r,"Objective").includes(o.id));
     revId = rev ? rev.id : null; rvNewObj = o.id;
@@ -2796,7 +2804,9 @@ V.okrs = () => {
   // keep the add-task input clicks from collapsing the row
   el.querySelectorAll(".wobj-body input, .wobj-body .addrow").forEach(n=>n.addEventListener("click",e=>e.stopPropagation()));
   // check in / full workspace
-  el.querySelectorAll("[data-checkin]").forEach(b=>b.onclick=(e)=>{ e.stopPropagation(); ciObj=b.dataset.checkin; ciVals={}; VIEW="checkin"; drawChrome(); render(); scrollTo(0,0); });
+  el.querySelectorAll("[data-checkin]").forEach(b=>b.onclick=(e)=>{ e.stopPropagation();
+    const ob=rec("objectives",b.dataset.checkin); teamUnitOverride = one(ob,"Org Unit")||teamUnitOverride;
+    TC=null; VIEW="teamcheckin"; drawChrome(); render(); scrollTo(0,0); });
   el.querySelectorAll("[data-full]").forEach(b=>b.onclick=(e)=>{ e.stopPropagation(); selObj=b.dataset.full; VIEW="objective"; drawChrome(); render(); scrollTo(0,0); });
   // new objective
   document.getElementById("onew").onclick = ()=>document.getElementById("onewbox").classList.toggle("hidden");

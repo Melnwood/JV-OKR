@@ -67,11 +67,18 @@ Coaching Notes, Resources, Resource Shares.
   linked id; `lnk(r,"Link")` the array; `rec("table",id)` fetches; `nm("table",id)`
   a name. Views live on `V.<name>`; the JV 2030 lenses on `LENS.<name>`.
 
-## Navigation (current, intentional)
-`JV 2030 · OKRs · My work · Coaching` + a ⚙ gear (Org, Archive — leaders) and a
-"?" guide. JV 2030 is the default landing. Coaching is gated to Mike + Mel only,
-**enforced server-side** (not just hidden). "Objectives" is renamed "OKRs" in the
-UI; the Airtable table stays "Objectives."
+## Navigation (current, intentional — restructured 2026-09-01)
+**`JV 2030 · Team · My work · Coaching`** + icons: ✦ Workshop, ⚙ gear (Org,
+Archive — leaders), "?" guide. Three layers, per Mike's original design: JV 2030
+= everyone (view-only, three lenses), Team = the team's room (season, the three
+meetings, the weekly team check-in, the record; coaches get a team picker),
+My work = the personal walk. Coaching is Mike + Mel only, enforced server-side.
+The old OKRs and Meetings tabs are retired from the nav — `V.okrs` and
+`V.meetings` still exist and are reached internally (new-objective flow lands on
+V.okrs with the form open). The per-objective check-in (`V.checkin`) is retired
+from all routes — every Check in button leads to the team check-in
+(`V.teamcheckin`), using `teamUnitOverride` when crossing teams. Do not add nav
+tabs without strong reason — "eloquent simplicity" lost once already.
 
 ## Key features and where they live in index.html
 - **OKRs tab = expand-in-place workspace** (`V.okrs`): objectives as a collapsed
