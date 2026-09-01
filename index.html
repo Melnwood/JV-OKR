@@ -247,7 +247,7 @@
   .noteline{font-size:12.5px;padding:5px 0;border-bottom:1px dotted var(--rule-2);line-height:1.5}
   .noteline .n-when{font-family:'Plus Jakarta Sans',sans-serif;font-size:10.5px;color:var(--ink-3);margin-right:4px}
   .noteline:last-of-type{border-bottom:none}
-  .sbchat-u{background:#fff;border:1px solid var(--rule);border-radius:10px;padding:9px 12px;margin:12px 0 6px;font-size:13.5px}
+  .sbchat-u{background:#fff;border:1px solid var(--rule);border-radius:10px;padding:9px 12px;margin:12px 0 6px;font-size:13.5px;white-space:pre-wrap}
   .sbchat-a{background:var(--jv-50);border:1px solid var(--jv-edge);border-radius:10px;padding:11px 14px;margin:0 0 4px;font-size:13.5px;line-height:1.6;white-space:pre-wrap}
   .takebox{margin-top:12px;background:var(--jv-50);border:1px dashed var(--jv-edge);border-radius:10px;padding:10px 13px}
   .takebox .lab{font-size:10.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--jv-deep);margin-bottom:6px}
@@ -1644,24 +1644,56 @@ V.team = () => {
 };
 
 /* ============================ WORKSHOP — a clean bench for shaping OKRs ============================ */
+let wsThread = [];   // the bench conversation — survives tab hops, cleared by "start fresh"
+
 V.workshop = () => {
   const el = document.getElementById("view");
   el.innerHTML = `
     <div class="head"><div><h1>Workshop</h1>
-      <div class="sub">A clean bench. Try an objective and key results out loud — the Sounding Board thinks with you. Nothing lands anywhere until you make it real.</div></div></div>
+      <div class="sub">A clean bench. Put down what you're thinking, ask anything, and the Sounding Board thinks with you — back and forth, as long as you need. Nothing lands anywhere until you make it real.</div></div>
+      ${wsThread.length?`<div class="filters"><button class="btn ghost" id="wsFresh">Start fresh</button></div>`:""}</div>
     <div class="card" style="max-width:760px">
-      <button id="sbToggle" class="hidden" type="button"></button>
-      <div id="sbBody">
-        <div class="field"><label>The objective, as you'd say it now</label>
-          <textarea id="sbObj" rows="3" placeholder="Even rough — half a sentence is enough to start"></textarea></div>
-        <div class="field" style="margin-top:10px"><label>Key results you're playing with <span class="mono">(one per line — optional)</span></label>
-          <textarea id="sbKRs" rows="3" placeholder="10 new churches move up a level&#10;Average response time under 30 days"></textarea></div>
-        <button class="btn jv" id="sbGo" type="button" style="margin-top:10px">Think it through with the Sounding Board →</button>
-        <div id="sbOut"></div>
+      <div class="grid2">
+        <div class="field"><label>Objective draft <span class="mono">(optional)</span></label>
+          <textarea id="sbObj" rows="2" placeholder="Even rough — half a sentence is enough"></textarea></div>
+        <div class="field"><label>Key results you're playing with <span class="mono">(one per line — optional)</span></label>
+          <textarea id="sbKRs" rows="2" placeholder="10 new churches move up a level"></textarea></div>
+      </div>
+      <div id="wsChat">${wsThread.map(m=>m.role==="user"
+        ?`<div class="sbchat-u"><b>You</b> — ${esc(m.content)}</div>`
+        :`<div class="sbchat-a">${esc(m.content)}</div>`).join("")}</div>
+      <div class="addrow" style="margin-top:12px">
+        <input type="text" id="wsIn" placeholder="${wsThread.length?"Keep going — push back, ask, try another angle…":"Ask anything — how to make it behavioral, what to measure, whether it's even the right objective…"}"/>
+        <button class="btn jv" id="wsGo" type="button">Send</button>
       </div>
     </div>
-    <div class="cap" style="max-width:760px;margin-top:4px">When it's shaped: OKRs → + New objective makes it real, or Meetings → New trimester if you're closing a season.</div>`;
-  wireSoundingBoard();
+    <div class="cap" style="max-width:760px;margin-top:4px">When it's shaped: Team → + New objective makes it real (the guided walk lives there too).</div>`;
+
+  const send = async (text) => {
+    text = (text||"").trim(); if(!text) return;
+    const box = document.getElementById("wsChat");
+    // the boxes ride along with the first message, so the Board has the draft in hand
+    if(!wsThread.length){
+      const o=(document.getElementById("sbObj").value||"").trim(), k=(document.getElementById("sbKRs").value||"").trim();
+      const ctx = (o?`My objective draft: ${o}\n`:"")+(k?`Key results I'm playing with:\n${k}\n`:"");
+      if(ctx) text = ctx+"\n"+text;
+    }
+    wsThread.push({role:"user", content:text});
+    box.insertAdjacentHTML("beforeend", `<div class="sbchat-u"><b>You</b> — ${esc(text)}</div><div class="sb-load" id="wsL"><span class="dot"></span><span class="dot"></span><span class="dot"></span></div>`);
+    document.getElementById("wsIn").value="";
+    box.lastElementChild.scrollIntoView({behavior:"smooth",block:"nearest"});
+    try{
+      const r = await sbCall({messages: wsThread});
+      document.getElementById("wsL")?.remove();
+      wsThread.push({role:"assistant", content:r.reply||""});
+      box.insertAdjacentHTML("beforeend", `<div class="sbchat-a">${esc(r.reply||"")}</div>`);
+      box.lastElementChild.scrollIntoView({behavior:"smooth",block:"nearest"});
+    }catch(e){ document.getElementById("wsL")?.remove(); box.insertAdjacentHTML("beforeend", `<div class="sb-err">${esc(e.message)}</div>`); }
+  };
+  document.getElementById("wsGo").onclick = ()=>send(document.getElementById("wsIn").value);
+  document.getElementById("wsIn").addEventListener("keydown", e=>{ if(e.key==="Enter") send(e.target.value); });
+  const fresh = document.getElementById("wsFresh");
+  if(fresh) fresh.onclick = ()=>{ wsThread=[]; V.workshop(); };
 };
 
 /* ============================ MEETINGS — pick a team, pick a room ============================ */
