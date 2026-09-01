@@ -111,10 +111,12 @@ UI; the Airtable table stays "Objectives."
 7. **A warmer product name** than "JV OKR" (undecided).
 
 ## After every feature ships
-Append a Mike-readable entry to the Google Doc **"JV OKR — What's New (how to
-try it)"** (Drive file id `1DD9MrYXqGjrZSAdbR-NKEFUEBurhZ7kerf74gS0yP8U`, in
-Mel's Drive): WHAT it is, TRY IT (concrete steps in the app), WATCH FOR (what
-feedback we want). Newest entries at the top. Mike tests from this doc.
+Add a Mike-readable entry (WHAT / TRY IT / WATCH FOR, newest first) to the
+Google Doc **"JV OKR — What's New (how to try it)"** in Mel's Drive — current
+file id `1i0_ZhF3_tDuzg8Hxd84FEtgM32jWo-xBmvJzeHeN7oQ`. The Drive connector
+can't edit Doc content, so the pattern is: recreate the Doc with the full
+updated text (same title), trash the old one, and update this id here and in
+memory. Mike tests from this doc.
 
 ## Working style the owner prefers
 Concise. Iterate fast. **Do not over-engineer.** Make reversible decisions
