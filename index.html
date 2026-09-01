@@ -247,6 +247,8 @@
   .noteline{font-size:12.5px;padding:5px 0;border-bottom:1px dotted var(--rule-2);line-height:1.5}
   .noteline .n-when{font-family:'Plus Jakarta Sans',sans-serif;font-size:10.5px;color:var(--ink-3);margin-right:4px}
   .noteline:last-of-type{border-bottom:none}
+  .sbchat-u{background:#fff;border:1px solid var(--rule);border-radius:10px;padding:9px 12px;margin:12px 0 6px;font-size:13.5px}
+  .sbchat-a{background:var(--jv-50);border:1px solid var(--jv-edge);border-radius:10px;padding:11px 14px;margin:0 0 4px;font-size:13.5px;line-height:1.6;white-space:pre-wrap}
   .takebox{margin-top:12px;background:var(--jv-50);border:1px dashed var(--jv-edge);border-radius:10px;padding:10px 13px}
   .takebox .lab{font-size:10.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--jv-deep);margin-bottom:6px}
   .takebox textarea{width:100%;border:1.5px solid transparent;background:#fff;border-radius:8px;padding:10px 12px;font:inherit;font-size:13.5px;min-height:52px;resize:vertical}
@@ -2590,7 +2592,7 @@ function wireObjForm(){
 }
 
 /* ---- The Sounding Board: think out loud, it builds on what you write ---- */
-let sbQuestions = [];
+let sbQuestions = [], sbThread = [];
 async function sbCall(payload){
   const r = await fetch(`${API}?action=sounding`, {method:"POST", headers:authHeaders({"Content-Type":"application/json"}), body:JSON.stringify(payload)});
   const j = await r.json();
@@ -2612,8 +2614,13 @@ function wireSoundingBoard(){
     out.innerHTML = `<div class="sb-load"><span class="dot"></span><span class="dot"></span><span class="dot"></span> Reading it the way a ministry mind would…</div>`;
     go.disabled = true;
     try{
-      const r = await sbCall({round:1, objective, keyResults:(document.getElementById("sbKRs")?.value||"").split("\n").map(x=>x.trim()).filter(Boolean), carry: sbCarry||undefined});
+      const krsLines = (document.getElementById("sbKRs")?.value||"").split("\n").map(x=>x.trim()).filter(Boolean);
+      const r = await sbCall({round:1, objective, keyResults:krsLines, carry: sbCarry||undefined});
       sbQuestions = r.questions||[];
+      sbThread = [
+        {role:"user", content:`My objective: ${objective}`+(krsLines.length?`\nKey results I'm playing with:\n${krsLines.join("\n")}`:"")},
+        {role:"assistant", content:`${r.read||""}${r.horizon?`\nLeads toward: ${r.horizon}`:""}${(r.questions||[]).length?`\nMy questions:\n${r.questions.join("\n")}`:""}`}
+      ];
       renderSbRound1(objective, r);
     }catch(e){ out.innerHTML = `<div class="sb-err">${esc(e.message)}</div>`; }
     go.disabled = false;
@@ -2638,6 +2645,8 @@ function renderSbRound1(objective, r){
     try{
       const r2 = await sbCall({round:2, objective, keyResults:(document.getElementById("sbKRs")?.value||"").split("\n").map(x=>x.trim()).filter(Boolean), answers, carry: sbCarry||undefined});
       document.getElementById("sbL")?.remove();
+      sbThread.push({role:"user", content:"My answers to your questions:\n"+answers.map(x=>`Q: ${x.q}\nMe: ${x.a||"(blank)"}`).join("\n\n")});
+      sbThread.push({role:"assistant", content:`${r2.blessing||""}${r2.horizon?`\nLeads toward: ${r2.horizon}`:""}${r2.objective?`\nSharpened objective: ${r2.objective}`:""}${(r2.rewrittenKRs||[]).length?`\nKey results to consider:\n${r2.rewrittenKRs.join("\n")}`:""}`});
       renderSbRound2(r2);
     }catch(e){ document.getElementById("sbL")?.remove(); document.getElementById("sbOut").insertAdjacentHTML("beforeend", `<div class="sb-err">${esc(e.message)}</div>`); }
   };
@@ -2650,8 +2659,30 @@ function renderSbRound2(r){
     if((r.rewrittenKRs||[]).length) h += `<span class="lab" style="margin-top:10px;display:block">Key results to consider</span>${r.rewrittenKRs.map(k=>`<div class="txt" style="margin-top:4px">• ${esc(k)}</div>`).join("")}`;
     h += `<button class="btn accent" id="sbUse" type="button" style="margin-top:12px">Use this as my title</button></div>`;
   }
-  h += `<div class="cap" style="margin-top:10px">This came from your words. Yours to keep shaping — or push back and write more.</div>`;
+  h += `<div id="sbChat"></div>
+    <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">
+      <button class="btn ghost" id="sbMeasure" type="button" style="font-size:12.5px">What could we actually measure? →</button>
+    </div>
+    <div class="addrow" style="margin-top:8px"><input type="text" id="sbChatIn" placeholder="Keep talking — push back, ask, try another angle…"/><button class="btn dash" id="sbChatGo" type="button">Send</button></div>
+    <div class="cap" style="margin-top:8px">This came from your words. Yours to keep shaping — the conversation stays open.</div>`;
   document.getElementById("sbOut").insertAdjacentHTML("beforeend", h);
+  const chatSend = async (text) => {
+    text = (text||"").trim(); if(!text) return;
+    const box = document.getElementById("sbChat");
+    box.insertAdjacentHTML("beforeend", `<div class="sbchat-u"><b>You</b> — ${esc(text)}</div><div class="sb-load" id="sbCL"><span class="dot"></span><span class="dot"></span><span class="dot"></span></div>`);
+    sbThread.push({role:"user", content:text});
+    const inEl = document.getElementById("sbChatIn"); if(inEl) inEl.value="";
+    try{
+      const rr = await sbCall({messages: sbThread});
+      document.getElementById("sbCL")?.remove();
+      sbThread.push({role:"assistant", content:rr.reply||""});
+      box.insertAdjacentHTML("beforeend", `<div class="sbchat-a">${esc(rr.reply||"")}</div>`);
+      box.lastElementChild.scrollIntoView({behavior:"smooth",block:"nearest"});
+    }catch(e){ document.getElementById("sbCL")?.remove(); box.insertAdjacentHTML("beforeend", `<div class="sb-err">${esc(e.message)}</div>`); }
+  };
+  document.getElementById("sbChatGo").onclick = ()=>chatSend(document.getElementById("sbChatIn").value);
+  document.getElementById("sbChatIn").addEventListener("keydown", e=>{ if(e.key==="Enter") chatSend(e.target.value); });
+  document.getElementById("sbMeasure").onclick = ()=>chatSend("Help me see the behavior changes here that we could actually track and measure — what would we literally count or observe, how often, and which one would you pick first?");
   const use = document.getElementById("sbUse");
   if(use) use.onclick = ()=>{
     (document.getElementById("oT")||document.getElementById("sbObj")).value = r.objective;

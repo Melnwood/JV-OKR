@@ -171,6 +171,23 @@ Be warm, direct, pastoral, never corporate. Iron sharpening iron.`;
     const carry = (b.carry||"").trim()
       ? `\n\nTheir team just closed a trimester. These are the notes from their retrospective — each person's own words:\n${b.carry.trim()}\nBuild on these notes: let the horizon and your questions grow out of what they said worked, what moved the needle, and what they're carrying forward — and honor what they chose to leave behind.`
       : "";
+    // open conversation — the thinking keeps going after the two rounds
+    if (Array.isArray(b.messages) && b.messages.length) {
+      const msgs = b.messages.slice(-30).map(m => ({
+        role: m.role === "assistant" ? "assistant" : "user",
+        content: String(m.content || "").slice(0, 4000)
+      }));
+      const CHAT = SYS + `\n\nYou are now in open conversation with the leader. Keep replies under ~200 words, plain text — no JSON, no markdown headings. Build on their words. When they ask how to measure or track behavioral change, get concrete: name 2–4 observable, countable signals (what you would literally see, hear, or count, and how often you'd count it), say which one you'd pick first and why, and be honest when a number is only a proxy for the change. If they push back, let them win when they're right.`;
+      const rr = await fetch("https://api.anthropic.com/v1/messages", {
+        method: "POST",
+        headers: { "x-api-key": AK, "anthropic-version": "2023-06-01", "content-type": "application/json" },
+        body: JSON.stringify({ model: "claude-sonnet-4-6", max_tokens: 1024, system: CHAT, messages: msgs })
+      });
+      const jj = await rr.json();
+      if (!rr.ok) return bad(rr.status, jj?.error?.message || "Sounding Board unavailable");
+      return ok({ result: { reply: (jj.content?.[0]?.text || "").trim() } });
+    }
+
     let userMsg;
     if (b.round === 1) {
       userMsg = `A leader wrote this objective:\nObjective: "${b.objective}"\nKey results:\n${(b.keyResults||[]).length ? b.keyResults.map(k=>"- "+k).join("\n") : "(none yet)"}${carry}\n\nRespond ONLY with valid JSON, no markdown:\n{"verdict":"building|mixed|behavioral","read":"1-2 warm sentences naming honestly where this sits — a building season (real work, no penalty), an event with no clear end, or already naming change","horizon":"one sentence naming the behavioral change this most likely LEADS TOWARD, phrased as a possibility to confirm or reshape","questions":["3-4 open, non-leading questions that move it toward behavioral change without demanding they've arrived — aspirational answers welcome, specific to what they wrote"]}`;
