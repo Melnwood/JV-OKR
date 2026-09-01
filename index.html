@@ -247,6 +247,10 @@
   .noteline{font-size:12.5px;padding:5px 0;border-bottom:1px dotted var(--rule-2);line-height:1.5}
   .noteline .n-when{font-family:'Plus Jakarta Sans',sans-serif;font-size:10.5px;color:var(--ink-3);margin-right:4px}
   .noteline:last-of-type{border-bottom:none}
+  .takebox{margin-top:12px;background:var(--jv-50);border:1px dashed var(--jv-edge);border-radius:10px;padding:10px 13px}
+  .takebox .lab{font-size:10.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--jv-deep);margin-bottom:6px}
+  .takebox textarea{width:100%;border:1.5px solid transparent;background:#fff;border-radius:8px;padding:10px 12px;font:inherit;font-size:13.5px;min-height:52px;resize:vertical}
+  .takebox textarea:focus{outline:none;border-color:var(--jv-edge)}
   .donehead{cursor:pointer;font-size:12px;color:var(--ink-3);margin-top:16px;user-select:none}
   .donehead:hover{color:var(--ink)}
   .orient{font-size:14px;color:var(--ink-2);margin:6px 0 0;line-height:1.55}
@@ -1641,6 +1645,8 @@ function carryFromRetro(objs){
     ["R — Rhythms that helped or limited","rhythms"],["R — Where I saw God at work","where they saw God at work"],
     ["R — How far did we advance","how far they got"]];
   const lines = [];
+  (f(latest,"Outcome")||"").split("\n").filter(Boolean).forEach(l=>
+    lines.push(`THE GROUP'S TAKEAWAY: ${l.replace(/^\[Q\d+\]\s?/,"")}`));
   DB.responses.filter(x=>lnk(x,"Review").includes(latest.id)).forEach(x=>{
     const who = (nm("people",one(x,"Person"))||"").split(" ")[0];
     RETQ.forEach(([k,label])=>{ const a=(f(x,k)||"").trim(); if(a) lines.push(`${who}, on ${label}: ${a}`); });
@@ -2070,6 +2076,29 @@ V.reviews = () => {
   document.getElementById("rv").onchange = e=>{revId=e.target.value; revDraft={}; render();};
   document.getElementById("rnew").onclick = ()=>document.getElementById("rnewbox").classList.toggle("hidden");
   wireNewReview();
+  if(mineDone){
+    const saveTakes = async () => {
+      const tk={}; document.querySelectorAll("textarea[data-take]").forEach(t=>tk[+t.dataset.take]=t.value);
+      const out = set.map((q,i)=> (tk[i]&&tk[i].trim()) ? `[Q${i}] ${tk[i].trim().replace(/\n+/g," / ")}` : null).filter(Boolean).join("\n");
+      await patch(T.reviews,[{id:R.id, fields:{Outcome: out}}]);
+      R.fields.Outcome = out;   // keep local copy fresh without a re-render, so typing focus survives
+    };
+    document.querySelectorAll("textarea[data-take]").forEach(t=>t.addEventListener("change", saveTakes));
+    const fp = document.getElementById("fPlan");
+    if(fp) fp.onclick = async ()=>{
+      await saveTakes();
+      await patch(T.reviews,[{id:R.id, fields:{Status:"Closed"}}]); await reload("reviews");
+      sbCarry = carryFromRetro([rec("objectives", objId)].filter(Boolean));
+      okrsOpenNew = true; toast("Retro closed — now the good part");
+      VIEW="okrs"; drawChrome(); render(); scrollTo(0,0);
+    };
+    const fc = document.getElementById("fClose");
+    if(fc) fc.onclick = async ()=>{
+      await saveTakes();
+      await patch(T.reviews,[{id:R.id, fields:{Status:"Closed"}}]); await reload("reviews");
+      toast("Closed — it's on the record"); VIEW="meetings"; drawChrome(); render(); scrollTo(0,0);
+    };
+  }
   if(!mineDone){
     const updWalk = () => set.forEach((q,i)=>{
       const has = q.t==="krscale"
@@ -2137,14 +2166,19 @@ function wireNewReview(){
   };
 }
 function facilitator(R, set, resp){
+  const takes = {}; (f(R,"Outcome")||"").split("\n").forEach(l=>{const m=l.match(/^\[Q(\d+)\]\s?(.*)$/); if(m) takes[+m[1]]=m[2];});
   const scores = resp.map(r=>f(r,"Confidence 1-10")).filter(Boolean);
   const avg = scores.length ? (scores.reduce((a,b)=>a+b,0)/scores.length).toFixed(1) : "—";
   const spread = scores.length ? Math.max(...scores)-Math.min(...scores) : 0;
   const bars = [...Array(10)].map((_,i)=>{
     const n = scores.filter(s=>s===i+1).length;
     return `<div class="${n?"hit":""}" style="height:${n?12+n*15:5}px"></div>`;}).join("");
-  const block = q => `<div class="card"><h3>${esc(q.q)}</h3>
-    ${resp.map(r=>{ const a=f(r,q.k); return a ? `<div class="ans"><div class="who">${esc(nm("people",one(r,"Person")))}</div><p>${esc(a)}</p></div>`:"";}).join("") || `<div class="empty">No answers.</div>`}</div>`;
+  const takeBox = i => `<div class="takebox"><div class="lab">What we're taking away</div>
+    <textarea rows="2" data-take="${i}" placeholder="The group's takeaway on this one — saves as you type">${esc(takes[i]||"")}</textarea></div>`;
+  const block = (q,i) => `<div class="card"><h3 style="margin-bottom:2px">${i+1} · ${esc(q.q)}</h3>
+    ${resp.map(r=>{ const a=f(r,q.k); return a ? `<div class="ans"><div class="who">${esc(nm("people",one(r,"Person")))}</div><p>${esc(a)}</p></div>`:"";}).join("") || `<div class="empty">No answers to this one.</div>`}
+    ${takeBox(i)}</div>`;
+  const isRetro = f(R,"Type")==="Retrospective";
   return `
     ${scores.length?`<div class="card"><h3>Confidence — each person's weakest key result</h3>
       <div class="spread">${bars}</div>
@@ -2152,11 +2186,15 @@ function facilitator(R, set, resp){
       <div style="margin-top:8px"><strong>Average ${avg}/10 — spread of ${spread} points.</strong></div>
       <div class="hint">${spread>=3?"That gap is the meeting. Someone believes something the others don't — start there, don't average it away.":"The team is aligned on this one."}</div>
     </div>`:""}
-    ${set.filter(q=>q.t!=="scale").map(block).join("")}
-    <div class="card"><h3>Record the outcome</h3>
-      <div class="cap">What the team decided goes on the objective, not in a meeting note.</div>
-      <button class="btn" onclick="selObj='${one(R,"Objective")}';VIEW='objective';drawChrome();render();scrollTo(0,0)">Record a decision on this objective →</button>
-    </div>`;
+    ${set.map((q,i)=> q.t==="scale" ? "" : block(q,i)).join("")}
+    <div class="card"><h3>Where we go next</h3>
+      <div class="cap">The takeaways above save as they're written — they're the group's voice, and they travel with you.</div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:10px;align-items:center">
+        ${isRetro
+          ? `<button class="btn jv" id="fPlan">Close the retro & plan the new trimester →</button>`
+          : `<button class="btn jv" id="fClose">Close the meeting — it's on the record</button>`}
+        <button class="btn ghost" onclick="selObj='${one(R,"Objective")}';VIEW='objective';drawChrome();render();scrollTo(0,0)">Record a decision (a target moved?) →</button>
+      </div></div>`;
 }
 
 /* ============================ OBJECTIVE RECORD ============================ */
