@@ -117,6 +117,27 @@ tabs without strong reason — "eloquent simplicity" lost once already.
    user); fold it into the app.
 7. **A warmer product name** than "JV OKR" (undecided).
 
+## Sandbox (build-time tester feedback — installed 2026-09-04)
+The feedback pencil from `Documents/sandbox-kit/` (see its README for the full
+philosophy). Testers: Mel, Mike, Chris. Files: `sandbox.js` + `sandbox.css`
+(repo root, kit files — kept neutral grey on purpose: it should read as a tool,
+not the product), `netlify/functions/notes.js` + `netlify/functions/lib/guard.js`
+(the endpoint + origin/X-Sandbox guard), `.checks/render-check.js` (console
+script — paste into DevTools, checks all 14 views + bot + notes page) and
+`.checks/shot.sh`. Wiring in index.html: `Sandbox.init` at the end of the
+script (screen names per view, context adds obj/kr/team), `V.notes` renders
+`Sandbox.notesHTML()`, Notes lives in the GEAR menu (leaders' gear — Chris
+uses the pencil's own list instead). `netlify.toml` carries the version.json
+build command, the `/api/notes` redirect, and `Referrer-Policy: same-origin`
+(NOT no-referrer — the guard needs the Referer on same-origin GETs).
+**Notes go to a SEPARATE Airtable base** `appUJ0xJCit7WOJzk` ("JV OKR Sandbox",
+table `Workbench`) — the sandbox endpoint is the weakest door; its token must
+not open the product base. Env vars for it (Netlify): `AIRTABLE_API_KEY` (a
+token whose Access list has ONLY the sandbox base), `AIRTABLE_BASE_ID` =
+`appUJ0xJCit7WOJzk`, `AIRTABLE_NOTES_TABLE` = `Workbench`. Note these are
+different names from the product proxy's `AIRTABLE_BASE`/`AIRTABLE_TOKEN` —
+that separation is the point.
+
 ## After every feature ships
 Add a Mike-readable entry (WHAT / TRY IT / WATCH FOR, newest first) to the
 Google Doc **"JV OKR — What's New (how to try it)"** in Mel's Drive — current
@@ -138,4 +159,6 @@ The repo once got polluted with a different app's files (Pulse Report: `src/`,
 hours lost. The repo is now exactly these files: `index.html`, `netlify.toml`,
 `netlify/functions/airtable.js`, `icon.svg`, `favicon-32.png`, `icon-192.png`,
 `icon-512.png`, `apple-touch-icon.png`, `site.webmanifest`, `README.md`, this
-`CLAUDE.md`. Keep it that clean.
+`CLAUDE.md`, `smoke.js`, plus the sandbox set: `sandbox.js`, `sandbox.css`,
+`netlify/functions/notes.js`, `netlify/functions/lib/guard.js`, `.checks/`.
+Keep it that clean.

@@ -1,6 +1,23 @@
 [build]
   publish = "."
   functions = "netlify/functions"
+  # Build stamp: lets the pencil tell a tester whether the page in front of
+  # them contains the fix. Without it, everything says "Local copy".
+  command = "node -e \"require('fs').writeFileSync('version.json',JSON.stringify({at:new Date().toISOString(),ref:(process.env.COMMIT_REF||'').slice(0,7)}))\""
 
 [functions]
   node_bundler = "esbuild"
+
+[[redirects]]
+  from   = "/api/notes"
+  to     = "/.netlify/functions/notes"
+  status = 200
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Content-Type-Options = "nosniff"
+    X-Frame-Options        = "DENY"
+    # NOT no-referrer: a same-origin GET sends no Origin, and no-referrer
+    # strips Referer too — the guard would 403 every read.
+    Referrer-Policy        = "same-origin"

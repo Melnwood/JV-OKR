@@ -391,6 +391,7 @@
   .empty{color:var(--ink-2);font-size:13px;font-style:italic}
   .hidden{display:none}
 </style>
+<link rel="stylesheet" href="sandbox.css">
 </head>
 <body>
 <div class="bar" id="bar" style="display:none"><div class="bar-in">
@@ -402,6 +403,7 @@
 <div class="wrap"><div id="view" class="loading">Loading…</div></div>
 <div class="toast" id="toast"></div>
 
+<script src="sandbox.js"></script>
 <script>
 /* ============================ API ============================ */
 const API = "/.netlify/functions/airtable";
@@ -573,7 +575,7 @@ const alignLine = o => {
 // Dashboard, Alignment map and Browse JV merge into one "JV 2030" page with three lenses.
 // Org and Archive live in a quiet settings corner.
 const NAV = [["jv","JV 2030"],["team","Team"],["mine","My work"],["coaching","Coaching"]];
-const GEAR = [["org","Org"],["archive","Archive"]];
+const GEAR = [["org","Org"],["archive","Archive"],["notes","Notes"]];
 function drawChrome(){
   const nav = NAV.filter(([k]) => k!=="coaching" || iAmCoach());
   document.getElementById("nav").innerHTML = nav.map(([k,l])=>
@@ -1659,6 +1661,13 @@ V.team = () => {
     });
     sbCarry = lines.join("\n").slice(0, 4000);
     okrsOpenNew=true; VIEW="okrs"; drawChrome(); render(); scrollTo(0,0); };
+};
+
+/* ============================ NOTES — the sandbox workbench page ============================ */
+V.notes = () => {
+  document.getElementById("view").innerHTML =
+    (typeof Sandbox !== "undefined") ? Sandbox.notesHTML()
+    : `<div class="card empty">Sandbox is not loaded.</div>`;
 };
 
 /* ============================ WORKSHOP — a clean bench for shaping OKRs ============================ */
@@ -3372,6 +3381,31 @@ let CLIENT_ID = null;
     <div id="gbtn" style="display:flex;justify-content:center;margin-top:16px"></div>`);
   const wait = setInterval(()=>{ if(window.google){ clearInterval(wait); drawButton(); } }, 120);
 })();
+
+/* ── the sandbox pencil: build-time feedback, on every screen ── */
+if (typeof Sandbox !== "undefined") {
+  const SCREEN_NAMES = {
+    jv: () => ({dashboard:"JV 2030 · Dashboard", map:"JV 2030 · Map", browse:"JV 2030 · By org"}[jvLens] || "JV 2030"),
+    team:"Team", teamcheckin:"Team check-in", mine:"My work", workshop:"Workshop",
+    objective:"Objective workspace", checkin:"Check-in", reviews:"Reviews",
+    okrs:"OKRs", meetings:"Meetings", org:"Org", archive:"Archive",
+    coaching:"Coaching", notes:"Notes"
+  };
+  Sandbox.init({
+    screen: () => { const s = SCREEN_NAMES[VIEW]; return typeof s === "function" ? s() : (s || "Somewhere"); },
+    rerender: () => { if (VIEW === "notes") render(); },
+    context: () => {
+      const bits = [];
+      try {
+        if (VIEW === "objective" && selObj) bits.push("obj: " + (nm("objectives", selObj) || "").slice(0, 40));
+        if (VIEW === "mine" && mineKr) bits.push("kr: " + (nm("krs", mineKr) || "").slice(0, 40));
+        if ((VIEW === "team" || VIEW === "teamcheckin") && teamUnit()) bits.push("team: " + (f(teamUnit(), "Name") || ""));
+        if (VIEW === "reviews" && revId) bits.push("review: " + (nm("reviews", revId) || "").slice(0, 40));
+      } catch (e) {}
+      return bits.join(" · ");
+    }
+  });
+}
 </script>
 </body>
 </html>

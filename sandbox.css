@@ -1,0 +1,136 @@
+/* ============================================================
+   THE SANDBOX — styles.
+
+   Every colour is a --sb-* custom property with a fallback, so this sits on
+   top of any host app without inheriting or fighting its palette. Override
+   the block below in your own stylesheet to make it match; leave it and it
+   is a neutral grey that reads as a tool rather than as part of the product.
+
+   Everything is prefixed .sb- so it cannot collide with the host. That
+   matters: an unprefixed .prow once collided with a host class and moved a
+   whole row of the app.
+   ============================================================ */
+:root{
+  --sb-ink:#16202E;
+  --sb-ink-64:rgba(22,32,46,.64);
+  --sb-ink-15:rgba(22,32,46,.15);
+  --sb-ink-08:rgba(22,32,46,.08);
+  --sb-paper:#FBFBFA;
+  --sb-ground:#E8EAE6;
+  --sb-line:#D3D7D1;
+  --sb-warn:#8F3A2C;   --sb-warn-bg:rgba(176,74,56,.10);
+  --sb-ok:#5F6836;     --sb-ok-bg:rgba(138,148,85,.16);
+  --sb-mono:'IBM Plex Mono',ui-monospace,SFMono-Regular,Menlo,monospace;
+}
+
+/* ---------- the pencil ---------- */
+.sb-fab{position:fixed;right:20px;bottom:20px;z-index:9000;width:52px;height:52px;
+  border-radius:50%;border:none;background:var(--sb-ink);color:#fff;font-size:20px;
+  cursor:pointer;box-shadow:0 6px 20px rgba(0,0,0,.22);display:grid;place-items:center}
+.sb-fab:hover{transform:translateY(-1px)}
+
+/* Fixed, and mounted outside any transformed container — see the README.
+   A transformed ancestor makes `fixed` position against that ancestor, and
+   this panel once rendered 1463px down the page because of it. */
+.sb-wrap{position:fixed;inset:auto 20px 20px auto;z-index:9000;width:min(420px,calc(100vw - 40px))}
+.sb-panel{background:var(--sb-paper);border:1px solid var(--sb-line);border-radius:12px;
+  box-shadow:0 12px 40px rgba(0,0,0,.20);overflow:hidden;
+  font-family:system-ui,-apple-system,sans-serif;font-size:14px;color:var(--sb-ink)}
+.sb-hd{display:flex;align-items:center;gap:8px;padding:11px 13px;
+  border-bottom:1px solid var(--sb-ink-08);background:var(--sb-ground)}
+.sb-hd b{font-size:13px;letter-spacing:.01em}
+.sb-local,.sb-stale{font-family:var(--sb-mono);font-size:9px;letter-spacing:.07em;
+  text-transform:uppercase;padding:2px 7px;border-radius:99px;
+  background:var(--sb-warn-bg);color:var(--sb-warn)}
+.sb-stale{cursor:pointer}
+.sb-x{margin-left:auto;border:none;background:none;font-size:20px;line-height:1;
+  color:var(--sb-ink-64);cursor:pointer;padding:0 2px}
+.sb-body{padding:13px;max-height:min(70vh,560px);overflow:auto}
+
+.sb-gate label span,.sb-whoami{display:block;font-size:12px;color:var(--sb-ink-64)}
+.sb-gate input,.sb-panel textarea{width:100%;font:inherit;padding:8px 10px;margin-top:5px;
+  border:1px solid var(--sb-line);border-radius:8px;background:#fff;color:var(--sb-ink);
+  resize:vertical}
+.sb-gate input:focus,.sb-panel textarea:focus{outline:none;border-color:var(--sb-ink-64)}
+.sb-whoami{display:flex;align-items:center;gap:6px;margin-bottom:7px}
+.sb-whoami button{border:none;background:none;color:var(--sb-ink-64);text-decoration:underline;
+  cursor:pointer;font:inherit;font-size:12px;padding:0}
+.sb-row{display:flex;align-items:center;gap:9px;margin-top:9px}
+.sb-file{font-size:12px;color:var(--sb-ink-64);cursor:pointer;border:1px dashed var(--sb-line);
+  border-radius:8px;padding:6px 11px}
+.sb-file input{display:none}
+.sb-go{margin-left:auto;border:none;border-radius:8px;background:var(--sb-ink);color:#fff;
+  padding:8px 15px;font:inherit;font-weight:600;cursor:pointer}
+.sb-hint{margin:9px 0 0;font-size:11.5px;line-height:1.45;color:var(--sb-ink-64)}
+.sb-hint.warn{color:var(--sb-warn)}
+.sb-hint.ok{color:var(--sb-ok)}
+.sb-shots{display:flex;gap:6px;flex-wrap:wrap;margin-top:9px}
+.sb-shot{position:relative;width:62px;height:46px;border-radius:6px;overflow:hidden;
+  border:1px solid var(--sb-line)}
+.sb-shot img{width:100%;height:100%;object-fit:cover;display:block}
+.sb-shot button{position:absolute;top:1px;right:1px;width:16px;height:16px;border:none;
+  border-radius:50%;background:rgba(0,0,0,.62);color:#fff;font-size:11px;line-height:1;cursor:pointer}
+
+.sb-mini{margin-top:12px;border-top:1px solid var(--sb-ink-08);padding-top:9px;
+  display:flex;flex-direction:column;gap:5px}
+.sb-mini-r{display:flex;gap:8px;align-items:flex-start;font-size:12px;line-height:1.4}
+.sb-mini-r.done span{opacity:.5;text-decoration:line-through}
+.sb-mini-r button{flex:none;width:15px;height:15px;margin-top:1px;border:1px solid var(--sb-line);
+  border-radius:4px;background:#fff;font-size:10px;line-height:1;cursor:pointer;color:var(--sb-ok)}
+
+/* ---------- the Notes page ---------- */
+.sb-page{font-family:inherit}
+.sb-page-top{display:flex;align-items:center;justify-content:space-between;gap:14px}
+.sb-eyebrow{font-family:var(--sb-mono);font-size:10px;letter-spacing:.1em;
+  text-transform:uppercase;color:var(--sb-ink-64)}
+.sb-refresh{border:1px solid var(--sb-line);background:none;border-radius:99px;
+  padding:6px 14px;font:inherit;font-size:12px;cursor:pointer;color:var(--sb-ink-64)}
+.sb-h1{margin:6px 0 0;font-size:34px;letter-spacing:-.02em}
+.sb-of{font-weight:400;color:var(--sb-ink-64)}
+.sb-lede{margin:8px 0 0;max-width:56ch;line-height:1.55;color:var(--sb-ink-64)}
+.sb-empty{margin-top:22px;padding:20px;border:1px dashed var(--sb-line);border-radius:10px;
+  color:var(--sb-ink-64)}
+.sb-sec{margin-top:26px}
+.sb-sec .sb-eyebrow{margin-bottom:8px}
+
+.sb-note{display:flex;gap:12px;align-items:flex-start;padding:14px 16px;margin-bottom:8px;
+  background:var(--sb-paper);border:1px solid var(--sb-line);border-radius:10px}
+.sb-note.done{background:none;border-style:dashed}
+.sb-note.done .sb-note-text{opacity:.62}
+.sb-tick{flex:none;width:21px;height:21px;border:1px solid var(--sb-line);border-radius:6px;
+  background:#fff;cursor:pointer;font-size:12px;line-height:1;color:var(--sb-ok)}
+.sb-note.done .sb-tick{background:var(--sb-ok-bg);border-color:transparent}
+.sb-note-body{flex:1;min-width:0}
+.sb-note-text{line-height:1.5}
+.sb-note-meta{margin-top:4px;font-family:var(--sb-mono);font-size:10px;letter-spacing:.06em;
+  text-transform:uppercase;color:var(--sb-ink-64)}
+.sb-ctx{margin-top:8px;font-family:var(--sb-mono);font-size:10px;letter-spacing:.05em;
+  color:var(--sb-ink-64);opacity:.8}
+.sb-fix{margin-top:11px;padding:10px 13px;border-radius:8px;background:var(--sb-ink-08);
+  font-size:13.5px;line-height:1.5}
+.sb-fix span{display:block;font-family:var(--sb-mono);font-size:9px;letter-spacing:.09em;
+  text-transform:uppercase;color:var(--sb-ink-64);margin-bottom:3px}
+.sb-note-act{flex:none;display:flex;gap:5px}
+.sb-del{border:1px solid var(--sb-line);background:none;border-radius:99px;padding:4px 11px;
+  font-family:var(--sb-mono);font-size:9.5px;letter-spacing:.07em;text-transform:uppercase;
+  color:var(--sb-ink-64);cursor:pointer}
+.sb-del.go{background:var(--sb-warn);border-color:var(--sb-warn);color:#fff}
+
+/* Before and after. Two fixed columns, so a note carrying only the tester's
+   shot sits in its half and leaves the other half visibly empty rather than
+   stretching across the card. Thumbnails are capped: a tester's grab is often
+   a whole scrolled page, and one of Dave's ran metres deep and buried every
+   note under it. */
+.sb-ba{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:12px}
+.sb-ba figure{margin:0;min-width:0}
+.sb-ba figcaption{font-family:var(--sb-mono);font-size:9px;letter-spacing:.09em;
+  text-transform:uppercase;color:var(--sb-ink-64);margin-bottom:4px}
+.sb-ba .after figcaption{color:var(--sb-ok);font-weight:600}
+.sb-ba img{width:100%;max-height:240px;object-fit:contain;object-position:top;
+  background:var(--sb-paper);border:1px solid var(--sb-line);border-radius:8px;
+  display:block;cursor:zoom-in}
+.sb-ba figure.big img{max-height:none;cursor:zoom-out}
+.sb-ba .after img{border-color:var(--sb-ok)}
+.sb-zoom{font-family:var(--sb-mono);font-size:9px;letter-spacing:.06em;
+  color:var(--sb-ink-64);margin-top:4px}
+@media(max-width:640px){.sb-ba{grid-template-columns:1fr}}
