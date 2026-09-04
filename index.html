@@ -249,6 +249,9 @@
   .noteline:last-of-type{border-bottom:none}
   .sbchat-u{background:#fff;border:1px solid var(--rule);border-radius:10px;padding:9px 12px;margin:12px 0 6px;font-size:13.5px;white-space:pre-wrap}
   .sbchat-a{background:var(--jv-50);border:1px solid var(--jv-edge);border-radius:10px;padding:11px 14px;margin:0 0 4px;font-size:13.5px;line-height:1.6;white-space:pre-wrap}
+  .stamp{display:inline-flex;align-items:center;gap:6px;font-family:'Plus Jakarta Sans',sans-serif;font-size:10.5px;color:var(--ink-3);white-space:nowrap}
+  .stampbar{position:relative;width:54px;height:5px;border-radius:3px;background:var(--rule-2);display:inline-block;overflow:hidden}
+  .stampbar b{position:absolute;left:0;top:0;bottom:0;background:var(--jv);border-radius:3px}
   .takebox{margin-top:12px;background:var(--jv-50);border:1px dashed var(--jv-edge);border-radius:10px;padding:10px 13px}
   .takebox .lab{font-size:10.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--jv-deep);margin-bottom:6px}
   .takebox textarea{width:100%;border:1.5px solid transparent;background:#fff;border-radius:8px;padding:10px 12px;font:inherit;font-size:13.5px;min-height:52px;resize:vertical}
@@ -718,6 +721,19 @@ const vizArc=(cx,cy,r,f0,f1,w,color,op)=>{const [x0,y0]=vizPolar(cx,cy,r,f0),[x1
 const vizTick=(cx,cy,r,fr,len,color,w)=>{const [x0,y0]=vizPolar(cx,cy,r-len/2,fr),[x1,y1]=vizPolar(cx,cy,r+len/2,fr);
   return `<line x1="${x0}" y1="${y0}" x2="${x1}" y2="${y1}" stroke="${color}" stroke-width="${w||2}"/>`;};
 
+/* where are we in the season? — a stamp every objective and KR can wear */
+const cyclePos = cyc => { if(!cyc) return null;
+  const name=f(cyc,"Name")||"", cs=f(cyc,"Start"), ce=f(cyc,"End");
+  if(!cs||!ce) return name?{name,phase:"",p:null}:null;
+  const t0=new Date(cs).getTime(), t1=new Date(ce).getTime(), now=TODAY.getTime();
+  const p=Math.max(0,Math.min(100,Math.round((now-t0)/((t1-t0)||1)*100)));
+  const weeks=Math.max(1,Math.round((t1-t0)/(7*864e5))), week=Math.min(weeks,Math.max(1,Math.ceil((now-t0)/(7*864e5))));
+  const phase = now<t0?`starts ${fmt(cs)}` : now>t1?`ended ${fmt(ce)}` : `week ${week} of ${weeks}`;
+  return {name, phase, p}; };
+const seasonStampO = o => { const c=cyclePos(rec("cycles", one(o||{},"Cycle"))); if(!c) return "";
+  return `<span class="stamp">${c.p!==null?`<i class="stampbar"><b style="width:${c.p}%"></b></i>`:""}${esc(c.name)}${c.phase?` · ${c.phase}`:""}</span>`; };
+const krStamp = k => seasonStampO(rec("objectives", one(k,"Objective")));
+
 /* which way a key result wins */
 const krDir = k => { const d=f(k,"Direction")||""; return d.indexOf("Decrease")===0?"down":d.indexOf("Hold")===0?"hold":"up"; };
 const krFrac = (k,v) => { const st=f(k,"Start value")||0, tgt=f(k,"Target value")??0, dir=krDir(k);
@@ -838,7 +854,8 @@ LENS.dashboard = () => {
         return `<div class="card" style="margin-bottom:14px">
           <div style="display:flex;justify-content:space-between;gap:12px;align-items:center;margin-bottom:4px">
             <div style="flex:1;min-width:0"><strong style="font-size:15px;cursor:pointer" data-o="${j.id}">${esc(f(k,"Title"))}</strong>
-              ${f(k,"How we'll know")?`<div class="cap">${esc(f(k,"How we'll know"))}</div>`:""}</div>
+              ${f(k,"How we'll know")?`<div class="cap">${esc(f(k,"How we'll know"))}</div>`:""}
+              <div style="margin-top:3px">${krStamp(k)}</div></div>
             ${vizToggle(k.id)}
           </div>
           <div style="cursor:pointer" data-o="${j.id}">${krViz(k,true)}</div>
@@ -1126,7 +1143,8 @@ function objCardRO(o){
       return `<div style="padding:10px 0;border-top:1px dashed var(--rule)">
         <div style="display:flex;justify-content:space-between;gap:10px;align-items:center;margin-bottom:4px">
           <div style="flex:1;min-width:0"><span style="font-weight:600;font-size:13.5px;cursor:pointer" data-o="${o.id}">${esc(f(kr,"Title"))}</span>
-            ${f(kr,"How we'll know")?`<div class="cap">${esc(f(kr,"How we'll know"))}</div>`:""}</div>
+            ${f(kr,"How we'll know")?`<div class="cap">${esc(f(kr,"How we'll know"))}</div>`:""}
+            <div style="margin-top:3px">${krStamp(kr)}</div></div>
           ${vizToggle(kr.id)}
         </div>
         <div style="cursor:pointer" data-o="${o.id}">${krViz(kr,false)}</div>
@@ -1276,7 +1294,7 @@ V.mine = () => {
                   : `${cur} of ${tgt}${esc(unit)} so far — <b>${p}%</b> of the way`;
     return `
       ${f(kr,"How we'll know")?`<div class="cap">${esc(f(kr,"How we'll know"))}</div>`:""}
-      <div class="orient" style="margin:2px 0 4px">${numline}. <span class="pill ${cls(conf)}" style="vertical-align:1px">${esc(conf)}</span></div>
+      <div class="orient" style="margin:2px 0 4px;display:flex;justify-content:space-between;align-items:baseline;gap:12px;flex-wrap:wrap"><span>${numline}. <span class="pill ${cls(conf)}" style="vertical-align:1px">${esc(conf)}</span></span>${krStamp(kr)}</div>
       ${(()=>{ const st2=f(kr,"Start value")||0, tv=(f(kr,"Target value")??0);
         const uo = rec("units", one(rec("objectives", one(kr,"Objective"))||{},"Org Unit"));
         const midD = uo && f(uo,"Midterm date"), retD = uo && f(uo,"Retro date");
@@ -1316,7 +1334,7 @@ V.mine = () => {
 
   el.innerHTML = `
     <div class="head"><div><h1>${greet}, ${esc(first)}.</h1>
-      ${orient?`<div class="orient">${orient}</div>`:`<div class="orient">You're not on any key results yet — when your team's OKRs have them, this page comes alive.</div>`}</div></div>
+      ${orient?`<div class="orient">${orient}${primary?` &nbsp;${seasonStampO(primary)}`:""}</div>`:`<div class="orient">You're not on any key results yet — when your team's OKRs have them, this page comes alive.</div>`}</div></div>
 
     ${!localStorage.getItem("jvMineIntro") ? `<div class="intro">
       This page is your corner of the team's work. Your tasks are up top, and each key result opens into the full workspace.
@@ -1550,7 +1568,7 @@ V.team = () => {
 
   el.innerHTML = `
     <div class="head"><div><h1>${esc(f(u,"Name"))}</h1>
-      <div class="sub">${mates.length} of us${leaderName?` · led by ${esc(leaderName)}`:""}${cycle?` · ${esc(f(cycle,"Name"))}`:""} · one team, one rhythm.</div></div>
+      <div class="sub">${mates.length} of us${leaderName?` · led by ${esc(leaderName)}`:""}${(c=>c?` · ${esc(c.name)}${c.phase?`, ${c.phase}`:""}`:"")(cyclePos(cycle))} · one team, one rhythm.</div></div>
       <div class="filters">
         ${iAmCoach() ? `<select class="sm" id="tmpick" title="Step into any team's room">${unitsSorted(DB.units).filter(x=>f(x,"Active")!==false).map(x=>`<option value="${x.id}" ${x.id===u.id?"selected":""}>${esc(f(x,"Name"))}</option>`).join("")}</select>` : ""}
         ${iAmLeader() ? `<button class="btn" id="tmnew">+ New objective</button>` : ""}
@@ -1789,7 +1807,7 @@ V.teamcheckin = () => {
 
   el.innerHTML = `
     <div class="head"><div><h1>This week's check-in</h1>
-      <div class="sub">${esc(f(u,"Name"))} · ${fmt(iso(TODAY))} · go around the room — every number gets a look, every voice gets a say.</div></div>
+      <div class="sub">${esc(f(u,"Name"))} · ${fmt(iso(TODAY))}${(c=>c&&c.phase?` · ${esc(c.name)}, ${c.phase}`:"")(cyclePos(teamCycle()))} · go around the room — every number gets a look, every voice gets a say.</div></div>
       <div class="filters"><button class="btn ghost" id="tcback">← Team</button></div></div>
     ${objs.map(o=>{
       const krs = objKrs(o.id);
@@ -2276,7 +2294,7 @@ V.objective = () => {
     <div class="head">
       <div>
         <button class="btn ghost" id="obacklist" style="margin-bottom:8px">← All OKRs</button>
-        <div class="eyebrow">${esc(areaName(o)||"")} · ${esc(nm("people",one(o,"Owner")))} · ${esc(nm("cycles",one(o,"Cycle")))} · ${alignLine(o)}</div>
+        <div class="eyebrow">${esc(areaName(o)||"")} · ${esc(nm("people",one(o,"Owner")))} · ${(c=>c?`${esc(c.name)}${c.phase?` (${c.phase})`:""}`:esc(nm("cycles",one(o,"Cycle"))))(cyclePos(rec("cycles",one(o,"Cycle"))))} · ${alignLine(o)}</div>
         <h1>${esc(f(o,"Title"))}</h1>
         <div class="sub">The full workspace — key results, decisions, and every check-in.</div>
       </div>
