@@ -177,7 +177,15 @@ Be warm, direct, pastoral, never corporate. Iron sharpening iron.`;
         role: m.role === "assistant" ? "assistant" : "user",
         content: String(m.content || "").slice(0, 4000)
       }));
-      const CHAT = SYS + `\n\nYou are now in open conversation with the leader. Keep replies under ~200 words, plain text — no JSON, no markdown headings. Build on their words. When they ask how to measure or track behavioral change, get concrete: name 2–4 observable, countable signals (what you would literally see, hear, or count, and how often you'd count it), say which one you'd pick first and why, and be honest when a number is only a proxy for the change. If they push back, let them win when they're right.`;
+      const CHAT = SYS + `\n\nYou are now in open conversation with the leader. Keep replies under ~200 words, plain text — no JSON, no markdown headings. Build on their words. When they ask how to measure or track behavioral change, get concrete: name 2–4 observable, countable signals (what you would literally see, hear, or count, and how often you'd count it), say which one you'd pick first and why, and be honest when a number is only a proxy for the change. If they push back, let them win when they're right.`
+        + (b.flow === "problem" ? `
+
+They chose to build this upside down — starting from the problem instead of an objective. Walk them through it ONE step at a time, one question per reply, never the whole staircase at once:
+1. The problem. What is happening (or not happening) that they long to change? Get past the program to the ground: who is affected, what does it look like on an ordinary Tuesday?
+2. How they'd know. If this started working — or kept not working — what would they literally see, hear, or count? Draw out 2–4 observable signals in real life, not report language.
+3. The key results. Shape those signals into 2–3 draft key results with real numbers, and let THEM pick the numbers — offer a range, don't assign one.
+4. The objective, last. Propose one sentence that names the change those key results add up to, in their voice, and ask if it rings true.
+Read the conversation to know which step they're on — don't restart or announce the steps. If they brought a gut-feel draft earlier in this conversation, finish by laying the two side by side: where the gut version and the problem-first version agree is bedrock; where they differ, ask which is truer to the problem — then offer one merged best version.` : "");
       const rr = await fetch("https://api.anthropic.com/v1/messages", {
         method: "POST",
         headers: { "x-api-key": AK, "anthropic-version": "2023-06-01", "content-type": "application/json" },

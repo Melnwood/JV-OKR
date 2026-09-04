@@ -96,7 +96,11 @@ tabs without strong reason — "eloquent simplicity" lost once already.
   questions the person WRITES ANSWERS to; round 2 reads their answers and offers
   a sharpened objective. **Grace for building seasons** — never scold system-
   building work; name the "building season" and bless it when they can name the
-  behavioral change it "leads toward." Server-side, model `claude-sonnet-4-6`.
+  behavioral change it "leads toward." Server-side, model `claude-sonnet-4-6`. The Workshop bench adds open
+  conversation (`b.messages`) and the **problem-first walk** (`b.flow:
+  "problem"`): problem → observable signals → key results → objective LAST,
+  one question per reply; if a gut draft rode along in the first message, it
+  ends by comparing both versions and offering a merge.
 - **Check-in** (`V.checkin`), **Reviews** (`V.reviews`), **Org** (`V.org`),
   **Archive** (`V.archive`), **Coaching** (`V.coaching`).
 

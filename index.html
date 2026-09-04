@@ -247,7 +247,9 @@
   .noteline{font-size:12.5px;padding:5px 0;border-bottom:1px dotted var(--rule-2);line-height:1.5}
   .noteline .n-when{font-family:'Plus Jakarta Sans',sans-serif;font-size:10.5px;color:var(--ink-3);margin-right:4px}
   .noteline:last-of-type{border-bottom:none}
-  .sbchat-u{background:#fff;border:1px solid var(--rule);border-radius:10px;padding:9px 12px;margin:12px 0 6px;font-size:13.5px;white-space:pre-wrap}
+  .ws-flip{margin-top:10px;padding-top:10px;border-top:1px dashed var(--line);font-size:13px;color:var(--mut);display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.ws-flip .cap{flex-basis:100%;margin:0}
+.sbchat-u{background:#fff;border:1px solid var(--rule);border-radius:10px;padding:9px 12px;margin:12px 0 6px;font-size:13.5px;white-space:pre-wrap}
   .sbchat-a{background:var(--jv-50);border:1px solid var(--jv-edge);border-radius:10px;padding:11px 14px;margin:0 0 4px;font-size:13.5px;line-height:1.6;white-space:pre-wrap}
   .stamp{display:inline-flex;align-items:center;gap:6px;font-family:'Plus Jakarta Sans',sans-serif;font-size:10.5px;color:var(--ink-3);white-space:nowrap}
   .stampbar{position:relative;width:54px;height:5px;border-radius:3px;background:var(--rule-2);display:inline-block;overflow:hidden}
@@ -1672,6 +1674,7 @@ V.notes = () => {
 
 /* ============================ WORKSHOP — a clean bench for shaping OKRs ============================ */
 let wsThread = [];   // the bench conversation — survives tab hops, cleared by "start fresh"
+let wsFlow = null;   // null = free bench · "problem" = the upside-down walk (problem → signals → KRs → objective)
 
 V.workshop = () => {
   const el = document.getElementById("view");
@@ -1693,6 +1696,8 @@ V.workshop = () => {
         <input type="text" id="wsIn" placeholder="${wsThread.length?"Keep going — push back, ask, try another angle…":"Ask anything — how to make it behavioral, what to measure, whether it's even the right objective…"}"/>
         <button class="btn jv" id="wsGo" type="button">Send</button>
       </div>
+      ${wsThread.length?"":`<div class="ws-flip">Or turn it upside down: <button class="btn ghost" id="wsProb" type="button">Start from the problem →</button>
+        <span class="cap">what's broken → how you'd see it change → key results → the objective last. Bring a gut draft above and it'll compare both at the end.</span></div>`}
     </div>
     <div class="cap" style="max-width:760px;margin-top:4px">When it's shaped: Team → + New objective makes it real (the guided walk lives there too).</div>`;
 
@@ -1705,12 +1710,13 @@ V.workshop = () => {
       const ctx = (o?`My objective draft: ${o}\n`:"")+(k?`Key results I'm playing with:\n${k}\n`:"");
       if(ctx) text = ctx+"\n"+text;
     }
+    if(!wsThread.length) document.querySelector(".ws-flip")?.remove();
     wsThread.push({role:"user", content:text});
     box.insertAdjacentHTML("beforeend", `<div class="sbchat-u"><b>You</b> — ${esc(text)}</div><div class="sb-load" id="wsL"><span class="dot"></span><span class="dot"></span><span class="dot"></span></div>`);
     document.getElementById("wsIn").value="";
     box.lastElementChild.scrollIntoView({behavior:"smooth",block:"nearest"});
     try{
-      const r = await sbCall({messages: wsThread});
+      const r = await sbCall({messages: wsThread, flow: wsFlow||undefined});
       document.getElementById("wsL")?.remove();
       wsThread.push({role:"assistant", content:r.reply||""});
       box.insertAdjacentHTML("beforeend", `<div class="sbchat-a">${esc(r.reply||"")}</div>`);
@@ -1718,9 +1724,11 @@ V.workshop = () => {
     }catch(e){ document.getElementById("wsL")?.remove(); box.insertAdjacentHTML("beforeend", `<div class="sb-err">${esc(e.message)}</div>`); }
   };
   document.getElementById("wsGo").onclick = ()=>send(document.getElementById("wsIn").value);
+  const prob = document.getElementById("wsProb");
+  if(prob) prob.onclick = ()=>{ wsFlow="problem"; send("Let's build this upside down — start from the problem, not the objective."); };
   document.getElementById("wsIn").addEventListener("keydown", e=>{ if(e.key==="Enter") send(e.target.value); });
   const fresh = document.getElementById("wsFresh");
-  if(fresh) fresh.onclick = ()=>{ wsThread=[]; V.workshop(); };
+  if(fresh) fresh.onclick = ()=>{ wsThread=[]; wsFlow=null; V.workshop(); };
 };
 
 /* ============================ MEETINGS — pick a team, pick a room ============================ */
