@@ -145,7 +145,7 @@ that separation is the point.
 ## After every feature ships
 Add a Mike-readable entry (WHAT / TRY IT / WATCH FOR, newest first) to the
 Google Doc **"JV OKR — What's New (how to try it)"** in Mel's Drive — current
-file id `1i0_ZhF3_tDuzg8Hxd84FEtgM32jWo-xBmvJzeHeN7oQ`. The Drive connector
+file id `1kxOhfauTHZj3-hnzZNipRCHiLQEEqW_9IPImR7BEIKc`. The Drive connector
 can't edit Doc content, so the pattern is: recreate the Doc with the full
 updated text (same title), trash the old one, and update this id here and in
 memory. Mike tests from this doc.
